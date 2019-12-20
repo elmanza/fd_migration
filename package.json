@@ -1,0 +1,21 @@
+{
+  "name": "freight_dragon_service",
+  "version": "1.0.0",
+  "description": "Service to synchronize on this system",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Harold Alexander Gallardo M",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "moment": "^2.24.0",
+    "node-cron": "^2.0.3",
+    "pg": "^7.15.1",
+    "pg-hstore": "^2.3.3",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.5",
+    "sequelize": "^5.21.3"
+  }
+}
