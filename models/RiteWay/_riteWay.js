@@ -9,6 +9,8 @@ const VehicleMaker = require('./vehicleMaker');
 const VehicleType = require('./vehicleType');
 const VehicleModel = require('./vehicleModel');
 
+const StageQuote = require('../Stage/quote');
+
 const City = require('./city');
 
 Quote.hasMany(Order);
@@ -63,7 +65,12 @@ Vehicle.belongsTo(VehicleType, {
     constraints: true
 });
 
-
+//====================
+Quote.hasOne(StageQuote, {
+    foreignKey: 'rite_way_id',
+    as: 'stage_quote',
+    constraints: true
+})
 module.exports = {
     Quote,
     Order,

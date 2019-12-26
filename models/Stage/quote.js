@@ -7,8 +7,10 @@ class Quote extends Model{}
 Quote.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        riteWayId: {type: Sequelize.INTEGER, allowNull: false},
+        riteWayId: {type: Sequelize.INTEGER, allowNull: false, unique: true},
         fdOrderId: {type: Sequelize.STRING, allowNull: true},
+        fdAccountId: {type: Sequelize.STRING, allowNull: true},
+        fdResponse: {type: Sequelize.STRING, allowNull: true},
         state: {type: Sequelize.STRING, allowNull: false}, //error, waiting, offered, pick up, in transit, delivered
         //status: {}, //macropoint
         whatch: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true},

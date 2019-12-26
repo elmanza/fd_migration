@@ -13,7 +13,7 @@ const StageQuote = require('../../models/Stage/quote');
 
 class FreighDragonOrderTask{
     constructor(){
-        this.quoteResource = new QuoteResource(process.env.ORDER_API_USER, process.env.ORDER_API_CODE);
+        this.quoteResource = new QuoteResource(process.env.QUOTE_API_USER, process.env.QUOTE_API_CODE);
     }
 
     _parseDataQuoute(riteWayQuote){
@@ -70,6 +70,46 @@ class FreighDragonOrderTask{
         return fdQuoteData;
     }
 
+    async sendCreateRequestToFD(riteWayQuote){
+        let stageQuote = null;
+        try{
+            let fdQuoteData = this._parseDataQuoute(riteWayQuote);
+            let res = await this.quoteResource.create(fdQuoteData);            
+            if(!res.Success){
+                fdQuoteData.save_shipper = 1;
+                fdQuoteData.update_shipper = 0;
+                res = await this.quoteResource.create(fdQuoteData);
+            }
+
+            if(res.Success){
+                let stageQuoteData = {
+                    riteWayId: riteWayQuote.id,
+                    fdOrderId: res.EntityID,
+                    fdAccountId: res.AccountID,
+                    fdResponse: JSON.stringify(res),
+                    state: "waiting"
+                };
+
+                stageQuote = await StageQuote.create(stageQuoteData);
+            }
+            else{
+                let stageQuoteData = {
+                    riteWayId: riteWayQuote.id,
+                    state: "fd_quote_creation_error",
+                    fdResponse: JSON.stringify(res)
+                };
+
+                stageQuote = await StageQuote.create(stageQuoteData);
+            }
+            
+        }
+        catch(e){
+            throw e;
+        }  
+        
+        return (stageQuote == null? null: stageQuote.dataValues);
+    }
+
     createQuotes(){
         console.log("createQuotes");
         riteWay.Quote.findAll({
@@ -82,19 +122,32 @@ class FreighDragonOrderTask{
                 {
                     model: riteWay.User,
                     require: true,
+                    attributes: ['name', 'last_name', 'username', 'last_name'],
                     include: [riteWay.Company]
                 },
                 {
                     model:riteWay.City,
                     require:true,
                     as: 'originCity',
-                    include: [riteWay.State]
+                    attributes: ['name', 'zip'],
+                    include: [
+                        {
+                            model: riteWay.State,
+                            attributes: ['abbreviation']
+                        }
+                    ]
                 },
                 {
                     model:riteWay.City,
                     require:true,
                     as: 'destinationCity',
-                    include: [riteWay.State]
+                    attributes: ['name', 'zip'],
+                    include: [
+                        {
+                            model: riteWay.State,
+                            attributes: ['abbreviation']
+                        }
+                    ]
                 },
                 {
                     model: riteWay.Vehicle,
@@ -103,11 +156,23 @@ class FreighDragonOrderTask{
                     include: [
                         {
                             model: riteWay.VehicleModel,
-                            include: [riteWay.VehicleMaker],
+                            attributes: ['name'],
+                            include: [{
+                                model: riteWay.VehicleMaker,
+                                attributes: ['name']
+                            }],
                             require:true
                         },
-                        riteWay.VehicleType
+                        {
+                            model:riteWay.VehicleType,
+                            attributes: ['name'],
+                        }
                     ]
+                },
+                {
+                    model:StageQuote,
+                    as: 'stage_quote',
+                    attributes:[]
                 }
             ],
             where: {
@@ -121,19 +186,20 @@ class FreighDragonOrderTask{
                         Sequelize.col('quotes.state'),
                         '=',
                         'waiting'
-                    )
+                    ), 
+                    Sequelize.where(
+                        Sequelize.col('stage_quote.id'),
+                        'IS',
+                        null
+                    ),
                 ]
             }
         })
         .then(quotes => {
-            quotes.forEach(quote => {
-                let fdQuoteData = this._parseDataQuoute(quote);    
-                this.quoteResource.create(fdQuoteData)
+            quotes.forEach(quote => {                 
+                this.sendCreateRequestToFD(quote)
                 .then(res => {
                     console.log(res);
-                })
-                .catch(error => {
-                    console.log(error);
                 });
             });
         });
