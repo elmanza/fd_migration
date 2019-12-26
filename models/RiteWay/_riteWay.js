@@ -70,7 +70,8 @@ Quote.hasOne(StageQuote, {
     foreignKey: 'rite_way_id',
     as: 'stage_quote',
     constraints: true
-})
+});
+
 module.exports = {
     Quote,
     Order,

@@ -33,7 +33,7 @@ class FreighDragonOrderTask{
             AssignedID: 1, // (provided to you in this document)
             ShipperPhone1: riteWayQuote.user.company.phone, //(please provide the number in a string),
             ShipperCompany: riteWayQuote.user.company.name, // (mandatory only when shipper is commercial)
-            ShipperType: "Comercial", // (Residential / Commercial)
+            ShipperType: "Commercial", // (Residential / Commercial)
             ShipperAddress1: riteWayQuote.user.company.address, 
             //Origin Posting Information ====================================
             OriginCity: riteWayQuote.originCity.name, //| Origin City name
@@ -87,7 +87,7 @@ class FreighDragonOrderTask{
                     fdOrderId: res.EntityID,
                     fdAccountId: res.AccountID,
                     fdResponse: JSON.stringify(res),
-                    state: "waiting"
+                    status: "waiting"
                 };
 
                 stageQuote = await StageQuote.create(stageQuoteData);
@@ -95,7 +95,7 @@ class FreighDragonOrderTask{
             else{
                 let stageQuoteData = {
                     riteWayId: riteWayQuote.id,
-                    state: "fd_quote_creation_error",
+                    status: "fd_quote_creation_error",
                     fdResponse: JSON.stringify(res)
                 };
 
@@ -110,8 +110,56 @@ class FreighDragonOrderTask{
         return (stageQuote == null? null: stageQuote.dataValues);
     }
 
+    async sendGetRequestToFD(stageQuotes){
+        let stageQuoteIds = stageQuotes.map(stageQuote => {
+            return stageQuote.fdOrderId;
+        }).join('|');
+
+        let res = await this.quoteResource.get({
+            FDOrderID: stageQuoteIds
+        });
+
+        let sQuotes = [];
+        if(res.Success){
+            for(let i=0; i < res.Data.length; i++) 
+            {
+                let fdQuote = res.Data[i];
+                if(fdQuote.tariff > 0){
+                    let stageQuote = await StageQuote.findOne({
+                        where: {
+                            fdOrderId: fdQuote.FDOrderID
+                        }
+                    });
+
+                    let riteWayQuote = await riteWay.Quote.findOne({
+                        include: [
+                            {
+                                model: StageQuote,
+                                as:'stage_quote'
+                            }
+                        ],
+                        where: {
+                            id: stageQuote.riteWayId
+                        }
+                    });
+                    
+                    await riteWayQuote.update({
+                        state: 'offered',
+                        tariff: fdQuote.tariff
+                    });
+
+                    stageQuote = await riteWayQuote.stage_quote.update({
+                        status: 'offered',
+                    });  
+                    
+                    sQuotes.push(stageQuote.dataValues);
+                }
+            };
+        }
+        return sQuotes;
+    }
+
     createQuotes(){
-        console.log("createQuotes");
         riteWay.Quote.findAll({
             include: [
                 {
@@ -198,15 +246,36 @@ class FreighDragonOrderTask{
         .then(quotes => {
             quotes.forEach(quote => {                 
                 this.sendCreateRequestToFD(quote)
-                .then(res => {
-                    console.log(res);
+                .then(result => {
+                    console.log("createQuotes");
+                    console.log(result);
+                })
+                .catch(error => {
+                    console.log("createQuotes Error");
+                    console.log(error);
                 });
             });
         });
     }
 
     refreshQuotes(){
-
+        StageQuote.findAll({
+            where: {
+                'status': 'waiting',
+                'watch': true
+            }
+        })
+        .then( stageQuotes => {
+            this.sendGetRequestToFD(stageQuotes)
+            .then(result => {
+                console.log("refreshQuotes");
+                console.log(result);
+            })
+            .catch(error => {
+                console.log("refreshQuotes Error");
+                console.log(error);
+            });
+        })
     }
 }
 

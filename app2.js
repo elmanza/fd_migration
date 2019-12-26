@@ -56,16 +56,16 @@ Notas:
     *Por ende se debe buscar en funcion del EntityID retornado, que en realidad es el FDOrderID para actualizar una orden
 */
 
-quote.create(quoteData)
+/*quote.create(quoteData)
 .then(res => {
     console.log(res);
 })
 .catch(error => {
     console.log(error);
-});
+});*/
 
 quote.get({
-    FDOrderID: "6EC-713855",
+    FDOrderID: "6CW-713873|1XB-713872",
 })
 .then(res => {
     console.log("qoute->get", res);
