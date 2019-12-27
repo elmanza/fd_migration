@@ -7,7 +7,7 @@ class Order extends Model{}
 Order.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        state: {type: Sequelize.STRING, allowNull: false},
+        status: {type: Sequelize.STRING, allowNull: false},
     },
     {
         sequelize: ritewayDB,
