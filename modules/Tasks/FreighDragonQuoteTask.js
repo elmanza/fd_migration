@@ -166,7 +166,7 @@ class FreighDragonOrderTask{
 
         if(res.Success){
             await riteWayQuote.stage_quote.update({
-                status: 'acepted',
+                status: 'accepted',
                 fdOrderId: res.EntityID
             });
         }
@@ -296,7 +296,7 @@ class FreighDragonOrderTask{
                 console.log("refreshQuotes Error");
                 console.log(error);
             });
-        })
+        });
     }
 
     quotesToOrders(){
@@ -323,7 +323,7 @@ class FreighDragonOrderTask{
                     Sequelize.where(
                         Sequelize.col('quotes.state'),
                         '=',
-                        'acepted'
+                        'accepted'
                     ), 
                     Sequelize.where(
                         Sequelize.col('stage_quote.status'),

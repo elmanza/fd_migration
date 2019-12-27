@@ -13,7 +13,7 @@ const StageQuote = require('../Stage/quote');
 
 const City = require('./city');
 
-Quote.hasMany(Order);
+Quote.hasOne(Order);
 
 Order.belongsTo(Quote);
 
