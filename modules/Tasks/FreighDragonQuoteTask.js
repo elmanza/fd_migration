@@ -163,11 +163,12 @@ class FreighDragonOrderTask{
         let res = await this.quoteResource.toOrder({
             FDOrderID: riteWayQuote.stage_quote.fdOrderId,
         });
-
+        
         if(res.Success){
             await riteWayQuote.stage_quote.update({
                 status: 'accepted',
-                fdOrderId: res.EntityID
+                fdOrderId: res.EntityID,
+                fdResponse: JSON.stringify(res)
             });
         }
         else{
