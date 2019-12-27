@@ -247,7 +247,7 @@ class FreighDragonOrderTask{
             where: {
                 [dbOp.and] : [
                     Sequelize.where(
-                        Sequelize.col('orders.id'),
+                        Sequelize.col('order.id'),
                         'IS',
                         null
                     ),
@@ -316,7 +316,7 @@ class FreighDragonOrderTask{
             where: {
                 [dbOp.and] : [
                     Sequelize.where(
-                        Sequelize.col('orders.id'),
+                        Sequelize.col('order.id'),
                         'IS NOT',
                         null
                     ),
