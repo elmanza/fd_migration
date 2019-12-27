@@ -159,6 +159,27 @@ class FreighDragonOrderTask{
         return sQuotes;
     }
 
+    async sendQuoteToOrderRequestToFD(riteWayQuote){
+        let res = await this.quoteResource.toOrder({
+            FDOrderID: riteWayQuote.stage_quote.fdOrderId,
+        });
+
+        if(res.Success){
+            await riteWayQuote.stage_quote.update({
+                status: 'acepted',
+                fdOrderId: res.EntityID
+            });
+        }
+        else{
+            await riteWayQuote.stage_quote.update({
+                status: "fd_order_creation_error",
+                fdResponse: JSON.stringify(res)
+            });
+        }
+
+        return res;
+    }
+
     createQuotes(){
         riteWay.Quote.findAll({
             include: [
@@ -276,6 +297,60 @@ class FreighDragonOrderTask{
                 console.log(error);
             });
         })
+    }
+
+    quotesToOrders(){
+        riteWay.Quote.findAll({
+            include: [
+                {
+                    model: riteWay.Order,
+                    require: true,
+                    attributes: []
+                },
+                {
+                    model:StageQuote,
+                    as: 'stage_quote',
+                    require: true,
+                }
+            ],
+            where: {
+                [dbOp.and] : [
+                    Sequelize.where(
+                        Sequelize.col('orders.id'),
+                        'IS NOT',
+                        null
+                    ),
+                    Sequelize.where(
+                        Sequelize.col('quotes.state'),
+                        '=',
+                        'acepted'
+                    ), 
+                    Sequelize.where(
+                        Sequelize.col('stage_quote.status'),
+                        '=',
+                        'offered'
+                    ),
+                    Sequelize.where(
+                        Sequelize.col('stage_quote.watch'),
+                        '=',
+                        true
+                    ),
+                ]
+            }
+        })
+        .then(quotes => {
+            quotes.forEach(quote => {                 
+                this.sendQuoteToOrderRequestToFD(quote)
+                .then(res => {
+                    console.log("quotesToOrders");
+                    console.log(res);
+                })
+                .catch(error => {
+                    console.log("quotesToOrders Error");
+                    console.log(error);
+                });
+            });
+        });
     }
 }
 

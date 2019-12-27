@@ -11,8 +11,8 @@ module.exports = {
     refreshQuote: function(){
         quoteTask.refreshQuotes();
     },
-    createOrders: function(){
-        orderTask.createOrders();
+    quotesToOrders: function(){
+        quoteTask.quotesToOrders();
     },
     refreshOrders: function(){
         orderTask.refreshOrders();

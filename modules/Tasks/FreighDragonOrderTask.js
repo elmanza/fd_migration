@@ -11,10 +11,6 @@ class FreighDragonOrderTask{
         this.orderResource = new OrderResource(process.env.ORDER_API_USER, process.env.ORDER_API_CODE);
     }
 
-    createOrders(){
-        
-    }
-
     refreshOrders(){
 
     }
