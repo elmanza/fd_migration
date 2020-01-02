@@ -2,9 +2,9 @@ const Sequelize = require('sequelize');
 const {ritewayDB} = require('../../config/database');
 const Model = Sequelize.Model;
 
-class VehicleMaker extends Model{}
+class VehicleModel extends Model{}
 
-VehicleMaker.init(
+VehicleModel.init(
     {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false }
@@ -17,4 +17,4 @@ VehicleMaker.init(
     }
 );
 
-module.exports = VehicleMaker;
+module.exports = VehicleModel;

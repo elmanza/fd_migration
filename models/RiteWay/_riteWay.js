@@ -12,10 +12,15 @@ const VehicleModel = require('./vehicleModel');
 const StageQuote = require('../Stage/quote');
 
 const City = require('./city');
+const Note = require('./note');
 
 Quote.hasOne(Order);
 
 Order.belongsTo(Quote);
+
+Order.hasMany(Note);
+
+Note.belongsTo(Order);
 
 Quote.belongsTo(User, {
     foreignKey: 'user_create_id'
@@ -82,5 +87,6 @@ module.exports = {
     Vehicle,
     VehicleModel,
     VehicleType,
-    VehicleMaker
+    VehicleMaker,
+    Note
 }

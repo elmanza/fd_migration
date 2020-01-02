@@ -12,6 +12,8 @@ User.init(
         username: {type: Sequelize.STRING, allowNull: false},
         password: {type: Sequelize.STRING, allowNull: false},
         photo: {type: Sequelize.STRING, allowNull: false},
+        phone: {type: Sequelize.INTEGER, allowNull: false},
+        shipper_type: {type: Sequelize.STRING, allowNull: false},
         enabled: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true},
         isOperator:  {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
         isCompanyAdmin: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue:false},
