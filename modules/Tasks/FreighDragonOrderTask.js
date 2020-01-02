@@ -50,9 +50,16 @@ class FreighDragonOrderTask{
                 for(let j=0; j < res.Data.length; j++) 
                 {
                     let fdOrder = res.Data[j];
-                    riteWayQuote.order.update({
-                        status: this._parseStatus(fdOrder.status)
+                    let fdStatus = this._parseStatus(fdOrder.status);
+
+                    await riteWayQuote.order.update({
+                        status: fdStatus
                     });
+
+                    await riteWayQuote.stage_quote.update({
+                        status: fdStatus
+                    }); 
+                    
                     sOrders.push(riteWayQuote.order.dataValues);
                 };
             }
