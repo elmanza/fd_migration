@@ -9,7 +9,7 @@ User.init(
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
         name: {type: Sequelize.STRING, allowNull: false},
         last_name: {type: Sequelize.STRING, allowNull: false},
-        username: {type: Sequelize.STRING, allowNull: false},
+        username: {type: Sequelize.STRING, allowNull: false, unique: true},
         password: {type: Sequelize.STRING, allowNull: false},
         photo: {type: Sequelize.STRING, allowNull: false},
         phone: {type: Sequelize.INTEGER, allowNull: false},

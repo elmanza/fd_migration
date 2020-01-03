@@ -9,7 +9,7 @@ Company.init(
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
         name: {type: Sequelize.STRING, allowNull: false},
         photo: {type: Sequelize.STRING, allowNull: false},
-        email: {type: Sequelize.STRING, allowNull: false, isEmail: true},
+        email: {type: Sequelize.STRING, allowNull: false, isEmail: true, unique: true},
         phone: {type: Sequelize.STRING, allowNull: false},
         address: {type: Sequelize.STRING, allowNull: false},
     },

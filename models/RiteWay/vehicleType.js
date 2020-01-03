@@ -2,7 +2,7 @@ const Sequelize = require('sequelize');
 const {ritewayDB} = require('../../config/database');
 const Model = Sequelize.Model;
 
-class VehicleType extends Model{}
+class VehicleType extends Model { }
 
 VehicleType.init(
     {

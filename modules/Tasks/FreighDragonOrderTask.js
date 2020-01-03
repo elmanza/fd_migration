@@ -59,6 +59,8 @@ class FreighDragonOrderTask{
                     await riteWayQuote.stage_quote.update({
                         status: fdStatus
                     }); 
+
+                    //console.log("Notes", fdOrder.notes, riteWayQuote.stage_quote.fdOrderId);
                     
                     sOrders.push(riteWayQuote.order.dataValues);
                 };

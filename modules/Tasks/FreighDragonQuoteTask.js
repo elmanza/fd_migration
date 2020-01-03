@@ -111,51 +111,60 @@ class FreighDragonOrderTask{
     }
 
     async sendGetRequestToFD(stageQuotes){
-        let stageQuoteIds = stageQuotes.map(stageQuote => {
-            return stageQuote.fdOrderId;
-        }).join('|');
-
-        let res = await this.quoteResource.get({
-            FDOrderID: stageQuoteIds
-        });
-
         let sQuotes = [];
-        if(res.Success){
-            for(let i=0; i < res.Data.length; i++) 
-            {
-                let fdQuote = res.Data[i];
-                if(fdQuote.tariff > 0){
-                    let stageQuote = await StageQuote.findOne({
-                        where: {
-                            fdOrderId: fdQuote.FDOrderID
-                        }
-                    });
 
-                    let riteWayQuote = await riteWay.Quote.findOne({
-                        include: [
-                            {
-                                model: StageQuote,
-                                as:'stage_quote'
+
+        for(let i = 0; i<stageQuotes.length; i++){
+            const stageQuote = stageQuotes[i];
+
+            let res = await this.quoteResource.get({
+                FDOrderID: stageQuote.fdOrderId
+            });
+
+            if(res.Success){
+                for(let i=0; i < res.Data.length; i++) 
+                {
+                    let fdQuote = res.Data[i];
+                    if(fdQuote.tariff > 0){
+                        let stageQuote = await StageQuote.findOne({
+                            where: {
+                                fdOrderId: fdQuote.FDOrderID
                             }
-                        ],
-                        where: {
-                            id: stageQuote.riteWayId
-                        }
-                    });
-                    
-                    await riteWayQuote.update({
-                        state: 'offered',
-                        tariff: fdQuote.tariff
-                    });
-
-                    stageQuote = await riteWayQuote.stage_quote.update({
-                        status: 'offered',
-                    });  
-                    
-                    sQuotes.push(stageQuote.dataValues);
-                }
-            };
+                        });
+    
+                        let riteWayQuote = await riteWay.Quote.findOne({
+                            include: [
+                                {
+                                    model: StageQuote,
+                                    as:'stage_quote'
+                                }
+                            ],
+                            where: {
+                                id: stageQuote.riteWayId
+                            }
+                        });
+                        
+                        await riteWayQuote.update({
+                            state: 'offered',
+                            tariff: fdQuote.tariff
+                        });
+    
+                        stageQuote = await riteWayQuote.stage_quote.update({
+                            status: 'offered',
+                        });  
+                        
+                        sQuotes.push(stageQuote.dataValues);
+                    }
+                };
+            }
+            else{
+                await riteWayQuote.stage_quote.update({
+                    status: "fd_get_quote_error",
+                    fdResponse: JSON.stringify(res)
+                });
+            }
         }
+
         return sQuotes;
     }
 

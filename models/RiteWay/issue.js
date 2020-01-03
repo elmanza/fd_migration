@@ -2,21 +2,19 @@ const Sequelize = require('sequelize');
 const {ritewayDB} = require('../../config/database');
 const Model = Sequelize.Model;
 
-class Order extends Model{}
+class Issue extends Model{}
 
-Order.init(
+Issue.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        status: {type: Sequelize.STRING, allowNull: false},
-        isFavorite: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+        description: {type: Sequelize.STRING, allowNull: false},
     },
     {
         sequelize: ritewayDB,
-        modelName: 'orders',
+        modelName: 'issues',
         timestamps: true,
-        underscored: true,
-        paranoid: true
+        underscored: true
     }
 );
 
-module.exports = Order;
+module.exports = Issue;
