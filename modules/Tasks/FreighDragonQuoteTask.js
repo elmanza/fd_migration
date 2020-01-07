@@ -141,7 +141,8 @@ class FreighDragonOrderTask{
                             ],
                             where: {
                                 id: stageQuote.riteWayId
-                            }
+                            },
+                            paranoid: false
                         });
                         
                         await riteWayQuote.update({
