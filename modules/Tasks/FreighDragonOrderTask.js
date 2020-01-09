@@ -52,9 +52,11 @@ class FreighDragonOrderTask{
                     let fdOrder = res.Data[j];
                     let fdStatus = this._parseStatus(fdOrder.status);
 
-                    await riteWayQuote.order.update({
-                        status: fdStatus
-                    });
+                    if(riteWayQuote.order.status != 'issues'){
+                        await riteWayQuote.order.update({
+                            status: fdStatus
+                        });
+                    }
 
                     await riteWayQuote.stage_quote.update({
                         status: fdStatus
