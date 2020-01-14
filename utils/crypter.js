@@ -1,8 +1,8 @@
 require('dotenv').config();
-//const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt');
 const crypter = { };
 
-/* crypter.encryptPassword = async (plainInPassword) => {
+crypter.encryptPassword = async (plainInPassword) => {
     const hashPassword = await bcrypt.hash(plainInPassword, process.env.SALT_ROUNDS);
     return hashPassword;
 };
@@ -13,6 +13,6 @@ crypter.comparePasswords = async (inUserPassword, savedUserPassword) => {
     } catch (error) {
         console.log(error);
     }
-}; */
+};
 
 module.exports = crypter;

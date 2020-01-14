@@ -62,8 +62,7 @@ class FreightDragonMemberTask{
                     
                     let name = fdOperator.contactname.split(' ');
                     let plainPassoword = Math.random().toString(36).slice(2); 
-                    //let password = await Crypter.encryptPassword(plainPassoword);
-                    let password = "";
+                    let password = await Crypter.encryptPassword(plainPassoword);
 
                     let rwOperator = await riteWay.User.create({
                         name: name[0],
