@@ -11,7 +11,7 @@ const {ritewayDB} = require('../../config/database');
 
 const OperatorUser = require('../../models/Stage/operator_user');
 
-const Crypter = require('../../utils/crypter');
+//const Crypter = require('../../utils/crypter');
 
 class FreightDragonMemberTask{
     constructor(){
@@ -62,8 +62,8 @@ class FreightDragonMemberTask{
                     
                     let name = fdOperator.contactname.split(' ');
                     let plainPassoword = Math.random().toString(36).slice(2); 
-                    let password = await Crypter.encryptPassword(plainPassoword);
-                    
+                    //let password = await Crypter.encryptPassword(plainPassoword);
+                    let password = "";
 
                     let rwOperator = await riteWay.User.create({
                         name: name[0],

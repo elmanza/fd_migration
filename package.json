@@ -16,7 +16,6 @@
     "pg-hstore": "^2.3.3",
     "request": "^2.88.0",
     "request-promise": "^4.2.5",
-    "sequelize": "^5.21.3",
-    "bcrypt": "^3.0.7"
+    "sequelize": "^5.21.3"
   }
 }
