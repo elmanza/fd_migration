@@ -21,6 +21,7 @@ User.init(
     },
     {
         sequelize: ritewayDB,
+        schema: 'public',
         modelName: 'users',
         timestamps: false,
         underscored: true

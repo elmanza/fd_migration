@@ -121,30 +121,27 @@ class FreighDragonOrderTask{
                 FDOrderID: stageQuote.fdOrderId
             });
 
+            let riteWayQuote = await riteWay.Quote.findOne({
+                include: [
+                    {
+                        model: StageQuote,
+                        as:'stage_quote'
+                    },
+                    {
+                        model: riteWay.Order
+                    }
+                ],
+                where: {
+                    id: stageQuote.riteWayId
+                },
+                paranoid: false
+            });
+
             if(res.Success){
                 for(let i=0; i < res.Data.length; i++) 
                 {
                     let fdQuote = res.Data[i];
-                    if(fdQuote.tariff > 0){
-                        let stageQuote = await StageQuote.findOne({
-                            where: {
-                                fdOrderId: fdQuote.FDOrderID
-                            }
-                        });
-    
-                        let riteWayQuote = await riteWay.Quote.findOne({
-                            include: [
-                                {
-                                    model: StageQuote,
-                                    as:'stage_quote'
-                                }
-                            ],
-                            where: {
-                                id: stageQuote.riteWayId
-                            },
-                            paranoid: false
-                        });
-                        
+                    if(fdQuote.tariff > 0){                        
                         await riteWayQuote.update({
                             state: 'offered',
                             tariff: fdQuote.tariff
@@ -152,6 +149,7 @@ class FreighDragonOrderTask{
     
                         stageQuote = await riteWayQuote.stage_quote.update({
                             status: 'offered',
+                            fdResponse: "fd_get_quote_sucess"
                         });  
                         
                         sQuotes.push(stageQuote.dataValues);

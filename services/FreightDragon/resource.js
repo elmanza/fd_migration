@@ -10,14 +10,19 @@ class Resource {
         this.freightDragonService = new FreightDragonService()
     }
 
-    doGetRequest(iData){
-        let data = Object.assign({}, this.credentials, iData);
-        return this.freightDragonService.get(this.resourceUrl, data);
+
+    getUrl(actionUrl){
+        return this.resourceUrl + (actionUrl||'');
     }
 
-    doPostRequest(iData){
+    doGetRequest(iData, actionUrl){
+        let data = Object.assign({}, this.credentials, iData);
+        return this.freightDragonService.get(this.getUrl(actionUrl), data);
+    }
+
+    doPostRequest(iData, actionUrl){
         let data = Object.assign({}, this.credentials, iData);        
-        return this.freightDragonService.post(this.resourceUrl, data);
+        return this.freightDragonService.post(this.getUrl(actionUrl), data);
     }
     
 }

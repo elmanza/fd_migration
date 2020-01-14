@@ -14,6 +14,7 @@ class FreightDragonService {
         let options = {
             method: "GET",
             uri: this.getUrl(resourceUrl),
+            qs: data,
             formData: data,
             json: true
         }

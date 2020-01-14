@@ -43,7 +43,8 @@ class FreighDragonOrderTask{
                 ],
                 where: {
                     id: stageQuote.riteWayId
-                }
+                },
+                paranoid: false
             });
 
             if(res.Success){
@@ -59,7 +60,8 @@ class FreighDragonOrderTask{
                     }
 
                     await riteWayQuote.stage_quote.update({
-                        status: fdStatus
+                        status: fdStatus,
+                        fdResponse: "fd_get_order_success"
                     }); 
 
                     //console.log("Notes", fdOrder.notes, riteWayQuote.stage_quote.fdOrderId);
