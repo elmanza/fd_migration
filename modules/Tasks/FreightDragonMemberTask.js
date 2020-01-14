@@ -39,7 +39,7 @@ class FreightDragonMemberTask{
                     }
                 });
 
-                console.log(i, fdOperator.email, riteWayOperator==null);
+                //console.log(i, fdOperator.email, riteWayOperator==null);
 
                 if(riteWayOperator){
                     let operatorUser = await OperatorUser.findOne({
