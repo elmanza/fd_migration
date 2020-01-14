@@ -11,7 +11,7 @@ const {ritewayDB} = require('../../config/database');
 
 const OperatorUser = require('../../models/Stage/operator_user');
 
-//const Crypter = require('../../utils/crypter');
+const Crypter = require('../../utils/crypter');
 
 class FreightDragonMemberTask{
     constructor(){
