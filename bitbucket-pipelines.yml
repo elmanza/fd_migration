@@ -23,4 +23,5 @@ pipelines:
                 COMMAND: 'all'
                 ZIP_FILE: 'syncritewayautotransportfd.zip'
                 ENVIRONMENT_NAME: 'syncritewayautotransportfd-production'
-                WAIT: 'true'
+                WAIT: 'true',
+                VERSION_LABEL: 'syncritewayautotransportfd-${BITBUCKET_BUILD_NUMBER}-${BITBUCKET_COMMIT:0:8}'
