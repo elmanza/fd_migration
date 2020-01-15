@@ -12,6 +12,10 @@ const StageQuote = require('../../models/Stage/quote');
 class FreighDragonOrderTask{
     constructor(){
         this.orderResource = new OrderResource(process.env.ORDER_API_USER, process.env.ORDER_API_CODE);
+        
+        this.finishedProcess = {
+            refreshOrders:true,
+        };
     }
 
     _parseStatus(status){
@@ -26,7 +30,7 @@ class FreighDragonOrderTask{
         let sOrders = [];
         for(let i = 0; i<stageQuotes.length; i++){
             const stageQuote = stageQuotes[i];
-
+            
             let res = await this.orderResource.get({
                 FDOrderID: stageQuote.fdOrderId
             });
@@ -38,7 +42,12 @@ class FreighDragonOrderTask{
                         as:'stage_quote'
                     },
                     {
-                        model: riteWay.Order
+                        model: riteWay.Order,
+                        include: [
+                            {
+                                model: riteWay.Note
+                            }
+                        ]
                     }
                 ],
                 where: {
@@ -48,26 +57,83 @@ class FreighDragonOrderTask{
             });
 
             if(res.Success){
-                for(let j=0; j < res.Data.length; j++) 
-                {
-                    let fdOrder = res.Data[j];
-                    let fdStatus = this._parseStatus(fdOrder.status);
+                let fdOrder = res.Data;
+                let fdStatus = this._parseStatus(fdOrder.status);
+                
+                if(riteWayQuote.order.status != 'issues'){
+                    await riteWayQuote.order.update({
+                        status: fdStatus
+                    });
+                }
+                
+                await riteWayQuote.stage_quote.update({
+                    status: fdStatus,
+                    fdResponse: "fd_get_order_success"
+                }); 
+                
+                //Search if exist note
+                let usersList = {};
+                
+                for(let iN=0; iN < fdOrder.notes.length; iN++){
+                    let fdNote = fdOrder.notes[iN];
+                    let rwUser = null;
 
-                    if(riteWayQuote.order.status != 'issues'){
-                        await riteWayQuote.order.update({
-                            status: fdStatus
+                    if(typeof usersList[fdNote.email] == 'undefined'){
+                        let user = await riteWay.User.findOne({
+                            where: {
+                                username: fdNote.email
+                            }
                         });
+
+                        if(user){
+                            usersList[user.username] = user;
+                            rwUser = usersList[user.username];
+                        }
                     }
-
-                    await riteWayQuote.stage_quote.update({
-                        status: fdStatus,
-                        fdResponse: "fd_get_order_success"
-                    }); 
-
-                    //console.log("Notes", fdOrder.notes, riteWayQuote.stage_quote.fdOrderId);
+                    else{
+                        rwUser = usersList[fdNote.email];
+                    }
                     
-                    sOrders.push(riteWayQuote.order.dataValues);
-                };
+                    if(rwUser != null){
+                        let rwNote = await riteWay.Note.findOne({
+                            where: {
+                                [dbOp.and] : [
+                                    Sequelize.where(
+                                        Sequelize.col('notes.order_id'),
+                                        '=',
+                                        riteWayQuote.order.id
+                                    ),
+                                    Sequelize.where(
+                                        Sequelize.col('notes.user_id'),
+                                        '=',
+                                        rwUser.id
+                                    ),
+                                    Sequelize.where(
+                                        Sequelize.col('notes.created_at'),
+                                        '=',
+                                        fdNote.created
+                                    ),
+                                    Sequelize.where(
+                                        Sequelize.col('notes.text'),
+                                        'ilike',
+                                        fdNote.text
+                                    )
+                                ]
+                            }
+                        });   
+                        if(rwNote == null){
+                            await riteWay.Note.create({
+                                orderId: riteWayQuote.order.id,
+                                userId: rwUser.id,
+                                createdAt: fdNote.created,
+                                updatedAt: fdNote.created,
+                                text: fdNote.text
+                            });
+                        }                 
+                    }
+                }
+                    
+                sOrders.push(riteWayQuote.order.dataValues);
             }
             else{
                 await riteWayQuote.stage_quote.update({
@@ -80,6 +146,12 @@ class FreighDragonOrderTask{
     }
 
     refreshOrders(){
+        if(!this.finishedProcess.refreshOrders){
+            return null;
+        }
+        
+        this.finishedProcess.refreshOrders = false;
+
         StageQuote.findAll({
             where: {
                 'status': {
@@ -96,6 +168,9 @@ class FreighDragonOrderTask{
             .catch(error => {
                 console.log("refreshOrders Error");
                 console.log(error);
+            })
+            .finally(()=>{
+                this.finishedProcess.refreshOrders = true;
             });
         });
     }

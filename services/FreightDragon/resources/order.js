@@ -1,23 +1,19 @@
 const ResourceFreightDragon = require("../resource");
 class Quote extends ResourceFreightDragon{
     constructor(apiUser, apiPasscode){
-        super("Orders.php", apiUser, apiPasscode, "OrderUpdate");
+        super("LeanTech/entities", apiUser, apiPasscode, "OrderUpdate");
     }
 
-    update(iData){
-        let data = Object.assign({
-            Action: "Update"
-        }, iData);
+    /* update(iData){
+        let data = Object.assign({}, iData);
 
         return this.doPostRequest(data);
-    }
+    } */
 
     get(iData){
-        let data = Object.assign({
-            Action: "Get"
-        }, iData);
+        let data = Object.assign({}, iData);
 
-        return this.doPostRequest(data);
+        return this.doGetRequest(data);
     }
 }
 

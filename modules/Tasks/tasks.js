@@ -7,13 +7,8 @@ quoteTask = new QuoteTask();
 memberTask = new MemberTask();
 
 module.exports = {
-    getMembersList: function(){
-        memberTask.getList().then(res => {
-            console.log('getMembersList', res);
-        })
-        .catch(error =>{
-            console.log('Error getMembersList', error);
-        });
+/*     getMembersList: function(){
+        memberTask.getList();
     },
     createQuotes: function(){
         quoteTask.createQuotes();
@@ -23,7 +18,7 @@ module.exports = {
     },
     quotesToOrders: function(){
         quoteTask.quotesToOrders();
-    },
+    }, */
     refreshOrders: function(){
         orderTask.refreshOrders();
     }

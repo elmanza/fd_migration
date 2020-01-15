@@ -14,6 +14,11 @@ const StageQuote = require('../../models/Stage/quote');
 class FreighDragonOrderTask{
     constructor(){
         this.quoteResource = new QuoteResource(process.env.QUOTE_API_USER, process.env.QUOTE_API_CODE);
+        this.finishedProcess = {
+            createQuotes:true,
+            refreshQuotes:true,
+            quotesToOrders:true,
+        };
     }
 
     _parseDataQuoute(riteWayQuote){
@@ -21,7 +26,7 @@ class FreighDragonOrderTask{
             //Consistencia dentro de la tabla entities=======================================
             ExternalOrderID: riteWayQuote.id,
             EntityFlag:2, // (1 = Fetch from FD entity | 2 = Fetch from External Entity | 3 = Fetch from OrderID
-            AssignedID:1,
+            AssignedTo:riteWayQuote.company.operatorUser.username,
             ReferrerID: 18, //RiteWay Main WebSite 
             //Shipper Contact Information=================================
             shipping_est_date: moment(riteWayQuote.estimated_ship_date).format('YYYY-MM-DD'),
@@ -138,23 +143,20 @@ class FreighDragonOrderTask{
             });
 
             if(res.Success){
-                for(let i=0; i < res.Data.length; i++) 
-                {
-                    let fdQuote = res.Data[i];
-                    if(fdQuote.tariff > 0){                        
-                        await riteWayQuote.update({
-                            state: 'offered',
-                            tariff: fdQuote.tariff
-                        });
+                let fdQuote = res.Data;
+                if(fdQuote.tariff > 0){   
+                    await riteWayQuote.update({
+                        state: 'offered',
+                        tariff: fdQuote.tariff
+                    });
     
-                        stageQuote = await riteWayQuote.stage_quote.update({
-                            status: 'offered',
-                            fdResponse: "fd_get_quote_sucess"
-                        });  
+                    stageQuote = await riteWayQuote.stage_quote.update({
+                        status: 'offered',
+                        fdResponse: "fd_get_quote_sucess"
+                    });  
                         
-                        sQuotes.push(stageQuote.dataValues);
-                    }
-                };
+                    sQuotes.push(stageQuote.dataValues);
+                }
             }
             else{
                 await riteWayQuote.stage_quote.update({
@@ -190,12 +192,28 @@ class FreighDragonOrderTask{
     }
 
     createQuotes(){
+        if(!this.finishedProcess.createQuotes){
+            return null;
+        }
+        
+        this.finishedProcess.createQuotes = false;
+
         riteWay.Quote.findAll({
             include: [
                 {
                     model: riteWay.Order,
                     require: false,
                     attributes: []
+                },
+                {
+                    model: riteWay.Company,
+                    require: true,
+                    include: [{
+                        model: riteWay.User,
+                        require: true,
+                        as: 'operatorUser',
+                        attributes: ['name', 'last_name', 'username', 'last_name'],
+                    }]
                 },
                 {
                     model: riteWay.User,
@@ -283,12 +301,21 @@ class FreighDragonOrderTask{
                 .catch(error => {
                     console.log("createQuotes Error");
                     console.log(error);
+                })
+                .finally(()=>{
+                    this.finishedProcess.createQuotes = true;
                 });
             });
         });
     }
 
     refreshQuotes(){
+        if(!this.finishedProcess.refreshQuotes){
+            return null;
+        }
+        
+        this.finishedProcess.refreshQuotes = false;
+
         StageQuote.findAll({
             where: {
                 'status': 'waiting',
@@ -304,11 +331,20 @@ class FreighDragonOrderTask{
             .catch(error => {
                 console.log("refreshQuotes Error");
                 console.log(error);
+            })
+            .finally(()=>{
+                this.finishedProcess.refreshQuotes = true;
             });
         });
     }
 
     quotesToOrders(){
+        if(!this.finishedProcess.quotesToOrders){
+            return null;
+        }
+        
+        this.finishedProcess.quotesToOrders = false;
+
         riteWay.Quote.findAll({
             include: [
                 {
@@ -357,6 +393,9 @@ class FreighDragonOrderTask{
                 .catch(error => {
                     console.log("quotesToOrders Error");
                     console.log(error);
+                })
+                .finally(()=>{
+                    this.finishedProcess.quotesToOrders = true;
                 });
             });
         });

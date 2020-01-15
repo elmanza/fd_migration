@@ -18,7 +18,7 @@ class FreightDragonMemberTask{
         this.memberResource = new MemberResource(process.env.QUOTE_API_USER, process.env.QUOTE_API_CODE);
         this.finishedProcess = {
             getList:true,
-        }
+        };
     }
 
     async getList(){

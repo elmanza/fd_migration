@@ -12,7 +12,7 @@ User.init(
         username: {type: Sequelize.STRING, allowNull: false, unique: true},
         password: {type: Sequelize.STRING, allowNull: false},
         photo: {type: Sequelize.STRING, allowNull: false},
-        phone: {type: Sequelize.INTEGER, allowNull: false},
+        phone: {type: Sequelize.STRING, allowNull: true},
         shipper_type: {type: Sequelize.STRING, allowNull: false},
         enabled: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true},
         isOperator:  {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},

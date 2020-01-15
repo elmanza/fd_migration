@@ -7,16 +7,15 @@ class Note extends Model{}
 Note.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        autor_name: {type: Sequelize.STRING, allowNull: false},
-        autor_email: {type: Sequelize.STRING, allowNull: false},
         text: {type: Sequelize.STRING, allowNull: false},
         showOnCustomerPortal: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true},
-        createdAt: {type: Sequelize.DATE, allowNull: true},
+        createdAt: {type: 'timestamp', allowNull: false},
+        updatedAt: {type: Sequelize.DATE, allowNull: false},
     },
     {
         sequelize: ritewayDB,
         modelName: 'notes',
-        timestamps: true,
+        timestamps: false,
         underscored: true
     }
 );
