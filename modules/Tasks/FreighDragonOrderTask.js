@@ -156,6 +156,9 @@ class FreighDragonOrderTask{
             where: {
                 'status': {
                     [dbOp.notIn]: ['waiting', 'offered']
+                },
+                'fdOrderId': {
+                    [dbOp.not]: null
                 }
             }
         })

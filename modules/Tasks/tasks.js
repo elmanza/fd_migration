@@ -7,7 +7,7 @@ quoteTask = new QuoteTask();
 memberTask = new MemberTask();
 
 module.exports = {
-/*     getMembersList: function(){
+    getMembersList: function(){
         memberTask.getList();
     },
     createQuotes: function(){
@@ -18,7 +18,7 @@ module.exports = {
     },
     quotesToOrders: function(){
         quoteTask.quotesToOrders();
-    }, */
+    },
     refreshOrders: function(){
         orderTask.refreshOrders();
     }

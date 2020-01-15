@@ -274,6 +274,11 @@ class FreighDragonOrderTask{
             where: {
                 [dbOp.and] : [
                     Sequelize.where(
+                        Sequelize.col('company.operatorUser.id'),
+                        'IS NOT',
+                        null
+                    ),
+                    Sequelize.where(
                         Sequelize.col('order.id'),
                         'IS',
                         null
