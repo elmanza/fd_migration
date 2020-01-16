@@ -10,7 +10,7 @@ Note.init(
         text: {type: Sequelize.STRING, allowNull: false},
         showOnCustomerPortal: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true},
         createdAt: {type: 'timestamp', allowNull: false},
-        updatedAt: {type: Sequelize.DATE, allowNull: false},
+        updatedAt: {type: 'timestamp', allowNull: false},
     },
     {
         sequelize: ritewayDB,

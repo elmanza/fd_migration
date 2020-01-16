@@ -207,6 +207,14 @@ Quote.hasOne(StageQuote, {
     constraints: true
 });
 
+StageQuote.belongsTo(Quote, {
+    foreignKey: {
+        name: 'rite_way_id',
+        allowNull: false
+    },
+    constraints: false,
+});
+
 module.exports = {
     Company,
     User,

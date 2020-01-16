@@ -15,6 +15,7 @@ class FreighDragonOrderTask{
         
         this.finishedProcess = {
             refreshOrders:true,
+            sendOrderNotes: true,
         };
     }
 
@@ -145,6 +146,29 @@ class FreighDragonOrderTask{
         return sOrders;
     }
 
+    async sendNotesToFD(stageQuotes){
+        for(let i = 0; i<stageQuotes.length; i++){
+            const stageQuote = stageQuotes[i];
+            if(stageQuote.quote.order.notes.length > 0){
+                let rData = {
+                    FDOrderID: stageQuote.fdOrderId,
+                    Notes: (new Buffer(JSON.stringify(stageQuote.quote.order.notes.map(note => {
+                        let data = {
+                            sender: note.user.username,
+                            sender_customer_portal: note.showOnCustomerPortal,
+                            created: note.createdAt,
+                            text: note.text
+                        };
+                        return data;
+                    })))).toString('base64'),
+                };
+                let res = await this.orderResource.sendNotes(rData);
+                console.log(rData, stageQuote.quote.order.notes.map(e=>e.dataValues));
+            }
+        }
+        return true;
+    }
+
     refreshOrders(){
         if(!this.finishedProcess.refreshOrders){
             return null;
@@ -174,6 +198,60 @@ class FreighDragonOrderTask{
             })
             .finally(()=>{
                 this.finishedProcess.refreshOrders = true;
+            });
+        });
+    }
+
+    sendOrderNotes(){
+        if(!this.finishedProcess.sendOrderNotes){
+            return null;
+        }
+        
+        this.finishedProcess.sendOrderNotes = false;
+
+        StageQuote.findAll({
+            include: [
+                {
+                    model: riteWay.Quote,
+                    require: true,
+                    include: [{
+                            model: riteWay.Order,
+                            require: true,
+                            include: [{
+                                model: riteWay.Note,
+                                require: true,
+                                include: [{
+                                    model: riteWay.User,
+                                    require: true
+                                }]
+                            }]
+                    }]
+                }
+            ],
+            where: {
+                'status': {
+                    [dbOp.notIn]: ['waiting', 'offered']
+                },
+                'rite_way_id': {
+                    [dbOp.not]: null
+                },
+                'fd_order_id': {
+                    [dbOp.not]: null
+                }
+            }
+        })
+        .then( stageQuotes => {
+            this.sendNotesToFD(stageQuotes)
+            .then(result => {
+                console.log("sendOrderNotes");
+                console.log(result);
+            })
+            .catch(error => {
+                console.log("sendOrderNotes Error");
+                console.log(error);
+            })
+            .finally(()=>{
+                this.finishedProcess.sendOrderNotes = true;
             });
         });
     }

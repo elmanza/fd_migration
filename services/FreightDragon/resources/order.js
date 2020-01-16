@@ -15,6 +15,12 @@ class Quote extends ResourceFreightDragon{
 
         return this.doGetRequest(data);
     }
+
+    sendNotes(iData){
+        let data = Object.assign({}, iData);
+
+        return this.doPostRequest(data, '/add_notes');
+    }
 }
 
 module.exports = Quote;

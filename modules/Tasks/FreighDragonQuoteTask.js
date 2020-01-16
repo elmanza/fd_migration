@@ -324,7 +324,10 @@ class FreighDragonOrderTask{
         StageQuote.findAll({
             where: {
                 'status': 'waiting',
-                'watch': true
+                'watch': true,
+                'fdOrderId': {
+                    [dbOp.not]: null
+                }
             }
         })
         .then( stageQuotes => {
