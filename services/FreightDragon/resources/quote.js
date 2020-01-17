@@ -10,6 +10,12 @@ class Quote extends ResourceFreightDragon{
         return this.doPostRequest(data, '/create_quote');
     }
 
+    update(iData){
+        let data = Object.assign({}, iData);
+
+        return this.doPostRequest(data, '/update'); 
+    }
+
     get(iData){
         let data = Object.assign({}, iData);
 

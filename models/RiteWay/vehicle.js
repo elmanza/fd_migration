@@ -14,6 +14,7 @@ Vehicle.init(
         state: { type: Sequelize.STRING, allowNull: true },
         color: { type: Sequelize.STRING, allowNull: true },
         inop: { type: Sequelize.STRING, allowNull: true },
+        tariff: { type: Sequelize.NUMBER, allowNull: true },
     },
     {
         sequelize: ritewayDB,

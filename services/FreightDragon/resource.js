@@ -21,7 +21,7 @@ class Resource {
     }
 
     doPostRequest(iData, actionUrl){
-        let data = Object.assign({}, this.credentials, iData);        
+        let data = Object.assign({}, this.credentials, iData);   
         return this.freightDragonService.post(this.getUrl(actionUrl), data);
     }
     

@@ -163,7 +163,6 @@ class FreighDragonOrderTask{
                     })))).toString('base64'),
                 };
                 let res = await this.orderResource.sendNotes(rData);
-                console.log(rData, stageQuote.quote.order.notes.map(e=>e.dataValues));
             }
         }
         return true;
@@ -225,7 +224,8 @@ class FreighDragonOrderTask{
                                     require: true
                                 }]
                             }]
-                    }]
+                    }],
+                    paranoid: false
                 }
             ],
             where: {

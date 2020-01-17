@@ -19,6 +19,78 @@ class FreighDragonOrderTask{
             refreshQuotes:true,
             quotesToOrders:true,
         };
+
+        this.allIncludeData = [
+            {
+                model: riteWay.Order,
+                require: false,
+                attributes: []
+            },
+            {
+                model: riteWay.Company,
+                require: true,
+                include: [{
+                    model: riteWay.User,
+                    require: true,
+                    as: 'operatorUser',
+                    attributes: ['name', 'last_name', 'username', 'last_name'],
+                }]
+            },
+            {
+                model: riteWay.User,
+                require: true,
+                attributes: ['name', 'last_name', 'username', 'last_name'],
+                include: [riteWay.Company]
+            },
+            {
+                model:riteWay.City,
+                require:true,
+                as: 'originCity',
+                attributes: ['name', 'zip'],
+                include: [
+                    {
+                        model: riteWay.State,
+                        attributes: ['abbreviation']
+                    }
+                ]
+            },
+            {
+                model:riteWay.City,
+                require:true,
+                as: 'destinationCity',
+                attributes: ['name', 'zip'],
+                include: [
+                    {
+                        model: riteWay.State,
+                        attributes: ['abbreviation']
+                    }
+                ]
+            },
+            {
+                model: riteWay.Vehicle,
+                as: 'vehicles',
+                require: true,
+                include: [
+                    {
+                        model: riteWay.VehicleModel,
+                        attributes: ['name'],
+                        include: [{
+                            model: riteWay.VehicleMaker,
+                            attributes: ['name']
+                        }],
+                        require:true
+                    },
+                    {
+                        model:riteWay.VehicleType,
+                        attributes: ['name'],
+                    }
+                ]
+            },
+            {
+                model:StageQuote,
+                as: 'stage_quote'
+            }
+        ];
     }
 
     _parseDataQuoute(riteWayQuote){
@@ -64,14 +136,14 @@ class FreighDragonOrderTask{
             dataVehicle["make"+index] = vehicle.vehicle_model.vehicle_maker.name;
             dataVehicle["model"+index] = vehicle.vehicle_model.name;
             dataVehicle["type"+index] = vehicle.vehicle_type.name;
-            dataVehicle["tariff"+index] = 0;
+            dataVehicle["tariff"+index] = vehicle.tariff;
             dataVehicle["deposit"+index] = 0;
             dataVehicle["carrier_pay"+index] = 0;
             vehicleCount++;
 
             Object.assign(fdQuoteData, dataVehicle);
         });
-        fdQuoteData['vehicleCount'] = vehicleCount;
+        fdQuoteData['VehicleCount'] = vehicleCount;
         return fdQuoteData;
     }
 
@@ -120,7 +192,7 @@ class FreighDragonOrderTask{
 
 
         for(let i = 0; i<stageQuotes.length; i++){
-            const stageQuote = stageQuotes[i];
+            let stageQuote = stageQuotes[i];
 
             let res = await this.quoteResource.get({
                 FDOrderID: stageQuote.fdOrderId
@@ -134,6 +206,26 @@ class FreighDragonOrderTask{
                     },
                     {
                         model: riteWay.Order
+                    },
+                    {
+                        model: riteWay.Vehicle,
+                        as: 'vehicles',
+                        require: true,
+                        include: [
+                            {
+                                model: riteWay.VehicleModel,
+                                attributes: ['name'],
+                                include: [{
+                                    model: riteWay.VehicleMaker,
+                                    attributes: ['name']
+                                }],
+                                require:true
+                            },
+                            {
+                                model:riteWay.VehicleType,
+                                attributes: ['name'],
+                            }
+                        ]
                     }
                 ],
                 where: {
@@ -145,6 +237,21 @@ class FreighDragonOrderTask{
             if(res.Success){
                 let fdQuote = res.Data;
                 if(fdQuote.tariff > 0){   
+
+                    for(let j=0; j<riteWayQuote.vehicles.length; j++){
+                        let rwVehicle = riteWayQuote.vehicles[j];
+
+                        for(let k=0; k<fdQuote.vehicles.length; k++){
+                            let fdVehicle = fdQuote.vehicles[k];
+                            
+                            if(rwVehicle.vin ==  fdVehicle.vin){
+                                await rwVehicle.update({
+                                    tariff: fdVehicle.tariff
+                                });
+                            }
+                        }
+                    }
+
                     await riteWayQuote.update({
                         state: 'offered',
                         tariff: fdQuote.tariff
@@ -170,7 +277,14 @@ class FreighDragonOrderTask{
     }
 
     async sendQuoteToOrderRequestToFD(riteWayQuote){
-        let res = await this.quoteResource.toOrder({
+
+        //Update quote with all data
+        let fdQuoteData = this._parseDataQuoute(riteWayQuote);
+        fdQuoteData.FDOrderID = riteWayQuote.stage_quote.fdOrderId;
+
+        let res = await this.quoteResource.update(fdQuoteData);      
+    
+        res = await this.quoteResource.toOrder({
             FDOrderID: riteWayQuote.stage_quote.fdOrderId,
         });
         
@@ -199,78 +313,7 @@ class FreighDragonOrderTask{
         this.finishedProcess.createQuotes = false;
 
         riteWay.Quote.findAll({
-            include: [
-                {
-                    model: riteWay.Order,
-                    require: false,
-                    attributes: []
-                },
-                {
-                    model: riteWay.Company,
-                    require: true,
-                    include: [{
-                        model: riteWay.User,
-                        require: true,
-                        as: 'operatorUser',
-                        attributes: ['name', 'last_name', 'username', 'last_name'],
-                    }]
-                },
-                {
-                    model: riteWay.User,
-                    require: true,
-                    attributes: ['name', 'last_name', 'username', 'last_name'],
-                    include: [riteWay.Company]
-                },
-                {
-                    model:riteWay.City,
-                    require:true,
-                    as: 'originCity',
-                    attributes: ['name', 'zip'],
-                    include: [
-                        {
-                            model: riteWay.State,
-                            attributes: ['abbreviation']
-                        }
-                    ]
-                },
-                {
-                    model:riteWay.City,
-                    require:true,
-                    as: 'destinationCity',
-                    attributes: ['name', 'zip'],
-                    include: [
-                        {
-                            model: riteWay.State,
-                            attributes: ['abbreviation']
-                        }
-                    ]
-                },
-                {
-                    model: riteWay.Vehicle,
-                    as: 'vehicles',
-                    require: true,
-                    include: [
-                        {
-                            model: riteWay.VehicleModel,
-                            attributes: ['name'],
-                            include: [{
-                                model: riteWay.VehicleMaker,
-                                attributes: ['name']
-                            }],
-                            require:true
-                        },
-                        {
-                            model:riteWay.VehicleType,
-                            attributes: ['name'],
-                        }
-                    ]
-                },
-                {
-                    model:StageQuote,
-                    as: 'stage_quote',
-                    attributes:[]
-                }
-            ],
+            include: this.allIncludeData,
             where: {
                 [dbOp.and] : [
                     Sequelize.where(
@@ -354,18 +397,7 @@ class FreighDragonOrderTask{
         this.finishedProcess.quotesToOrders = false;
 
         riteWay.Quote.findAll({
-            include: [
-                {
-                    model: riteWay.Order,
-                    require: true,
-                    attributes: []
-                },
-                {
-                    model:StageQuote,
-                    as: 'stage_quote',
-                    require: true,
-                }
-            ],
+            include: this.allIncludeData,
             where: {
                 [dbOp.and] : [
                     Sequelize.where(
