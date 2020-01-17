@@ -1,3 +1,5 @@
+const Carrier = require('./carrier');
+const CarrierContactInformation = require('./carrierContactInformation');
 const City = require('./city');
 const Company = require('./company');
 const Document = require('./document');
@@ -12,6 +14,9 @@ const VehicleMaker = require('./vehicleMaker');
 const VehicleModel = require('./vehicleModel');
 const VehicleType = require('./vehicleType');
 const Note = require('./note');
+const ContactInformation = require('./contact_information');
+const Location = require('./location');
+const TypeAddress = require('./type_address');
 
 const StageQuote = require('../Stage/quote');
 
@@ -199,7 +204,81 @@ Company.belongsTo(User, {
     constraints: false,
     as:'operatorUser'
 });
+// ContactInformation,
+// Location,
+// TypeAddress
+ContactInformation.belongsTo(Location, {
+    foreignKey: {
+        name: 'location_id',
+        allowNull: false
+    },
+    constraints: false,
+});
 
+Location.hasOne(ContactInformation, {
+    foreignKey: {
+        name: 'location_id',
+        allowNull: false
+    },
+    constraints: false
+});
+
+Order.belongsTo(Location, {
+    foreignKey: {
+        name: 'location_origin_id',
+        allowNull: false
+    },
+    constraints: false,
+    as:'originLocation'
+});
+Order.belongsTo(Location, {
+    foreignKey: {
+        name: 'location_destination_id',
+        allowNull: false
+    },
+    constraints: false,
+    as:'destinationLocation'
+});
+
+Location.belongsTo(TypeAddress, {
+    foreignKey: {
+        name: 'type_address_id',
+        allowNull: false
+    },
+    constraints: false,
+});
+
+City.hasMany(Carrier, {
+    foreignKey: {
+        name: 'city_id',
+        allowNull: false
+    },
+    constraints: true
+});
+
+Carrier.belongsTo(City, {
+    foreignKey: {
+        name: 'city_id',
+        allowNull: false
+    },
+    constraints: true
+});
+
+Carrier.hasMany(CarrierContactInformation, {
+    foreignKey: {
+        name: 'carrier_id',
+        allowNull: false
+    },
+    constraints: true
+});
+
+CarrierContactInformation.belongsTo(Carrier, {
+    foreignKey: {
+        name: 'carrier_id',
+        allowNull: false
+    },
+    constraints: true
+});
 //====================
 Quote.hasOne(StageQuote, {
     foreignKey: 'rite_way_id',
@@ -216,6 +295,8 @@ StageQuote.belongsTo(Quote, {
 });
 
 module.exports = {
+    Carrier,
+    CarrierContactInformation,
     Company,
     User,
     Quote,
@@ -229,5 +310,8 @@ module.exports = {
     Invoice,
     Issue,
     Document,
-    Note
+    Note,
+    ContactInformation,
+    Location,
+    TypeAddress
 };

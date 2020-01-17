@@ -11,7 +11,7 @@ Invoice.init(
         amount: {type: Sequelize.INTEGER, allowNull: false},
         url_invoice: {type: Sequelize.STRING, allowNull: false},
         is_paid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
-        paided_at: {type: Sequelize.DATE, allowNull: false },
+        paided_at: {type: Sequelize.DATE, allowNull: true },
         archived:{type: Sequelize.BOOLEAN, allowNull: false},
     },
     {

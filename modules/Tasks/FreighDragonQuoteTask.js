@@ -24,7 +24,32 @@ class FreighDragonOrderTask{
             {
                 model: riteWay.Order,
                 require: false,
-                attributes: []
+                include: [
+                    {
+                        model: riteWay.Location,
+                        as: 'originLocation',
+                        include: [
+                            {
+                                model: riteWay.ContactInformation
+                            },
+                            {
+                                model: riteWay.TypeAddress
+                            }
+                        ]
+                    },
+                    {
+                        model: riteWay.Location,
+                        as: 'destinationLocation',
+                        include: [
+                            {
+                                model: riteWay.ContactInformation
+                            },
+                            {
+                                model: riteWay.TypeAddress
+                            }
+                        ]
+                    }
+                ]
             },
             {
                 model: riteWay.Company,
@@ -122,7 +147,7 @@ class FreighDragonOrderTask{
             DestinationCity: riteWayQuote.destinationCity.name, //| Destination City Name
             DestinationState: riteWayQuote.destinationCity.state.abbreviation, //| Destination State Name
             DestinationCountry:"US", //| Destination Country Name
-            destination_zip: (riteWayQuote.destination_zip == null ? riteWayQuote.destinationCity.zip : riteWayQuote.destination_zip ), //Destination ZipCode
+            DestinationZip: (riteWayQuote.destination_zip == null ? riteWayQuote.destinationCity.zip : riteWayQuote.destination_zip ), //Destination ZipCode
 
             //Notifaction information
             send_email:0, //| 0: Dont send Email 1: Send email
@@ -136,7 +161,7 @@ class FreighDragonOrderTask{
             dataVehicle["make"+index] = vehicle.vehicle_model.vehicle_maker.name;
             dataVehicle["model"+index] = vehicle.vehicle_model.name;
             dataVehicle["type"+index] = vehicle.vehicle_type.name;
-            dataVehicle["tariff"+index] = vehicle.tariff;
+            dataVehicle["tariff"+index] = (vehicle.tariff == null? 0:vehicle.tariff);
             dataVehicle["deposit"+index] = 0;
             dataVehicle["carrier_pay"+index] = 0;
             vehicleCount++;
@@ -144,6 +169,34 @@ class FreighDragonOrderTask{
             Object.assign(fdQuoteData, dataVehicle);
         });
         fdQuoteData['VehicleCount'] = vehicleCount;
+
+        if(riteWayQuote.order != null){
+            if(riteWayQuote.order.destinationLocation != null && riteWayQuote.order.originLocation != null){                
+                //Origen
+                let origin = riteWayQuote.order.originLocation;
+                let originData = {};
+                originData['OriginAddress1'] = origin.address;
+                originData['OriginContactName'] = origin.contact_information.name;
+                originData['OriginCompanyName'] = origin.company_name;
+                originData['OriginPhone1'] = origin.contact_information.phone;
+                originData['OriginType'] = origin.type_address.name;
+                originData['OriginHours'] = moment(origin.pickup_time_start).format('HH:mm:ss') +' to '+moment(origin.pickup_time_end).format('HH:mm:ss');
+
+                Object.assign(fdQuoteData, originData);
+
+                //Origen
+                let destination = riteWayQuote.order.destinationLocation;
+                let destinationData = {};
+                destinationData['OriginAddress1'] = destination.address;
+                destinationData['OriginContactName'] = destination.contact_information.name;
+                destinationData['OriginCompanyName'] = destination.company_name;
+                destinationData['OriginPhone1'] = destination.contact_information.phone;
+                destinationData['OriginType'] = destination.type_address.name;
+                destinationData['OriginHours'] = moment(destination.pickup_time_start).format('HH:mm:ss') +' to '+moment(destination.pickup_time_end).format('HH:mm:ss');
+                Object.assign(fdQuoteData, destinationData);
+            }
+        }
+
         return fdQuoteData;
     }
 
@@ -194,11 +247,21 @@ class FreighDragonOrderTask{
         for(let i = 0; i<stageQuotes.length; i++){
             let stageQuote = stageQuotes[i];
 
-            let res = await this.quoteResource.get({
+            let riteWayQuote = await riteWay.Quote.findByPk(stageQuote.riteWayId, {
+                include: this.allIncludeData,
+                paranoid: false
+            });
+            //Update quote with all data
+            let fdQuoteData = this._parseDataQuoute(riteWayQuote);
+            fdQuoteData.FDOrderID = riteWayQuote.stage_quote.fdOrderId;
+
+            let res = await this.quoteResource.update(fdQuoteData);
+            //-------------------------------------
+            res = await this.quoteResource.get({
                 FDOrderID: stageQuote.fdOrderId
             });
 
-            let riteWayQuote = await riteWay.Quote.findOne({
+            riteWayQuote = await riteWay.Quote.findOne({
                 include: [
                     {
                         model: StageQuote,
@@ -366,6 +429,7 @@ class FreighDragonOrderTask{
 
         StageQuote.findAll({
             where: {
+                'id':97,
                 'status': 'waiting',
                 'watch': true,
                 'fdOrderId': {

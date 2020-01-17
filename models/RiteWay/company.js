@@ -11,6 +11,7 @@ Company.init(
         photo: {type: Sequelize.STRING, allowNull: false},
         email: {type: Sequelize.STRING, allowNull: false, isEmail: true, unique: true},
         phone: {type: Sequelize.STRING, allowNull: false},
+        show_carriers: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true},
         address: {type: Sequelize.STRING, allowNull: false},
     },
     {

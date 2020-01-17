@@ -21,6 +21,8 @@ Quote.init(
 
         state: { type: Sequelize.STRING, allowNull: false },
         tariff: { type: Sequelize.DOUBLE, allowNull: true },
+
+        additional_information: { type: Sequelize.STRING, allowNull: true },
     },
     {
         sequelize: ritewayDB,

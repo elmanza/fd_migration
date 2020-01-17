@@ -65,6 +65,10 @@ class FreighDragonOrderTask{
                     await riteWayQuote.order.update({
                         status: fdStatus
                     });
+
+                    if(fdStatus == 'delivered'){
+                        
+                    }
                 }
                 
                 await riteWayQuote.stage_quote.update({

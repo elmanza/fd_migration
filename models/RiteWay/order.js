@@ -12,7 +12,8 @@ Order.init(
         isFavorite: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
         pickedUpAt: {type: Sequelize.DATE, allowNull: true},
         deliveredAt: {type: Sequelize.DATE, allowNull: true},
-        gatePass: {type: Sequelize.STRING, allowNull: true},
+        shipper_information:{type: Sequelize.STRING, allowNull: true},
+        macroPointId: {type: Sequelize.STRING, allowNull: true},
     },
     {
         sequelize: ritewayDB,
