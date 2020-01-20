@@ -127,7 +127,7 @@ class FreighDragonOrderTask{
             ReferrerID: 18, //RiteWay Main WebSite 
             //Shipper Contact Information=================================
             shipping_est_date: moment(riteWayQuote.estimated_ship_date).format('YYYY-MM-DD'),
-            ShippingShipVia: riteWayQuote.ship_via, // 1:Open 2:Closed 3: DriveAway
+            ShippingShipVia: riteWayQuote.ship_via+1, // 1:Open 2:Closed 3: DriveAway
         
             ShipperFName: riteWayQuote.user.name,
             ShipperLName: riteWayQuote.user.last_name,
@@ -162,8 +162,8 @@ class FreighDragonOrderTask{
             dataVehicle["model"+index] = vehicle.vehicle_model.name;
             dataVehicle["type"+index] = vehicle.vehicle_type.name;
             dataVehicle["tariff"+index] = (vehicle.tariff == null? 0:vehicle.tariff);
-            dataVehicle["deposit"+index] = 0;
-            dataVehicle["carrier_pay"+index] = 0;
+            dataVehicle["deposit"+index] = (vehicle.deposit == null? 0:vehicle.deposit);
+            dataVehicle["carrier_pay"+index] = (vehicle.carrierPay == null? 0:vehicle.carrierPay);
             vehicleCount++;
 
             Object.assign(fdQuoteData, dataVehicle);
@@ -187,12 +187,12 @@ class FreighDragonOrderTask{
                 //Origen
                 let destination = riteWayQuote.order.destinationLocation;
                 let destinationData = {};
-                destinationData['OriginAddress1'] = destination.address;
-                destinationData['OriginContactName'] = destination.contact_information.name;
-                destinationData['OriginCompanyName'] = destination.company_name;
-                destinationData['OriginPhone1'] = destination.contact_information.phone;
-                destinationData['OriginType'] = destination.type_address.name;
-                destinationData['OriginHours'] = moment(destination.pickup_time_start).format('HH:mm:ss') +' to '+moment(destination.pickup_time_end).format('HH:mm:ss');
+                destinationData['DestinationAddress1'] = destination.address;
+                destinationData['DestinationContactName'] = destination.contact_information.name;
+                destinationData['DestinationCompanyName'] = destination.company_name;
+                destinationData['DestinationPhone1'] = destination.contact_information.phone;
+                destinationData['DestinationType'] = destination.type_address.name;
+                destinationData['DestinationHours'] = moment(destination.pickup_time_start).format('HH:mm:ss') +' to '+moment(destination.pickup_time_end).format('HH:mm:ss');
                 Object.assign(fdQuoteData, destinationData);
             }
         }
@@ -323,7 +323,7 @@ class FreighDragonOrderTask{
                     stageQuote = await riteWayQuote.stage_quote.update({
                         status: 'offered',
                         fdResponse: "fd_get_quote_sucess"
-                    });  
+                    }); 
                         
                     sQuotes.push(stageQuote.dataValues);
                 }
