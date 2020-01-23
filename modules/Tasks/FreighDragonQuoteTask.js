@@ -371,7 +371,6 @@ class FreighDragonOrderTask{
             }
             quotes.forEach(quote => {   
                 recProccesed++;              
-                console.log(JSON.stringify(quote));
                 this.sendCreateRequestToFD(quote)
                 .then(result => {
                     console.log("createQuotes ", result);
