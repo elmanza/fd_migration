@@ -27,11 +27,7 @@ class FreighDragonOrderTask{
         return validStatus[status-1];
     }
 
-    async sendGetRequestToFD(stageQuotes){
-        let sOrders = [];
-        for(let i = 0; i<stageQuotes.length; i++){
-            const stageQuote = stageQuotes[i];
-            
+    async sendGetRequestToFD(stageQuote){
             let res = await this.orderResource.get({
                 FDOrderID: stageQuote.fdOrderId
             });
@@ -162,8 +158,6 @@ class FreighDragonOrderTask{
                         }                 
                     }
                 }
-                    
-                sOrders.push(riteWayQuote.order.dataValues);
             }
             else{
                 await riteWayQuote.stage_quote.update({
@@ -171,8 +165,7 @@ class FreighDragonOrderTask{
                     fdResponse: JSON.stringify(res)
                 });
             }
-        }
-        return sOrders;
+            return res.Success ? "Order refreshed. Quote ID "+stageQuote.riteWayId: 'fd_get_order_error';
     }
 
     async sendNotesToFD(stageQuotes){
@@ -201,7 +194,7 @@ class FreighDragonOrderTask{
         if(!this.finishedProcess.refreshOrders){
             return null;
         }
-        
+        let recProccesed = 0;
         this.finishedProcess.refreshOrders = false;
 
         StageQuote.findAll({
@@ -215,17 +208,21 @@ class FreighDragonOrderTask{
             }
         })
         .then( stageQuotes => {
-            this.sendGetRequestToFD(stageQuotes)
-            .then(result => {
-                console.log("refreshOrders");
-                console.log(result);
-            })
-            .catch(error => {
-                console.log("refreshOrders Error");
-                console.log(error);
-            })
-            .finally(()=>{
-                this.finishedProcess.refreshOrders = true;
+            stageQuotes.forEach(stageQuote => {
+                recProccesed++;
+                this.sendGetRequestToFD(stageQuote)
+                .then(result => {
+                    console.log("refreshOrders ",result);
+                })
+                .catch(error => {
+                    console.log("refreshOrders Error ", error);
+                })
+                .finally(()=>{
+                    recProccesed--;
+                    if(recProccesed <= 0){
+                        this.finishedProcess.refreshOrders = true;
+                    }
+                });
             });
         });
     }

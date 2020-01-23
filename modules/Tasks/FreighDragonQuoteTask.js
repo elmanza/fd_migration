@@ -242,16 +242,10 @@ class FreighDragonOrderTask{
             throw e;
         }  
         
-        return (stageQuote == null? null: stageQuote.dataValues);
+        return (stageQuote == null? null: "Quote created. quote_id: "+stageQuote.riteWayId+ " company: "+riteWayQuote.company.name + " fd_order_id: "+stageQuote.fdOrderId);
     }
 
-    async sendGetRequestToFD(stageQuotes){
-        let sQuotes = [];
-
-
-        for(let i = 0; i<stageQuotes.length; i++){
-            let stageQuote = stageQuotes[i];
-
+    async sendGetRequestToFD(stageQuote){
             let riteWayQuote = await riteWay.Quote.findByPk(stageQuote.riteWayId, {
                 include: this.allIncludeData,
                 paranoid: false
@@ -264,42 +258,6 @@ class FreighDragonOrderTask{
             //-------------------------------------
             res = await this.quoteResource.get({
                 FDOrderID: stageQuote.fdOrderId
-            });
-
-            riteWayQuote = await riteWay.Quote.findOne({
-                include: [
-                    {
-                        model: StageQuote,
-                        as:'stage_quote'
-                    },
-                    {
-                        model: riteWay.Order
-                    },
-                    {
-                        model: riteWay.Vehicle,
-                        as: 'vehicles',
-                        require: true,
-                        include: [
-                            {
-                                model: riteWay.VehicleModel,
-                                attributes: ['name'],
-                                include: [{
-                                    model: riteWay.VehicleMaker,
-                                    attributes: ['name']
-                                }],
-                                require:true
-                            },
-                            {
-                                model:riteWay.VehicleType,
-                                attributes: ['name'],
-                            }
-                        ]
-                    }
-                ],
-                where: {
-                    id: stageQuote.riteWayId
-                },
-                paranoid: false
             });
 
             if(res.Success){
@@ -331,19 +289,17 @@ class FreighDragonOrderTask{
                         status: 'offered',
                         fdResponse: "fd_get_quote_sucess"
                     }); 
-                        
-                    sQuotes.push(stageQuote.dataValues);
                 }
+
+                return "quote_id: "+riteWayQuote.id+ " company: "+riteWayQuote.company.name;
             }
             else{
                 await riteWayQuote.stage_quote.update({
                     status: "fd_get_quote_error",
                     fdResponse: JSON.stringify(res)
                 });
+                return "fd_get_quote_error quote_id: "+riteWayQuote.id+ " company: "+riteWayQuote.company.name;
             }
-        }
-
-        return sQuotes;
     }
 
     async sendQuoteToOrderRequestToFD(riteWayQuote){
@@ -372,14 +328,14 @@ class FreighDragonOrderTask{
             });
         }
 
-        return res;
+        return (res.Success? "Order created. quote_id: "+riteWayQuote + " company: "+riteWayQuote.company.name : "fd_order_creation_error");
     }
 
     createQuotes(){
         if(!this.finishedProcess.createQuotes){
             return null;
         }
-        
+        let recProccesed = 0;
         this.finishedProcess.createQuotes = false;
 
         riteWay.Quote.findAll({
@@ -410,18 +366,21 @@ class FreighDragonOrderTask{
             }
         })
         .then(quotes => {
-            quotes.forEach(quote => {                 
+            quotes.forEach(quote => {   
+                recProccesed++;              
                 this.sendCreateRequestToFD(quote)
                 .then(result => {
-                    console.log("createQuotes");
-                    console.log(result);
+                    console.log("createQuotes ", result);
+                    console.log();
                 })
                 .catch(error => {
-                    console.log("createQuotes Error");
-                    console.log(error);
+                    console.log("createQuotes Error ", error);
                 })
                 .finally(()=>{
-                    this.finishedProcess.createQuotes = true;
+                    recProccesed--;
+                    if(recProccesed<=0){
+                        this.finishedProcess.createQuotes = true;
+                    }
                 });
             });
         });
@@ -433,7 +392,7 @@ class FreighDragonOrderTask{
         }
         
         this.finishedProcess.refreshQuotes = false;
-
+        let recProccesed = 0;
         StageQuote.findAll({
             where: {
                 'status': 'waiting',
@@ -444,17 +403,21 @@ class FreighDragonOrderTask{
             }
         })
         .then( stageQuotes => {
-            this.sendGetRequestToFD(stageQuotes)
-            .then(result => {
-                console.log("refreshQuotes");
-                console.log(result);
-            })
-            .catch(error => {
-                console.log("refreshQuotes Error");
-                console.log(error);
-            })
-            .finally(()=>{
-                this.finishedProcess.refreshQuotes = true;
+            stageQuotes.forEach(stageQuote => {
+                recProccesed++;
+                this.sendGetRequestToFD(stageQuote)
+                .then(result => {
+                    console.log("refreshQuotes ", result);
+                })
+                .catch(error => {
+                    console.log("refreshQuotes Error ", error);
+                })
+                .finally(()=>{
+                    recProccesed--;
+                    if(recProccesed <= 0){
+                        this.finishedProcess.refreshQuotes = true;
+                    }                    
+                });
             });
         });
     }
@@ -463,7 +426,7 @@ class FreighDragonOrderTask{
         if(!this.finishedProcess.quotesToOrders){
             return null;
         }
-        
+        let recProccesed = 0;
         this.finishedProcess.quotesToOrders = false;
 
         riteWay.Quote.findAll({
@@ -494,18 +457,20 @@ class FreighDragonOrderTask{
             }
         })
         .then(quotes => {
-            quotes.forEach(quote => {                 
+            quotes.forEach(quote => {        
+                recProccesed++;         
                 this.sendQuoteToOrderRequestToFD(quote)
                 .then(res => {
-                    console.log("quotesToOrders");
-                    console.log(res);
+                    console.log("quotesToOrders", res);
                 })
                 .catch(error => {
-                    console.log("quotesToOrders Error");
-                    console.log(error);
+                    console.log("quotesToOrders Error", error);
                 })
                 .finally(()=>{
-                    this.finishedProcess.quotesToOrders = true;
+                    recProccesed--;
+                    if(recProccesed <= 0){
+                        this.finishedProcess.quotesToOrders = true;
+                    }                    
                 });
             });
         });
