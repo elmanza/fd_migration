@@ -8,27 +8,27 @@ memberTask = new MemberTask();
 
 module.exports = {
     /* getMembersList: function(){
-        console.log("getMembersList task is called........................");
+        console.log((new Date()).toString() + "getMembersList task is called........................");
         memberTask.getList();
     }, */
     createQuotes: function(){
-        console.log("createQuotes task is called........................");
+        console.log((new Date()).toString() + "createQuotes task is called........................");
         quoteTask.createQuotes();
     },/* 
     refreshQuote: function(){
-        console.log("refreshQuote task is called........................");
+        console.log((new Date()).toString() + "refreshQuote task is called........................");
         quoteTask.refreshQuotes();
     },
     quotesToOrders: function(){
-        console.log("quotesToOrders task is called........................");
+        console.log((new Date()).toString() + "quotesToOrders task is called........................");
         quoteTask.quotesToOrders();
     },
     refreshOrders: function(){
-        console.log("refreshOrders task is called........................");
+        console.log((new Date()).toString() + "refreshOrders task is called........................");
         orderTask.refreshOrders();
     },
     sendOrderNotes: function(){
-        console.log("sendOrderNotes task is called........................");
+        console.log((new Date()).toString() + "sendOrderNotes task is called........................");
         orderTask.sendOrderNotes();
     } */
 }
