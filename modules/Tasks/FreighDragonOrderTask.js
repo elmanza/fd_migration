@@ -79,7 +79,7 @@ class FreighDragonOrderTask{
                             let amount = 0;
 
                             riteWayQuote.vehicles.forEach(vehicle => {
-                                amount += (vehicle?vehicle.tariff:0);
+                                amount += (vehicle?Number.parseFloat(vehicle.tariff) :0);
                             });
 
 
