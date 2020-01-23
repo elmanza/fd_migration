@@ -164,7 +164,9 @@ class FreighDragonOrderTask{
             dataVehicle["type"+index] = vehicle.vehicle_type.name;
             dataVehicle["tariff"+index] = (vehicle.tariff == null? 0:vehicle.tariff);
             dataVehicle["deposit"+index] = (vehicle.deposit == null? 0:vehicle.deposit);
+            dataVehicle["vin"+index] = (vehicle.vin == null? 0:vehicle.vin);
             dataVehicle["carrier_pay"+index] = (vehicle.carrierPay == null? 0:vehicle.carrierPay);
+
             vehicleCount++;
 
             Object.assign(fdQuoteData, dataVehicle);
@@ -192,8 +194,8 @@ class FreighDragonOrderTask{
                 destinationData['DestinationType'] = destination.type_address.name;
 
                 try{
-                    originData['OriginHours'] = moment(origin.pickup_time_start).format('HH:mm:ss') +' to '+moment(origin.pickup_time_end).format('HH:mm:ss');
-                    destinationData['DestinationHours'] = moment(destination.pickup_time_start).format('HH:mm:ss') +' to '+moment(destination.pickup_time_end).format('HH:mm:ss');
+                    originData['OriginHours'] = origin.pickup_time_start +' to '+origin.pickup_time_end;
+                    destinationData['DestinationHours'] = destination.pickup_time_start +' to '+destination.pickup_time_end;
                 }
                 catch(e){ }
                 
@@ -270,12 +272,21 @@ class FreighDragonOrderTask{
                         for(let k=0; k<fdQuote.vehicles.length; k++){
                             let fdVehicle = fdQuote.vehicles[k];
                             
-                            if(rwVehicle.vin ==  fdVehicle.vin){
+                            if(
+                                (rwVehicle.vin ==  fdVehicle.vin) || 
+                                (
+                                    rwVehicle.year ==  fdVehicle.year
+                                    && rwVehicle.vehicle_model.vehicle_maker.name == fdVehicle.model
+                                    && rwVehicle.vehicle_model.name == fdVehicle.model
+                                    && rwVehicle.vehicle_type.name == fdVehicle.type
+                                )
+                                ){
                                 await rwVehicle.update({
                                     tariff: fdVehicle.tariff,
                                     deposit: fdVehicle.deposit,
                                     carrierPay: fdVehicle.carrier_pay,
                                 });
+                                break;
                             }
                         }
                     }
@@ -374,7 +385,6 @@ class FreighDragonOrderTask{
                 this.sendCreateRequestToFD(quote)
                 .then(result => {
                     console.log("createQuotes ", result);
-                    console.log();
                 })
                 .catch(error => {
                     console.log("createQuotes Error ", error);
