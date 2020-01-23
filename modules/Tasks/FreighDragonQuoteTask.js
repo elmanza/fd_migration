@@ -366,6 +366,9 @@ class FreighDragonOrderTask{
             }
         })
         .then(quotes => {
+            if(quotes.length == 0){
+                this.finishedProcess.createQuotes = true;
+            }
             quotes.forEach(quote => {   
                 recProccesed++;              
                 console.log(JSON.stringify(quote));
@@ -404,6 +407,9 @@ class FreighDragonOrderTask{
             }
         })
         .then( stageQuotes => {
+            if(stageQuotes.length == 0){
+                this.finishedProcess.refreshQuotes = true;
+            }
             stageQuotes.forEach(stageQuote => {
                 recProccesed++;
                 this.sendGetRequestToFD(stageQuote)
@@ -458,6 +464,9 @@ class FreighDragonOrderTask{
             }
         })
         .then(quotes => {
+            if(quotes.length == 0){
+                this.finishedProcess.quotesToOrders = true;
+            }
             quotes.forEach(quote => {        
                 recProccesed++;         
                 this.sendQuoteToOrderRequestToFD(quote)

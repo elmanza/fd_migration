@@ -208,6 +208,9 @@ class FreighDragonOrderTask{
             }
         })
         .then( stageQuotes => {
+            if(stageQuotes.length == 0){
+                this.finishedProcess.refreshOrders = true;
+            }
             stageQuotes.forEach(stageQuote => {
                 recProccesed++;
                 this.sendGetRequestToFD(stageQuote)
