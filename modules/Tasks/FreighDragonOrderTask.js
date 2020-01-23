@@ -49,6 +49,11 @@ class FreighDragonOrderTask{
                                 model: riteWay.Note
                             }
                         ]
+                    },
+                    {
+                        model: riteWay.Vehicle,
+                        as: 'vehicles',
+                        require: true
                     }
                 ],
                 where: {
@@ -67,7 +72,27 @@ class FreighDragonOrderTask{
                     });
 
                     if(fdStatus == 'delivered'){
-                        
+                        let invoice = await riteWay.Invoice.findOne({
+                            where: {
+                                order_id: riteWayQuote.order.id
+                            }
+                        });
+
+                        if(invoice == null){
+
+                            let amount = 0;
+
+                            riteWayQuote.vehicles.forEach(vehicle => {
+                                amount += (vehicle?vehicle.tariff:0);
+                            });
+
+
+                            await riteWay.Invoice.create({
+                                status: 'pending',
+                                amount: amount,
+                                order_id: riteWayQuote.order.id
+                            });
+                        }
                     }
                 }
                 

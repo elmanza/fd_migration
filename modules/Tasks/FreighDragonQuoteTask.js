@@ -127,16 +127,17 @@ class FreighDragonOrderTask{
             ReferrerID: 18, //RiteWay Main WebSite 
             //Shipper Contact Information=================================
             shipping_est_date: moment(riteWayQuote.estimated_ship_date).format('YYYY-MM-DD'),
+            AvailPickupDate: moment(riteWayQuote.estimated_ship_date).format('YYYY-MM-DD'),
             ShippingShipVia: riteWayQuote.ship_via+1, // 1:Open 2:Closed 3: DriveAway
         
             ShipperFName: riteWayQuote.user.name,
             ShipperLName: riteWayQuote.user.last_name,
             ShipperEmail: riteWayQuote.user.username,
             AssignedID: 1, // (provided to you in this document)
-            ShipperPhone1: riteWayQuote.user.company.phone, //(please provide the number in a string),
-            ShipperCompany: riteWayQuote.user.company.name, // (mandatory only when shipper is commercial)
+            ShipperPhone1: riteWayQuote.company.phone, //(please provide the number in a string),
+            ShipperCompany: riteWayQuote.company.name, // (mandatory only when shipper is commercial)
             ShipperType: "Commercial", // (Residential / Commercial)
-            ShipperAddress1: riteWayQuote.user.company.address, 
+            ShipperAddress1: riteWayQuote.company.address, 
             //Origin Posting Information ====================================
             OriginCity: riteWayQuote.originCity.name, //| Origin City name
             OriginState: riteWayQuote.originCity.state.abbreviation, // Origin State Name
@@ -180,9 +181,6 @@ class FreighDragonOrderTask{
                 originData['OriginCompanyName'] = origin.company_name;
                 originData['OriginPhone1'] = origin.contact_information.phone;
                 originData['OriginType'] = origin.type_address.name;
-                originData['OriginHours'] = moment(origin.pickup_time_start).format('HH:mm:ss') +' to '+moment(origin.pickup_time_end).format('HH:mm:ss');
-
-                Object.assign(fdQuoteData, originData);
 
                 //Origen
                 let destination = riteWayQuote.order.destinationLocation;
@@ -192,7 +190,14 @@ class FreighDragonOrderTask{
                 destinationData['DestinationCompanyName'] = destination.company_name;
                 destinationData['DestinationPhone1'] = destination.contact_information.phone;
                 destinationData['DestinationType'] = destination.type_address.name;
-                destinationData['DestinationHours'] = moment(destination.pickup_time_start).format('HH:mm:ss') +' to '+moment(destination.pickup_time_end).format('HH:mm:ss');
+
+                try{
+                    originData['OriginHours'] = moment(origin.pickup_time_start).format('HH:mm:ss') +' to '+moment(origin.pickup_time_end).format('HH:mm:ss');
+                    destinationData['DestinationHours'] = moment(destination.pickup_time_start).format('HH:mm:ss') +' to '+moment(destination.pickup_time_end).format('HH:mm:ss');
+                }
+                catch(e){ }
+                
+                Object.assign(fdQuoteData, originData);
                 Object.assign(fdQuoteData, destinationData);
             }
         }
@@ -309,7 +314,9 @@ class FreighDragonOrderTask{
                             
                             if(rwVehicle.vin ==  fdVehicle.vin){
                                 await rwVehicle.update({
-                                    tariff: fdVehicle.tariff
+                                    tariff: fdVehicle.tariff,
+                                    deposit: fdVehicle.deposit,
+                                    carrierPay: fdVehicle.carrier_pay,
                                 });
                             }
                         }
@@ -429,7 +436,6 @@ class FreighDragonOrderTask{
 
         StageQuote.findAll({
             where: {
-                'id':97,
                 'status': 'waiting',
                 'watch': true,
                 'fdOrderId': {
