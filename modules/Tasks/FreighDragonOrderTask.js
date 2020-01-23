@@ -20,7 +20,7 @@ class FreighDragonOrderTask{
     }
 
     _parseStatus(status){
-        let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'issues', 'pickedup', 'delivered'];
+        let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'pickedup', 'issues', 'delivered'];
         if(typeof validStatus[status-1] == 'undefined'){
             throw "Status not valid";
         }
