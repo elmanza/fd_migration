@@ -1,6 +1,7 @@
 
 require('dotenv').config();
 
+const {ritewayDB} = require('../../config/database')
 const moment = require('moment');
 const Sequelize = require('sequelize');
 const dbOp = Sequelize.Op;
@@ -88,7 +89,9 @@ class FreighDragonOrderTask{
                         await riteWay.Note.create({
                             text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
                             userId: riteWayQuote.company.operatorUser.id,
-                            showOnCustomerPortal: true
+                            showOnCustomerPortal: true,
+                            createdAt: ritewayDB.fn('NOW'),
+                            updatedAt: ritewayDB.fn('NOW'),
                         });
                     }
 
