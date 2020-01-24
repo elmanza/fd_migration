@@ -35,6 +35,16 @@ class FreighDragonOrderTask{
             let riteWayQuote = await riteWay.Quote.findOne({
                 include: [
                     {
+                        model: riteWay.Company,
+                        require: true,
+                        include: [{
+                            model: riteWay.User,
+                            require: true,
+                            as: 'operatorUser',
+                            attributes: ['name', 'last_name', 'username', 'last_name'],
+                        }]
+                    },
+                    {
                         model: StageQuote,
                         as:'stage_quote'
                     },
@@ -63,6 +73,25 @@ class FreighDragonOrderTask{
                 let fdStatus = this._parseStatus(fdOrder.status);
 
                 if(riteWayQuote.order.status != 'issues'){
+                    let getRWStatus = function(status){
+                        if(["active", "onhold", "posted", "notsigned", "dispatched"].includes(status)){
+                            return 'dispatched';
+                        }
+                        else if(["cancelled", "pickedup", "delivered", "issues"].includes(status)){
+                            return status;
+                        }
+                    };
+
+                    await riteWayQuote.order.reload();
+                    
+                    if(getRWStatus(fdStatus)!=getRWStatus(riteWayQuote.order.status)){
+                        await riteWay.Note.create({
+                            text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
+                            userId: riteWayQuote.company.operatorUser.id,
+                            showOnCustomerPortal: true
+                        });
+                    }
+
                     await riteWay.Order.update({
                         status: fdStatus
                     }, {
