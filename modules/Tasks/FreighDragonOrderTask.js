@@ -61,10 +61,17 @@ class FreighDragonOrderTask{
             if(res.Success){
                 let fdOrder = res.Data;
                 let fdStatus = this._parseStatus(fdOrder.status);
-                
+
                 if(riteWayQuote.order.status != 'issues'){
-                    await riteWayQuote.order.update({
+                    await riteWay.Order.update({
                         status: fdStatus
+                    }, {
+                        where: {
+                            id: riteWayQuote.order.id,
+                            status: {
+                                [dbOp.ne]: 'issues'
+                            }
+                        }
                     });
 
                     if(fdStatus == 'delivered'){
