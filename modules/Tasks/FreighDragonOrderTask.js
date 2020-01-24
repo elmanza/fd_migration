@@ -88,10 +88,11 @@ class FreighDragonOrderTask{
                     if(getRWStatus(fdStatus)!=getRWStatus(riteWayQuote.order.status)){
                         await riteWay.Note.create({
                             text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
-                            userId: riteWayQuote.company.operatorUser.id,
-                            showOnCustomerPortal: true,
-                            createdAt: ritewayDB.fn('NOW'),
-                            updatedAt: ritewayDB.fn('NOW'),
+                            showOnCustomerPortal: true, 
+                            userId: riteWayQuote.company.operatorUser.id, 
+                            createdAt:ritewayDB.fn('NOW'), 
+                            updatedAt:ritewayDB.fn('NOW'),
+                            orderId: riteWayQuote.order.id
                         });
                     }
 
@@ -181,7 +182,7 @@ class FreighDragonOrderTask{
                                     Sequelize.where(
                                         Sequelize.col('notes.text'),
                                         'ilike',
-                                        fdNote.text
+                                        `%${fdNote.text}%` 
                                     )
                                 ]
                             }
