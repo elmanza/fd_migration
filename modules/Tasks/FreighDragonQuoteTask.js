@@ -121,12 +121,12 @@ class FreighDragonOrderTask{
     _parseDataQuoute(riteWayQuote){
         let fdQuoteData = {
             //Consistencia dentro de la tabla entities=======================================
-            ExternalOrderID: riteWayQuote.id,
-            EntityFlag:2, // (1 = Fetch from FD entity | 2 = Fetch from External Entity | 3 = Fetch from OrderID
+            //ExternalOrderID: riteWayQuote.id,
+            //EntityFlag:2, // (1 = Fetch from FD entity | 2 = Fetch from External Entity | 3 = Fetch from OrderID
             AssignedTo:riteWayQuote.company.operatorUser.username,
-            ReferrerID: 18, //RiteWay Main WebSite 
+            //ReferrerID: 18, //RiteWay Main WebSite 
             //Shipper Contact Information=================================
-            shipping_est_date: moment(riteWayQuote.estimated_ship_date).format('YYYY-MM-DD'),
+            ShippingEstDate: moment(riteWayQuote.estimated_ship_date).format('YYYY-MM-DD'),
             AvailPickupDate: moment(riteWayQuote.estimated_ship_date).format('YYYY-MM-DD'),
             ShippingShipVia: riteWayQuote.ship_via+1, // 1:Open 2:Closed 3: DriveAway
         

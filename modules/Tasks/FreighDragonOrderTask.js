@@ -218,7 +218,7 @@ class FreighDragonOrderTask{
                         let data = {
                             sender: note.user.username,
                             sender_customer_portal: note.showOnCustomerPortal,
-                            created: note.createdAt,
+                            created: moment(note.createdAt).format('YYYY-MM-DD HH:mm:ss'),
                             text: note.text
                         };
                         return data;
