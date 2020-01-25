@@ -89,7 +89,7 @@ class FreighDragonOrderTask{
                         await riteWay.Note.create({
                             text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
                             showOnCustomerPortal: true, 
-                            userId: riteWayQuote.company.operatorUser.id, 
+                            user_id: riteWayQuote.company.operatorUser.id, 
                             createdAt:ritewayDB.fn('NOW'), 
                             updatedAt:ritewayDB.fn('NOW'),
                             orderId: riteWayQuote.order.id
