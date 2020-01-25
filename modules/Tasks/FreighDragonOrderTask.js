@@ -161,6 +161,7 @@ class FreighDragonOrderTask{
                     }
                     
                     if(rwUser != null){
+                        console.log(".................................................");
                         let rwNote = await riteWay.Note.findOne({
                             where: {
                                 [dbOp.and] : [
@@ -175,7 +176,7 @@ class FreighDragonOrderTask{
                                         rwUser.id
                                     ),
                                     Sequelize.where(
-                                        Sequelize.col('notes.created_at'),
+                                        Sequelize.literal('notes.created_at::timestamp'),
                                         '=',
                                         fdNote.created
                                     ),
