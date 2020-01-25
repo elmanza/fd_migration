@@ -161,7 +161,6 @@ class FreighDragonOrderTask{
                     }
                     
                     if(rwUser != null){
-                        console.log(".................................................");
                         let rwNote = await riteWay.Note.findOne({
                             where: {
                                 [dbOp.and] : [
@@ -176,7 +175,7 @@ class FreighDragonOrderTask{
                                         rwUser.id
                                     ),
                                     Sequelize.where(
-                                        Sequelize.literal('notes.created_at::timestamp'),
+                                        Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH:mm:ss')"),
                                         '=',
                                         fdNote.created
                                     ),
@@ -212,6 +211,22 @@ class FreighDragonOrderTask{
     async sendNotesToFD(stageQuotes){
         for(let i = 0; i<stageQuotes.length; i++){
             const stageQuote = stageQuotes[i];
+
+            let notes = await riteWay.Note.findAll({
+                attributes:[
+                    'text',
+                    'showOnCustomerPortal',
+                    [Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH:mm:ss')"), 'createdAt']
+                ],
+                include: {
+                    model: riteWay.User, 
+                    required:true
+                },
+                where:{
+                    orderId: stageQuote.quote.order.id
+                }
+            })
+
             if(stageQuote.quote.order.notes.length > 0){
                 let rData = {
                     FDOrderID: stageQuote.fdOrderId,
@@ -219,7 +234,7 @@ class FreighDragonOrderTask{
                         let data = {
                             sender: note.user.username,
                             sender_customer_portal: note.showOnCustomerPortal,
-                            created: moment(note.createdAt).format('YYYY-MM-DD HH:mm:ss'),
+                            created: note.createdAt,
                             text: note.text
                         };
                         return data;
