@@ -42,7 +42,7 @@ class FreighDragonOrderTask{
                             model: riteWay.User,
                             require: true,
                             as: 'operatorUser',
-                            attributes: ['name', 'last_name', 'username', 'last_name'],
+                            attributes: ['id','name', 'last_name', 'username', 'last_name'],
                         }]
                     },
                     {
