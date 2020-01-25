@@ -161,6 +161,7 @@ class FreighDragonOrderTask{
                     }
                     
                     if(rwUser != null){
+                        console.log('...............................................................');
                         let rwNote = await riteWay.Note.findOne({
                             where: {
                                 [dbOp.and] : [
@@ -175,7 +176,7 @@ class FreighDragonOrderTask{
                                         rwUser.id
                                     ),
                                     Sequelize.where(
-                                        Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH:mm:ss')"),
+                                        Sequelize.literal("created_at::timestamp"),
                                         '=',
                                         fdNote.created
                                     ),
@@ -187,6 +188,7 @@ class FreighDragonOrderTask{
                                 ]
                             }
                         });   
+                        console.log('========================================================');
                         if(rwNote == null){
                             await riteWay.Note.create({
                                 orderId: riteWayQuote.order.id,
