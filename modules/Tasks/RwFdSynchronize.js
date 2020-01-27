@@ -629,15 +629,24 @@ class RwFdSynchronize {
                 }
             ],
             where: {
-                'status': {
-                    [dbOp.notIn]: ['waiting', 'offered']
-                },
-                'rite_way_id': {
-                    [dbOp.not]: null
-                },
-                'fd_order_id': {
-                    [dbOp.not]: null
-                }
+                [dbOp.and] : [
+                    Sequelize.where(
+                        Sequelize.col('quote.order.id'),
+                        'IS NOT',
+                        null
+                    ),
+                    {
+                        'status': {
+                            [dbOp.notIn]: ['waiting', 'offered']
+                        },
+                        'rite_way_id': {
+                            [dbOp.not]: null
+                        },
+                        'fd_order_id': {
+                            [dbOp.not]: null
+                        }
+                    }
+                ]
             }
         })
         .then( stageQuotes => {
