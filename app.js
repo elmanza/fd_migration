@@ -6,4 +6,4 @@ const cronTasks = {};
 
 Object.keys(tasks).forEach(task =>{
     cronTasks[task] = cron.schedule(process.env.SCHEDULE, tasks[task]);
-})
+});

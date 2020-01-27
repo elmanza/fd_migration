@@ -1,34 +1,25 @@
-const OrderTask = require('./FreighDragonOrderTask');
-const QuoteTask = require('./FreighDragonQuoteTask');
-const MemberTask = require('./FreightDragonMemberTask');
+const RwFdSynchronize = require('./RwFdSynchronize');
 
-orderTask = new OrderTask();
-quoteTask = new QuoteTask();
-memberTask = new MemberTask();
+rw_fd_sync = new RwFdSynchronize();
 
 module.exports = {
-    getMembersList: function(){
-        console.log((new Date()).toString() + "getMembersList task is called........................");
-        memberTask.getList();
-    },
     createQuotes: function(){
         console.log((new Date()).toString() + "createQuotes task is called........................");
-        quoteTask.createQuotes();
+        rw_fd_sync.createFDQuoteSyncTask();
     },
-    refreshQuote: function(){
-        console.log((new Date()).toString() + "refreshQuote task is called........................");
-        quoteTask.refreshQuotes();
+    refreshRWEntity: function(){
+        console.log((new Date()).toString() + "refreshRWEntity task is called........................");
+        rw_fd_sync.refreshRWEntitySyncTask();
     },
     quotesToOrders: function(){
         console.log((new Date()).toString() + "quotesToOrders task is called........................");
-        quoteTask.quotesToOrders();
-    },
-    refreshOrders: function(){
-        console.log((new Date()).toString() + "refreshOrders task is called........................");
-        orderTask.refreshOrders();
+        rw_fd_sync.quoteToOrderSyncTask();
     },
     sendOrderNotes: function(){
         console.log((new Date()).toString() + "sendOrderNotes task is called........................");
-        orderTask.sendOrderNotes();
-    }
+        rw_fd_sync.sendNotesSyncTask();
+    },
+    /* membersSync: function(){
+        console.log((new Date()).toString() + "membersSync task is called........................");
+    }, */
 }
