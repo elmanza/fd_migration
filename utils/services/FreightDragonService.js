@@ -99,12 +99,12 @@ class FreightDragonService{
 
     async createQuote(riteWayQuote){   
         let fdEntityD = this.parseRWData(riteWayQuote);
-        let res = await this.entityResource.sendPostRequest('create_quote/', fdEntityD);
+        let res = await this.entityResource.createQuote(fdEntityD);
 
         if(!res.Success){
             fdEntityD.save_shipper = 1;
             fdEntityD.update_shipper = 0;
-            res = await this.entityResource.sendPostRequest('create_quote/', fdEntityD);
+            res = await this.entityResource.createQuote(fdEntityD);
         }
 
         return res;
@@ -112,20 +112,34 @@ class FreightDragonService{
 
     quoteToOrder(FDOrderID){
         console.log(FDOrderID);
-        return this.entityResource.sendPostRequest('quote_to_order/', {FDOrderID});
+        return this.entityResource.quoteToOrder({FDOrderID});
     }
 
     update(FDOrderID, riteWayQuote){
         let fdEntityD = this.parseRWData(riteWayQuote);
-        return this.entityResource.sendPostRequest('update/', {FDOrderID, ...fdEntityD});
+        return this.entityResource.update({FDOrderID, ...fdEntityD});
     }
 
     get(FDOrderID){
-        return this.entityResource.sendGetRequest('', {FDOrderID});
+        return this.entityResource.get({FDOrderID});
+    }
+
+    getList(iniDate, endDate){
+        return this.entityResource.getList({
+            Created:`${iniDate}|${endDate}`
+        });
     }
 
     sendNotes(data){
-        return this.entityResource.sendPostRequest('add_notes/', data);
+        return this.entityResource.sendNotes(data);
+    }
+
+    getMember(email){
+        return this.memberResource.get(email);
+    }
+
+    getMemberList(){
+        return this.memberResource.getList();
     }
 
 }

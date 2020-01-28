@@ -9,7 +9,7 @@ class EntityResource extends Resource {
         return this.sendPostRequest('create_quote/', data);
     }
 
-    quoteToOrder(iData){
+    quoteToOrder(data){
         return this.sendPostRequest('quote_to_order/', data);
     }
 
@@ -19,7 +19,15 @@ class EntityResource extends Resource {
 
     get(data){
         return this.sendGetRequest('', data);
-    }   
+    }
+
+    getList(data){
+        return this.sendGetRequest('list/', data);
+    }
+
+    sendNotes(data){
+        return this.sendPostRequest('add_notes/', data);
+    }
 }
 
 module.exports = EntityResource;

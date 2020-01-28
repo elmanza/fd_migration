@@ -1,9 +1,11 @@
 const RwFdSynchronize = require('./RwFdSynchronize');
+const FreigthDragonMigration = require('./FreigthDragonMigration');
 
 rw_fd_sync = new RwFdSynchronize();
+migration = new FreigthDragonMigration();
 
 module.exports = {
-    createQuotes: function(){
+    /* createQuotes: function(){
         console.log((new Date()).toString() + "createQuotes task is called........................");
         rw_fd_sync.createFDQuoteSyncTask();
     },
@@ -19,7 +21,12 @@ module.exports = {
         console.log((new Date()).toString() + "sendOrderNotes task is called........................");
         rw_fd_sync.sendNotesSyncTask();
     },
-    /* membersSync: function(){
+    membersSync: function(){
         console.log((new Date()).toString() + "membersSync task is called........................");
+        migration.getOperatorMembers();
     }, */
+    importQuotes: function(){
+        console.log((new Date()).toString() + "importQuotes task is called........................");
+        migration.getEntities();
+    },
 }

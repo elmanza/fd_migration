@@ -10,11 +10,14 @@ const {ritewayDB} = require('../../config/database');
 
 const StageQuote = require('../../models/Stage/quote');
 
-const FreightDragonService = require('../../utils/services/FreightDragonService')
+const FreightDragonService = require('../../utils/services/FreightDragonService');
+const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');
 
 class RwFdSynchronize {
     constructor(){
         this.FDService = new FreightDragonService();
+        this.RWService = new RiteWayAutotranportService();
+
         this.finishedProcess = {
             createFDQuoteSyncTask:true,
             quoteToOrderSyncTask:true,
@@ -118,14 +121,6 @@ class RwFdSynchronize {
                 as: 'stage_quote'
             }
         ];
-    }
-
-    _parseStatus(status){
-        let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'issues', 'pickedup', 'delivered'];
-        if(typeof validStatus[status-1] == 'undefined'){
-            throw "Status not valid";
-        }
-        return validStatus[status-1];
     }
     //Create quotes---------------------------------------------------------
     async createFDQuote(riteWayQuote){
@@ -353,7 +348,7 @@ class RwFdSynchronize {
     async refreshRWOrder(res, riteWayQuote){
         if(res.Success){
             let fdOrder = res.Data;
-            let fdStatus = this._parseStatus(fdOrder.status);
+            let fdStatus = this.RWService._parseStatus(fdOrder.status);
 
             if(riteWayQuote.order.status != 'issues'){
                 let getRWStatus = function(status){
