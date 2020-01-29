@@ -4,11 +4,109 @@ const Sequelize = require('sequelize');
 const dbOp = Sequelize.Op;
 
 const riteWay  = require("../../models/RiteWay/_riteWay");
+const StageQuote = require('../../models/Stage/quote');
+
 const {ritewayDB} = require('../../config/database');
 
-
 class RiteWayAutotranportService{
-    constructor(){}
+    constructor(){
+        this.quoteIncludeData = [
+            {
+                model: riteWay.Order,
+                require: false,
+                include: [
+                    {
+                        model: riteWay.Location,
+                        as: 'originLocation',
+                        include: [
+                            {
+                                model: riteWay.ContactInformation
+                            },
+                            {
+                                model: riteWay.TypeAddress
+                            }
+                        ]
+                    },
+                    {
+                        model: riteWay.Location,
+                        as: 'destinationLocation',
+                        include: [
+                            {
+                                model: riteWay.ContactInformation
+                            },
+                            {
+                                model: riteWay.TypeAddress
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                model: riteWay.Company,
+                require: true,
+                include: [{
+                    model: riteWay.User,
+                    require: true,
+                    as: 'operatorUser',
+                    attributes: ['id', 'name', 'last_name', 'username', 'last_name'],
+                }]
+            },
+            {
+                model: riteWay.User,
+                require: true,
+                attributes: ['id', 'name', 'last_name', 'username', 'last_name'],
+                include: [riteWay.Company]
+            },
+            {
+                model:riteWay.City,
+                require:true,
+                as: 'originCity',
+                attributes: ['id', 'name', 'zip'],
+                include: [
+                    {
+                        model: riteWay.State,
+                        attributes: ['id', 'abbreviation']
+                    }
+                ]
+            },
+            {
+                model:riteWay.City,
+                require:true,
+                as: 'destinationCity',
+                attributes: ['id', 'name', 'zip'],
+                include: [
+                    {
+                        model: riteWay.State,
+                        attributes: ['id', 'abbreviation']
+                    }
+                ]
+            },
+            {
+                model: riteWay.Vehicle,
+                as: 'vehicles',
+                require: true,
+                include: [
+                    {
+                        model: riteWay.VehicleModel,
+                        attributes: ['name'],
+                        include: [{
+                            model: riteWay.VehicleMaker,
+                            attributes: ['name']
+                        }],
+                        require:true
+                    },
+                    {
+                        model:riteWay.VehicleType,
+                        attributes: ['name'],
+                    }
+                ]
+            },
+            {
+                model:StageQuote,
+                as: 'stage_quote'
+            }
+        ];
+    }
 
     _parseStatus(status){
         let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'issues', 'pickedup', 'delivered'];
@@ -25,7 +123,6 @@ class RiteWayAutotranportService{
                 INNER JOIN states on cities.state_id = states.id
                 WHERE states.abbreviation ilike '${stateAbbre}' and cities.name ilike '${cityName}'
             `;
-        console.log(citySQL);
         return await ritewayDB.query(citySQL, {nest: true, type: ritewayDB.QueryTypes.SELECT});
     }
 
@@ -34,7 +131,7 @@ class RiteWayAutotranportService{
 
         //Quote Data ===================================================
         rwData.quantity = FDEntity.vehicles.length;
-        rwData.estimated_ship_date = FDEntity.est_ship_date;
+        rwData.estimated_ship_date = FDEntity.est_ship_date?FDEntity.est_ship_date:FDEntity.avail_pickup_date;
         rwData.ship_via = (FDEntity.ship_via-1>0?FDEntity.ship_via-1:0);
 
         rwData.origin_zip = FDEntity.origin.zip;
@@ -62,8 +159,8 @@ class RiteWayAutotranportService{
         else{
             rwData.user = {
                 isNew: true,
-                name: FDEntity.fname,
-                last_name: FDEntity.lname,
+                name: FDEntity.shipper.fname,
+                last_name: FDEntity.shipper.lname,
                 username: FDEntity.shipper.email,
                 password: '',
                 photo: '',
@@ -92,13 +189,23 @@ class RiteWayAutotranportService{
         }
 
         if(rwData.company == null){
-            let opQuery = `
-            select users.id, count(companies.id) from users 
-            left join companies on companies.operator_id  = users.id
-            where users.is_operator = true
-            group by users.id order by count(companies.id) asc limit 1
-            `;
-            let operatorID = await ritewayDB.query(opQuery, { nest: true, type: Sequelize.QueryTypes.SELECT });
+            
+            let operator = await riteWay.User.findOne({
+                where:{
+                    username: FDEntity.assignedTo.email
+                }
+            });
+            let operatorID = [operator];
+            if(operator  == null){
+                let opQuery = `
+                select users.id, count(companies.id) from users 
+                left join companies on companies.operator_id  = users.id
+                where users.is_operator = true
+                group by users.id order by count(companies.id) asc limit 1
+                `;
+                operatorID = await ritewayDB.query(opQuery, { nest: true, type: Sequelize.QueryTypes.SELECT });
+            }
+
             if(operatorID.length > 0){
                 rwData.company = {
                     isNew: true,
@@ -126,7 +233,20 @@ class RiteWayAutotranportService{
         }
         //vehicles................
         rwData.vehicles = [];
-        FDEntity.vehicles.forEach(async (vehicle) => {
+        for(let i=0; i<FDEntity.vehicles.length; i++){
+            let vehicle = FDEntity.vehicles[i];
+            let vehicleData = {
+                year: vehicle.year,
+                lot: vehicle.lot,
+                vin: vehicle.vin,
+                plate: vehicle.plate,
+                state: vehicle.state,
+                color: vehicle.color,
+                inop: vehicle.inop,
+                tariff: vehicle.tariff,
+                carrier_pay: vehicle.carrier_pay,
+                deposit: vehicle.deposit,
+            }
 
             let vehicleType = await riteWay.VehicleType.findOne({
                 where: Sequelize.where(
@@ -137,7 +257,7 @@ class RiteWayAutotranportService{
             });
 
             let vehicleModel = null;
-            let vehicleMaker = await riteWay.VehicleMakers.findOne({
+            let vehicleMaker = await riteWay.VehicleMaker.findOne({
                 where: Sequelize.where(
                     Sequelize.col('name'),
                     'ILIKE',
@@ -150,7 +270,7 @@ class RiteWayAutotranportService{
                     where: {
                         [dbOp.and] : [
                             Sequelize.where(
-                                Sequelize.col('id'),
+                                Sequelize.col('name'),
                                 'ILIKE',
                                 `%${vehicle.model}%`
                             ),
@@ -162,23 +282,28 @@ class RiteWayAutotranportService{
                 });
             }
 
-            rwData.vehicles.push({
-                year: vehicle.year,
-                lot: vehicle.lot,
-                vin: vehicle.vin,
-                plate: vehicle.plate,
-                state: vehicle.state,
-                color: vehicle.color,
-                inop: vehicle.inop,
-                tariff: vehicle.tariff,
-                carrier_pay: vehicle.carrier_pay,
-                deposit: vehicle.deposit,
-                type_id: vehicleType?vehicleType.id:null,
-                model_id: vehicleModel?vehicleModel.id:null,
-            });
-        });
+            if(vehicleType){
+                vehicleData.type_id = vehicleType.id
+            }
+            else{
+                vehicleData.type = vehicle.type
+            }
+
+            if(vehicleModel){
+                vehicleData.model_id = vehicleModel.id
+            }
+            else{
+                vehicleData.model = vehicle.model
+                if(vehicleMaker){
+                    vehicleData.maker = vehicle.make
+                }
+            }
+            
+            rwData.vehicles.push(vehicleData);           
+        }
 
         //Order Data ===================================================
+        rwData.order = null;
         if(rwData.state == 'accepted'){
             rwData.order = {
                 status: this._parseStatus(FDEntity.status),
@@ -187,6 +312,59 @@ class RiteWayAutotranportService{
                 picked_up_at: FDEntity.actual_pickup_date
             };
 
+            rwData.originLocation = {
+                address: FDEntity.origin.address1,
+                company_name: FDEntity.origin.company,
+                type_address_id: FDEntity.origin.location_type=='Residential'?2:1,
+                pickup_time_start: FDEntity.origin.hours,
+                pickup_time_end: FDEntity.origin.hours,
+                contact_information: {
+                    name: FDEntity.origin.name,
+                    phone: FDEntity.origin.phone1,
+                    email: ''
+                }
+            };
+    
+            rwData.destinationLocation = {
+                address: FDEntity.destination.address1,
+                company_name: FDEntity.destination.company,
+                type_address_id: FDEntity.destination.location_type=='Residential'?2:1,
+                pickup_time_start: FDEntity.destination.hours,
+                pickup_time_end: FDEntity.destination.hours,
+                contact_information: {
+                    name: FDEntity.destination.name,
+                    phone: FDEntity.destination.phone1,
+                    email: ''
+                }
+            };
+    
+    
+            //Carrier................
+            rwData.carrier = null;
+
+            if(FDEntity.carrier){
+                rwData.carrier = await riteWay.Carrier.findOne({
+                    where: {
+                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber
+                    }
+                });
+
+                if(rwData.carrier == null){
+                    let city = await this.getRWCity(FDEntity.carrier.state, FDEntity.carrier.city);
+        
+                    rwData.carrier = {
+                        company_name: FDEntity.carrier.company_name.trim(),
+                        email: FDEntity.carrier.email,
+                        address: FDEntity.carrier.address1,
+                        zip: FDEntity.carrier.zip_code,
+                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber
+                    }
+        
+                    if(city.length > 0){
+                        rwData.carrier.city_id = city[0].id;
+                    }
+                }
+            }      
         }
         return rwData;
     }
@@ -219,9 +397,118 @@ class RiteWayAutotranportService{
         return riteWayOperator;
     }
 
-    async importQuote(FDEntity){
+    async importQuote(FDEntity, preCompany){
+
+        let stageQuote = await StageQuote.findOne({
+            where: {
+                fdOrderId: FDEntity.FDOrderID
+            }
+        });
+        if(stageQuote){
+            console.log(stageQuote.fdOrderId);
+            return false;
+        }
+
         let rwData = await this.parseFDData(FDEntity);
-        console.log(JSON.parse(JSON.stringify(rwData)));
+
+        let company = (preCompany? preCompany : rwData.company);
+        let user = rwData.user;
+        let quote = null;
+        let order = null;
+        let originLocation = null;
+        let originContactInfo = null;
+        let destinationLocation = null;
+        let destinationContactInfo = null;
+
+        try {
+            if(rwData.company.isNew){
+                company = await riteWay.Company.create(rwData.company);
+            }
+    
+            if(rwData.user.isNew){
+                user = await riteWay.User.create({...rwData.user, company_id: company.id});
+            }
+    
+            rwData.destination_city = rwData.destinationCity;
+            rwData.origin_city = rwData.originCity;
+            rwData.company_id = company.id;
+            rwData.user_create_id = user.id;
+            
+            quote = await riteWay.Quote.create(rwData);
+            console.log(`quote created ${quote.id}`);
+
+            if(rwData.order){
+                originLocation = await riteWay.Location.create(rwData.originLocation);
+                console.log(`originLocation created ${originLocation.id}`);
+                originContactInfo = await riteWay.ContactInformation.create({
+                    ...rwData.originLocation.contact_information, 
+                    location_id: originLocation.id
+                });
+
+                destinationLocation = await riteWay.Location.create(rwData.destinationLocation);
+                console.log(`destinationLocation created ${destinationLocation.id}`);
+                destinationContactInfo = await riteWay.ContactInformation.create(
+                    {
+                        ...rwData.destinationLocation.contact_information, 
+                        location_id: destinationLocation.id,
+
+                    });
+
+                
+                order = await riteWay.Order.create({
+                    ...rwData.order, 
+                    quote_id: quote.id, 
+                    user_accept_id: user.id,
+                    location_destination_id: destinationLocation.id,
+                    location_origin_id: originLocation.id,
+                });
+                console.log(`order created ${quote.id}`);
+            }            
+            
+            quote = await riteWay.Quote.findByPk(quote.id, {
+                include: this.quoteIncludeData
+            });
+            
+            let stageQuoteData = {
+                riteWayId: quote.id,
+                fdOrderId: FDEntity.FDOrderID,
+                fdAccountId: '',
+                fdResponse: 'Imported',
+                status: order ? order.status : quote.state,
+            };
+
+            stageQuote = await StageQuote.create(stageQuoteData);
+
+        }
+        catch(e){
+            console.log(`error on the process`, e);
+
+            if(destinationContactInfo){
+                await destinationContactInfo.destroy();
+            }
+
+            if(destinationLocation){
+                await destinationLocation.destroy();
+            }
+
+            if(originContactInfo){
+                await originContactInfo.destroy();
+            }
+
+            if(originLocation){
+                await originLocation.destroy();
+            }
+
+            if(order){
+                await order.destroy();
+            }
+
+            if(quote){
+                await quote.destroy();
+            }
+
+            throw e;
+        }     
     }
 }
 

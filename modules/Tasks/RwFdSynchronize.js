@@ -361,7 +361,7 @@ class RwFdSynchronize {
                 };
 
                 await riteWayQuote.order.reload();
-                
+                //Se crea una nota por el cambio del estado
                 if(getRWStatus(fdStatus)!=getRWStatus(riteWayQuote.order.status)){
                     await riteWay.Note.create({
                         text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
@@ -372,7 +372,7 @@ class RwFdSynchronize {
                         orderId: riteWayQuote.order.id
                     });
                 }
-
+                //Se actualiza el estado
                 await riteWay.Order.update({
                     status: fdStatus
                 }, {
@@ -383,7 +383,7 @@ class RwFdSynchronize {
                         }
                     }
                 });
-
+                //Si fue entregada se crea el invoice en caso de que no exista
                 if(fdStatus == 'delivered'){
                     let invoice = await riteWay.Invoice.findOne({
                         where: {

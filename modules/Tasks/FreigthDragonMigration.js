@@ -116,12 +116,26 @@ class FreigthDragonMigration {
 
         }
         this.finishedProcess.getEntities = false;
-
+        let today = moment().format('YYYY-MM-DD');
         let res = await this.FDService.getList('2018-09-17 11:53:30', '2018-09-17 11:55:00');
+        let company = await riteWay.Company.findByPk(1);
+
         if(res.Success){
-            res.Data.forEach(async fdEntity => {
-                await this.RWService.importQuote(fdEntity);
-            });
+            for(let i=0; i<res.Data.length; i++){
+                let fdEntity = res.Data[i];
+                try{
+                    let success = await this.RWService.importQuote(fdEntity, company);
+                    if(success){
+                        console.log("Sucess migration ", fdEntity.FDOrderID)
+                    }
+                }
+                catch(e){
+                    console.log("===========================================================================");
+                    console.log(e);
+                    console.log("===========================================================================");
+                }
+                
+            }
         }
         this.finishedProcess.getEntities = true;
 
