@@ -23,11 +23,16 @@ Quote.init(
         tariff: { type: Sequelize.DOUBLE, allowNull: true },
 
         additional_information: { type: Sequelize.STRING, allowNull: true },
+
+        created_at: { type: 'TIMESTAMP', allowNull: true },
+        updated_at: { type: 'TIMESTAMP', allowNull: true },
+
+        fd_id: { type: Sequelize.INTEGER, allowNull: false },
     },
     {
         sequelize: ritewayDB,
         modelName: 'quotes',
-        timestamps: true,
+        timestamps: false,
         underscored: true,
         paranoid: true
     }

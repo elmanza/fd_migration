@@ -8,6 +8,8 @@ const StageQuote = require('../../models/Stage/quote');
 
 const {ritewayDB} = require('../../config/database');
 
+const Crypter = require('../crypter');
+
 class RiteWayAutotranportService{
     constructor(){
         this.quoteIncludeData = [
@@ -133,6 +135,10 @@ class RiteWayAutotranportService{
         rwData.quantity = FDEntity.vehicles.length;
         rwData.estimated_ship_date = FDEntity.est_ship_date?FDEntity.est_ship_date:FDEntity.avail_pickup_date;
         rwData.ship_via = (FDEntity.ship_via-1>0?FDEntity.ship_via-1:0);
+        rwData.created_at = FDEntity.created;
+        rwData.updated_at = FDEntity.created;
+        rwData.fd_id = FDEntity.id;
+
 
         rwData.origin_zip = FDEntity.origin.zip;
         rwData.origin_address = FDEntity.origin.address1;
@@ -157,12 +163,14 @@ class RiteWayAutotranportService{
             }
         }
         else{
+            let password = await Crypter.encryptPassword(FDEntity.shipper.fname);
+
             rwData.user = {
                 isNew: true,
                 name: FDEntity.shipper.fname,
                 last_name: FDEntity.shipper.lname,
                 username: FDEntity.shipper.email,
-                password: '',
+                password: password,
                 photo: '',
                 phone: FDEntity.shipper.phone1,
                 shipper_type: '',
@@ -214,7 +222,7 @@ class RiteWayAutotranportService{
                     email: FDEntity.shipper.email,
                     phone: FDEntity.shipper.phone1,
                     address: FDEntity.shipper.address1,
-                    operator_id: operatorID[0].id
+                    operator_id: 631
                 };
             }
         }
@@ -425,7 +433,7 @@ class RiteWayAutotranportService{
         let vehicles = [];
 
         try {
-            if(rwData.company.isNew){
+            if(rwData.company.isNew && preCompany){
                 company = await riteWay.Company.create(rwData.company);
             }
     
@@ -437,9 +445,9 @@ class RiteWayAutotranportService{
             rwData.origin_city = rwData.originCity;
             rwData.company_id = company.id;
             rwData.user_create_id = user.id;
-            
+
             quote = await riteWay.Quote.create(rwData);
-            console.log(`quote created ${quote.id}`);
+            console.log(`quote created ${quote.id} company: ${company.id}`);
 
             for(let i = 0; i<rwData.vehicles.length; i++){
                 let vehicle = rwData.vehicles[i];
@@ -508,16 +516,20 @@ class RiteWayAutotranportService{
             quote = await riteWay.Quote.findByPk(quote.id, {
                 include: this.quoteIncludeData
             });
-            
+            let status =  order ? order.status : quote.state;
+            let watch = (status == 'cancelled' || status == 'delivered'? false : true);
+
             let stageQuoteData = {
                 riteWayId: quote.id,
                 fdOrderId: FDEntity.FDOrderID,
                 fdAccountId: '',
                 fdResponse: 'Imported',
-                status: order ? order.status : quote.state,
+                status: status,
+                watch: watch
             };
 
             stageQuote = await StageQuote.create(stageQuoteData);
+            return true;
 
         }
         catch(e){

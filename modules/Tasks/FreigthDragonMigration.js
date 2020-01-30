@@ -115,30 +115,28 @@ class FreigthDragonMigration {
             return null;
 
         }
+        console.log((new Date()).toString() + "getEntities task is called........................");
+        
         this.finishedProcess.getEntities = false;
         let today = moment().format('YYYY-MM-DD');
-        let companies = await riteWay.Company.findAll({
-            where:{
-                id:42
-            }
-        });
+        let companies = await riteWay.Company.findAll();
 
         for(let i = 0; i<companies.length; i++){
             let company =  companies[i];
             console.log("===========================================================================");
             console.log("company ", company.name);
             console.log("===========================================================================");
-            let res = await this.FDService.getList('2010-01-01 00:00:00', today+' 23:59:59', company.name);
+            let res = await this.FDService.getList('2010-01-01 00:00:00', today+' 23:59:59', company.name.trim());
             if(res.Success){
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
                         let success = await this.RWService.importQuote(fdEntity, company);
                         if(success){
-                            console.log("Sucess import ", i, fdEntity.FDOrderID)
+                            console.log("--->Sucess import ", i, fdEntity.FDOrderID)
                         }
                         else{
-                            console.log("Error import ", i, fdEntity.FDOrderID)
+                            console.log("|Error import ", i, fdEntity.FDOrderID)
                         }
                     }
                     catch(e){
@@ -150,7 +148,7 @@ class FreigthDragonMigration {
                 }
             }
         }
-        this.finishedProcess.getEntities = true;
+        this.finishedProcess.getEntities = false;
     }
 }
 
