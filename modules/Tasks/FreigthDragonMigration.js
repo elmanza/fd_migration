@@ -117,30 +117,40 @@ class FreigthDragonMigration {
         }
         this.finishedProcess.getEntities = false;
         let today = moment().format('YYYY-MM-DD');
-        let res = await this.FDService.getList('2018-09-17 11:53:30', '2018-09-17 11:55:00');
-        let company = await riteWay.Company.findByPk(1);
+        let companies = await riteWay.Company.findAll({
+            where:{
+                id:42
+            }
+        });
 
-        if(res.Success){
-            for(let i=0; i<res.Data.length; i++){
-                let fdEntity = res.Data[i];
-                try{
-                    let success = await this.RWService.importQuote(fdEntity, company);
-                    if(success){
-                        console.log("Sucess migration ", fdEntity.FDOrderID)
+        for(let i = 0; i<companies.length; i++){
+            let company =  companies[i];
+            console.log("===========================================================================");
+            console.log("company ", company.name);
+            console.log("===========================================================================");
+            let res = await this.FDService.getList('2010-01-01 00:00:00', today+' 23:59:59', company.name);
+            if(res.Success){
+                for(let i=0; i<res.Data.length; i++){
+                    let fdEntity = res.Data[i];
+                    try{
+                        let success = await this.RWService.importQuote(fdEntity, company);
+                        if(success){
+                            console.log("Sucess import ", i, fdEntity.FDOrderID)
+                        }
+                        else{
+                            console.log("Error import ", i, fdEntity.FDOrderID)
+                        }
                     }
+                    catch(e){
+                        console.log("===========================================================================");
+                        console.log(e);
+                        console.log("===========================================================================");
+                    }
+                    
                 }
-                catch(e){
-                    console.log("===========================================================================");
-                    console.log(e);
-                    console.log("===========================================================================");
-                }
-                
             }
         }
         this.finishedProcess.getEntities = true;
-
-        return res;
-
     }
 }
 

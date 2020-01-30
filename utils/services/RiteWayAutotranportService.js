@@ -293,9 +293,12 @@ class RiteWayAutotranportService{
                 vehicleData.model_id = vehicleModel.id
             }
             else{
-                vehicleData.model = vehicle.model
+                vehicleData.model = vehicle.model;
                 if(vehicleMaker){
-                    vehicleData.maker = vehicle.make
+                    vehicleData.maker_id = vehicleMaker.id;
+                }
+                else{
+                    vehicleData.maker = vehicle.make;
                 }
             }
             
@@ -419,6 +422,7 @@ class RiteWayAutotranportService{
         let originContactInfo = null;
         let destinationLocation = null;
         let destinationContactInfo = null;
+        let vehicles = [];
 
         try {
             if(rwData.company.isNew){
@@ -436,6 +440,42 @@ class RiteWayAutotranportService{
             
             quote = await riteWay.Quote.create(rwData);
             console.log(`quote created ${quote.id}`);
+
+            for(let i = 0; i<rwData.vehicles.length; i++){
+                let vehicle = rwData.vehicles[i];
+                if(typeof vehicle.type != 'undefined'){
+                    let type = await riteWay.VehicleType.create({
+                        'name': vehicle.type.trim()
+                    });
+                    vehicle.type_id = type.id;
+                }
+
+                if(typeof vehicle.model != 'undefined'){
+                    let dataModel = {
+                        name: vehicle.model.trim()
+                    };
+
+                    if(typeof vehicle.maker_id != 'undefined'){
+                        dataModel.maker_id = vehicle.maker_id;
+                    }
+                    else{
+                        let maker = await riteWay.VehicleMaker.create({
+                            'name': vehicle.maker.trim()
+                        });
+                        dataModel.maker_id = maker.id;
+                    }                    
+
+                    let model = await riteWay.VehicleModel.create(dataModel);
+                    vehicle.model_id = model.id;
+                }
+
+                vehicle.quote_id = quote.id;
+
+                let newVehicle = await riteWay.Vehicle.create(vehicle);
+                vehicles.push(newVehicle);
+                console.log(`vehicle created ${newVehicle.id}`);
+            }
+
 
             if(rwData.order){
                 originLocation = await riteWay.Location.create(rwData.originLocation);
@@ -501,6 +541,12 @@ class RiteWayAutotranportService{
 
             if(order){
                 await order.destroy();
+            }
+
+            if(vehicles.length>0){
+                vehicles.forEach(async v => {
+                    await v.destroy();
+                });
             }
 
             if(quote){

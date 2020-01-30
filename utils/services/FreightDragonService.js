@@ -8,6 +8,15 @@ class FreightDragonService{
         this.entityResource = new EntityResource();
     }
 
+    _parseStatus(RWStatus){
+        let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'issues', 'pickedup', 'delivered'];
+        let fdStatus = validStatus.indexOf(RWStatus);
+        if(fdStatus<0){
+            return 1;
+        }
+        return fdStatus + 1;
+    }
+
     parseRWData(riteWayQuote){
         let fdQuoteData = {
             //Consistencia dentro de la tabla entities=======================================
@@ -64,6 +73,7 @@ class FreightDragonService{
         fdQuoteData['VehicleCount'] = vehicleCount;
 
         if(riteWayQuote.order != null){
+            fdQuoteData['Status'] = this._parseStatus(riteWayQuote.order.status);
             if(riteWayQuote.order.destinationLocation != null && riteWayQuote.order.originLocation != null){                
                 //Origen
                 let origin = riteWayQuote.order.originLocation;
@@ -124,9 +134,10 @@ class FreightDragonService{
         return this.entityResource.get({FDOrderID});
     }
 
-    getList(iniDate, endDate){
+    getList(iniDate, endDate, companyName){
         return this.entityResource.getList({
-            Created:`${iniDate}|${endDate}`
+            Created:`${iniDate}|${endDate}`,
+            Company: companyName
         });
     }
 

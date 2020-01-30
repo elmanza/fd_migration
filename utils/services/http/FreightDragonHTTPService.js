@@ -4,7 +4,7 @@ const FDConf = require('../../../config/FDConf');
 
 class FreightDragonHTTPServices{
     constructor(){
-        this.host = FDConf.host;
+        this.host = FDConf.apiUrl;
         this.credentials = FDConf.credentials
     }
 
