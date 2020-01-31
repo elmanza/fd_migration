@@ -299,6 +299,12 @@ class RwFdSynchronize {
     async refreshRWQuote(res, riteWayQuote){
         if(res.Success){
             let fdQuote = res.Data;
+            
+            await riteWayQuote.update({
+                fd_id: fdOrder.id,
+                fd_number: fdQuote.FDOrderID,
+            });
+
             if(fdQuote.tariff > 0){   
 
                 for(let j=0; j<riteWayQuote.vehicles.length; j++){
@@ -415,9 +421,10 @@ class RwFdSynchronize {
             }); 
 
             await riteWayQuote.update({
-                fd_id: fdOrder.id
+                fd_id: fdOrder.id,
+                fd_number: fdQuote.FDOrderID,
             });
-            
+
             //Search if exist note
             let usersList = {};
             

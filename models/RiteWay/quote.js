@@ -27,7 +27,8 @@ Quote.init(
         created_at: { type: 'TIMESTAMP', allowNull: true },
         updated_at: { type: 'TIMESTAMP', allowNull: true },
 
-        fd_id: { type: Sequelize.INTEGER, allowNull: false },
+        fd_id: { type: Sequelize.INTEGER, allowNull: true },
+        fd_number: { type: Sequelize.STRING, allowNull: true },
     },
     {
         sequelize: ritewayDB,

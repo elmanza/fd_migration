@@ -138,6 +138,7 @@ class RiteWayAutotranportService{
         rwData.created_at = FDEntity.created;
         rwData.updated_at = FDEntity.created;
         rwData.fd_id = FDEntity.id;
+        rwData.fd_number = FDEntity.FDOrderID;
 
 
         rwData.origin_zip = FDEntity.origin.zip ? FDEntity.origin.zip : '';
