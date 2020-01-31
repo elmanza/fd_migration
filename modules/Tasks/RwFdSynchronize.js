@@ -408,11 +408,15 @@ class RwFdSynchronize {
                     }
                 }
             }
-            
+
             await riteWayQuote.stage_quote.update({
                 status: fdStatus,
                 fdResponse: "fd_get_order_success"
             }); 
+
+            await riteWayQuote.update({
+                fd_id: fdOrder.id
+            });
             
             //Search if exist note
             let usersList = {};

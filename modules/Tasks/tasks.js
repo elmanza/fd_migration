@@ -25,7 +25,11 @@ module.exports = {
         console.log((new Date()).toString() + "membersSync task is called........................");
         migration.getOperatorMembers();
     },
-    /* importQuotes: function(){
+    /*importQuotes: function(){
         migration.getEntities();
-    }, */
+    },
+    
+    migrateAll: function(){
+        migration.migration();
+    },*/
 }

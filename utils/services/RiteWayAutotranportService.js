@@ -140,12 +140,12 @@ class RiteWayAutotranportService{
         rwData.fd_id = FDEntity.id;
 
 
-        rwData.origin_zip = FDEntity.origin.zip;
+        rwData.origin_zip = FDEntity.origin.zip ? FDEntity.origin.zip : '';
         rwData.origin_address = FDEntity.origin.address1;
         let originCity = await this.getRWCity(FDEntity.origin.state, FDEntity.origin.city);
         rwData.originCity = originCity.length > 0 ? originCity[0].id : null;
 
-        rwData.destination_zip = FDEntity.destination.zip;
+        rwData.destination_zip = FDEntity.destination.zip ? FDEntity.destination.zip : '';
         rwData.destination_address = FDEntity.destination.address1;
         let destinationCity = await this.getRWCity(FDEntity.destination.state, FDEntity.destination.city);
         rwData.destinationCity = destinationCity.length > 0 ? destinationCity[0].id : null;
@@ -433,8 +433,8 @@ class RiteWayAutotranportService{
         let vehicles = [];
 
         try {
-            if(rwData.company.isNew && preCompany){
-                company = await riteWay.Company.create(rwData.company);
+            if(company.isNew && company.name.trim() != ''){
+                company = await riteWay.Company.create(company);
             }
     
             if(rwData.user.isNew){
@@ -533,7 +533,7 @@ class RiteWayAutotranportService{
 
         }
         catch(e){
-            console.log(`error on the process`, e);
+            //console.log(`error on the process`, e);
 
             if(destinationContactInfo){
                 await destinationContactInfo.destroy();

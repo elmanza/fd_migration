@@ -24,6 +24,7 @@ class FreigthDragonMigration {
         this.finishedProcess = {
             getOperatorMembers:true,
             getEntities:true,
+            migration:true,
         };
     }
 
@@ -121,6 +122,41 @@ class FreigthDragonMigration {
         let today = moment().format('YYYY-MM-DD');
         let companies = await riteWay.Company.findAll();
 
+        let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59');
+        if(res.Success){
+            for(let i=0; i<res.Data.length; i++){
+                let fdEntity = res.Data[i];
+                try{
+                    let success = await this.RWService.importQuote(fdEntity);
+                    if(success){
+                        console.log("--->Sucess import ", i, fdEntity.FDOrderID)
+                    }
+                    else{
+                        console.log("|Error import ", i, fdEntity.FDOrderID)
+                    }
+                }
+                catch(e){
+                    console.log("===========================================================================");
+                    console.log( fdEntity.FDOrderID, e);
+                    console.log("===========================================================================");
+                }
+            }
+        }
+        this.finishedProcess.getEntities = true;
+    }
+
+    async migration(){
+        if(!this.finishedProcess.migration){
+
+            return null;
+
+        }
+        console.log((new Date()).toString() + "getEntities task is called........................");
+        
+        this.finishedProcess.migration = false;
+        let today = moment().format('YYYY-MM-DD');
+        let companies = await riteWay.Company.findAll();
+
         for(let i = 0; i<companies.length; i++){
             let company =  companies[i];
             console.log("===========================================================================");
@@ -148,7 +184,7 @@ class FreigthDragonMigration {
                 }
             }
         }
-        this.finishedProcess.getEntities = false;
+        this.finishedProcess.migration = false;
     }
 }
 
