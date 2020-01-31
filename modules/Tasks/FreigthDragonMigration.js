@@ -34,6 +34,7 @@ class FreigthDragonMigration {
             return null;
 
         }
+        console.log((new Date()).toString() + "membersSync task is called........................");
         this.finishedProcess.getOperatorMembers = false;
 
         let res = await this.FDService.getMemberList();

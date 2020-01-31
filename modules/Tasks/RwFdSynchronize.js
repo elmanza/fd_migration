@@ -160,7 +160,8 @@ class RwFdSynchronize {
     createFDQuoteSyncTask(){
         if(!this.finishedProcess.createFDQuoteSyncTask){
             return null;
-        }
+        }        
+        console.log((new Date()).toString() + "createQuotes task is called........................");
         let recProccesed = 0;
         this.finishedProcess.createFDQuoteSyncTask = false;
 
@@ -242,6 +243,7 @@ class RwFdSynchronize {
         if(!this.finishedProcess.quoteToOrderSyncTask){
             return null;
         }
+        console.log((new Date()).toString() + "quotesToOrders task is called........................");
         let recProccesed = 0;
         this.finishedProcess.quoteToOrderSyncTask = false;
 
@@ -301,7 +303,7 @@ class RwFdSynchronize {
             let fdQuote = res.Data;
             
             await riteWayQuote.update({
-                fd_id: fdOrder.id,
+                fd_id: fdQuote.id,
                 fd_number: fdQuote.FDOrderID,
             });
 
@@ -422,7 +424,7 @@ class RwFdSynchronize {
 
             await riteWayQuote.update({
                 fd_id: fdOrder.id,
-                fd_number: fdQuote.FDOrderID,
+                fd_number: fdOrder.FDOrderID,
             });
 
             //Search if exist note
@@ -533,38 +535,51 @@ class RwFdSynchronize {
         if(!this.finishedProcess.refreshRWEntitySyncTask){
             return null;
         }
+        console.log((new Date()).toString() + "refreshRWEntity task is called........................");
         let recProccesed = 0;
         this.finishedProcess.refreshRWEntitySyncTask = false;
-
-        StageQuote.findAll({
-            where: {
-                'watch': true,
-                'fdOrderId': {
-                    [dbOp.not]: null
-                }
-            }
-        })
-        .then( stageQuotes => {
-            if(stageQuotes.length == 0){
-                this.finishedProcess.refreshRWEntitySyncTask = true;
-            }
-            stageQuotes.forEach(stageQuote => {
-                recProccesed++;
-                this.refreshRWEntity(stageQuote)
-                .then(result => {
-                    console.log("refreshRWEntitySyncTask ",result);
-                })
-                .catch(error => {
-                    console.log("refreshRWEntitySyncTask Error ", error, stageQuote.id);
-                })
-                .finally(()=>{
-                    recProccesed--;
-                    if(recProccesed <= 0){
-                        this.finishedProcess.refreshRWEntitySyncTask = true;
-                    }
+        
+        let getRecords = async () => {
+            let totalRecords = 0;
+            let recordsCount = 0;
+            let offset = 0;
+            do{
+                let result = await StageQuote.findAndCountAll({
+                    where: {
+                        'watch': true,
+                        'fdOrderId': {
+                            [dbOp.not]: null
+                        }
+                    },
+                    offset,
+                    limit: 100
                 });
-            });
-        });
+
+                totalRecords = result.count;
+                recordsCount += result.rows.length;
+
+                result.rows.forEach(stageQuote => {
+                    recProccesed++;
+                    this.refreshRWEntity(stageQuote)
+                    .then(result => {
+                        console.log("refreshRWEntitySyncTask ",result);
+                    })
+                    .catch(error => {
+                        console.log("refreshRWEntitySyncTask Error ", error, stageQuote.id);
+                    })
+                    .finally(()=>{
+                        recProccesed--;
+                        if(recProccesed <= 0){
+                            this.finishedProcess.refreshRWEntitySyncTask = true;
+                        }
+                    });
+                });
+
+                offset++;
+            }while( recordsCount < totalRecords );
+            return true;
+        }
+        getRecords();
     }
 
     //Add Notes---------------------------------------------------------
@@ -611,7 +626,7 @@ class RwFdSynchronize {
         if(!this.finishedProcess.sendNotesSyncTask){
             return null;
         }
-        
+        console.log((new Date()).toString() + "sendOrderNotes task is called........................");
         this.finishedProcess.sendNotesSyncTask = false;
 
         StageQuote.findAll({
