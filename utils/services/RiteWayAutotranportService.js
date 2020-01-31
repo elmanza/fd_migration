@@ -517,7 +517,7 @@ class RiteWayAutotranportService{
                 include: this.quoteIncludeData
             });
             let status =  order ? order.status : quote.state;
-            let watch = (status == 'cancelled' || status == 'delivered'? false : true);
+            let watch = (status == 'cancelled' ? false : true);
 
             let stageQuoteData = {
                 riteWayId: quote.id,
