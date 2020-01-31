@@ -169,10 +169,10 @@ class FreigthDragonMigration {
                     try{
                         let success = await this.RWService.importQuote(fdEntity, company);
                         if(success){
-                            console.log("--->Sucess import ", i, fdEntity.FDOrderID)
+                            console.log("--->Sucess import ", i, (i/res.Data.length*100),fdEntity.FDOrderID)
                         }
                         else{
-                            console.log("|Error import ", i, fdEntity.FDOrderID)
+                            console.log("===>Error import ", i, (i/res.Data.length*100), fdEntity.FDOrderID)
                         }
                     }
                     catch(e){
