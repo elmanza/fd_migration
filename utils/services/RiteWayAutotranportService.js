@@ -400,13 +400,19 @@ class RiteWayAutotranportService{
                         zip: FDEntity.carrier.zip_code,
                         insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
                     }
-        
-                    if(city.length > 0){
-                        rwData.carrier.city_id = city[0].id;
+                    
+                    if(city){
+                        rwData.carrier.city_id = city.id;
                     }
                 }
 
                 if(rwData.carrier){
+
+                    rwData.carrier.driver = {
+                        name: '',
+                        phone: ''
+                    };
+
                     if(FDEntity.carrier.driver){
                         rwData.carrier.driver = {
                             name: FDEntity.carrier.driver.driver_name,
@@ -561,8 +567,7 @@ class RiteWayAutotranportService{
                     else{
                         carrier = rwData.carrier;
                     }
-
-                    if(carrier.id){
+                    if(carrier.id && rwData.carrier.driver != null){
                         driver = await riteWay.Driver.create({
                             ...rwData.carrier.driver,
                             order_id: order.id,
