@@ -307,7 +307,7 @@ class RwFdSynchronize {
                 fd_number: fdQuote.FDOrderID,
             });
 
-            if(fdQuote.tariff > 0){   
+            if(Number(fdQuote.tariff) > 0){   
 
                 for(let j=0; j<riteWayQuote.vehicles.length; j++){
                     let rwVehicle = riteWayQuote.vehicles[j];
@@ -324,9 +324,9 @@ class RwFdSynchronize {
                             )
                             ){
                             await rwVehicle.update({
-                                tariff: fdVehicle.tariff,
-                                deposit: fdVehicle.deposit,
-                                carrierPay: fdVehicle.carrier_pay,
+                                tariff: Number(fdVehicle.tariff),
+                                deposit: Number(fdVehicle.deposit),
+                                carrierPay: Number(fdVehicle.carrier_pay),
                             });
                             break;
                         }
@@ -335,7 +335,7 @@ class RwFdSynchronize {
 
                 await riteWayQuote.update({
                     state: 'offered',
-                    tariff: fdQuote.tariff
+                    tariff: Number(fdQuote.tariff)
                 });
                 await riteWayQuote.stage_quote.update({
                     status: 'offered',
@@ -464,11 +464,6 @@ class RwFdSynchronize {
                                     '=',
                                     rwUser.id
                                 ),
-                                /* Sequelize.where(
-                                    Sequelize.literal("created_at::timestamp"),
-                                    '=',
-                                    fdNote.created
-                                ), */
                                 Sequelize.where(
                                     Sequelize.col('notes.text'),
                                     'ilike',
@@ -508,7 +503,7 @@ class RwFdSynchronize {
             let res = null;
 
             riteWayQuote.vehicles.forEach(vehicle => {
-                isOffered = isOffered && vehicle.tariff > 0;
+                isOffered = isOffered && Number(vehicle.tariff) > 0;
             });
             
             if(isOffered){

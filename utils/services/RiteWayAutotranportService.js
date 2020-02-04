@@ -125,7 +125,32 @@ class RiteWayAutotranportService{
                 INNER JOIN states on cities.state_id = states.id
                 WHERE states.abbreviation ilike '${stateAbbre}' and cities.name ilike '${cityName}'
             `;
-        return await ritewayDB.query(citySQL, {nest: true, type: ritewayDB.QueryTypes.SELECT});
+        let cities = await ritewayDB.query(citySQL, {nest: true, type: ritewayDB.QueryTypes.SELECT});
+        if(cities.length > 0){
+            return cities[0];
+        }
+        else{
+            return await this.createRWCity(stateAbbre, {
+                name: cityName
+            });
+        }
+
+    }
+
+    async createRWCity(stateAbbre, cityData){
+        let state = await riteWay.State.findOne({
+            where: Sequelize.where(
+                Sequelize.col('abbreviation'),
+                'ilike',
+                stateAbbre
+            )
+        });
+        if(state){
+            cityData.state_id = state.id;
+            let city = await riteWay.City.create(cityData);
+            return city;
+        }
+        return null;
     }
 
     async parseFDData(FDEntity){
@@ -139,17 +164,18 @@ class RiteWayAutotranportService{
         rwData.updated_at = FDEntity.created;
         rwData.fd_id = FDEntity.id;
         rwData.fd_number = FDEntity.FDOrderID;
+        rwData.tariff = Number(FDEntity.tariff);
 
 
         rwData.origin_zip = FDEntity.origin.zip ? FDEntity.origin.zip : '';
         rwData.origin_address = FDEntity.origin.address1;
         let originCity = await this.getRWCity(FDEntity.origin.state, FDEntity.origin.city);
-        rwData.originCity = originCity.length > 0 ? originCity[0].id : null;
+        rwData.originCity = originCity ? originCity.id : null;
 
         rwData.destination_zip = FDEntity.destination.zip ? FDEntity.destination.zip : '';
         rwData.destination_address = FDEntity.destination.address1;
         let destinationCity = await this.getRWCity(FDEntity.destination.state, FDEntity.destination.city);
-        rwData.destinationCity = destinationCity.length > 0 ? destinationCity[0].id : null;
+        rwData.destinationCity = destinationCity ? destinationCity.id : null;
 
         rwData.company = null;
         rwData.user = await riteWay.User.findOne({
@@ -229,8 +255,8 @@ class RiteWayAutotranportService{
         }
         //quote status................
         if(FDEntity.type < 3){
-            if(FDEntity.tariff > 0){
-                rwData.tariff = FDEntity.tariff;
+            if(Number(FDEntity.tariff) > 0){
+                rwData.tariff = Number(FDEntity.tariff);
                 rwData.state = 'offered';
             }
             else{
@@ -252,9 +278,9 @@ class RiteWayAutotranportService{
                 state: vehicle.state,
                 color: vehicle.color,
                 inop: vehicle.inop,
-                tariff: vehicle.tariff,
-                carrier_pay: vehicle.carrier_pay,
-                deposit: vehicle.deposit,
+                tariff: Number(vehicle.tariff),
+                carrier_pay: Number(vehicle.carrier_pay),
+                deposit: Number(vehicle.deposit),
             }
 
             let vehicleType = await riteWay.VehicleType.findOne({
@@ -365,6 +391,7 @@ class RiteWayAutotranportService{
                     let city = await this.getRWCity(FDEntity.carrier.state, FDEntity.carrier.city);
         
                     rwData.carrier = {
+                        isNew: true,
                         company_name: FDEntity.carrier.company_name.trim(),
                         email: FDEntity.carrier.email,
                         address: FDEntity.carrier.address1,
@@ -417,7 +444,6 @@ class RiteWayAutotranportService{
             }
         });
         if(stageQuote){
-            console.log(stageQuote.fdOrderId);
             return false;
         }
 

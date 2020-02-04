@@ -130,15 +130,15 @@ class FreigthDragonMigration {
                 try{
                     let success = await this.RWService.importQuote(fdEntity);
                     if(success){
-                        console.log("--->Sucess import ", i, fdEntity.FDOrderID)
+                        console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
                     }
                     else{
-                        console.log("|Error import ", i, fdEntity.FDOrderID)
+                        console.log(`--->Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
                     }
                 }
                 catch(e){
                     console.log("===========================================================================");
-                    console.log( fdEntity.FDOrderID, e);
+                    console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e.message);
                     console.log("===========================================================================");
                 }
             }
@@ -152,11 +152,15 @@ class FreigthDragonMigration {
             return null;
 
         }
-        console.log((new Date()).toString() + "getEntities task is called........................");
+        console.log((new Date()).toString() + "migration task is called........................");
         
         this.finishedProcess.migration = false;
         let today = moment().format('YYYY-MM-DD');
-        let companies = await riteWay.Company.findAll();
+        let companies = await riteWay.Company.findAll({
+            where: {
+                id:39
+            }
+        });
 
         for(let i = 0; i<companies.length; i++){
             let company =  companies[i];
@@ -168,17 +172,22 @@ class FreigthDragonMigration {
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
-                        let success = await this.RWService.importQuote(fdEntity, company);
+                        let success = await this.RWService.importQuote(fdEntity);
                         if(success){
-                            console.log("--->Sucess import ", i, (i/res.Data.length*100),fdEntity.FDOrderID)
+                            console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
                         }
                         else{
-                            console.log("===>Error import ", i, (i/res.Data.length*100), fdEntity.FDOrderID)
+                            console.log(`--->Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
                         }
                     }
                     catch(e){
                         console.log("===========================================================================");
-                        console.log(e);
+                        console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e, {
+                            shipper: fdEntity.shipper,
+                            origin: fdEntity.origin,
+                            destination: fdEntity.destination,
+                            carrier: fdEntity.carrier
+                        });
                         console.log("===========================================================================");
                     }
                     

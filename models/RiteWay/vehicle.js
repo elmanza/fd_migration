@@ -14,9 +14,9 @@ Vehicle.init(
         state: { type: Sequelize.STRING, allowNull: true },
         color: { type: Sequelize.STRING, allowNull: true },
         inop: { type: Sequelize.STRING, allowNull: true },
-        tariff: { type: Sequelize.NUMBER, allowNull: true },
-        carrierPay: { type: Sequelize.NUMBER, allowNull: true },
-        deposit: { type: Sequelize.NUMBER, allowNull: true },
+        tariff: { type: Sequelize.DOUBLE, allowNull: true },
+        carrierPay: { type: Sequelize.DOUBLE, allowNull: true },
+        deposit: { type: Sequelize.DOUBLE, allowNull: true },
         gatePass: {type: Sequelize.STRING, allowNull: true},
     },
     {

@@ -3,6 +3,7 @@ const CarrierContactInformation = require('./carrierContactInformation');
 const City = require('./city');
 const Company = require('./company');
 const Document = require('./document');
+const Driver = require('./driver');
 const Invoice = require('./invoice');
 const Issue = require('./issue');
 const Order = require('./order');
@@ -279,6 +280,38 @@ CarrierContactInformation.belongsTo(Carrier, {
     },
     constraints: true
 });
+
+Carrier.hasMany(Driver, {
+    foreignKey: {
+        name: 'carrier_id',
+        allowNull: false
+    },
+    constraints: true
+});
+
+Driver.belongsTo(Carrier, {
+    foreignKey: {
+        name: 'carrier_id',
+        allowNull: false
+    },
+    constraints: true
+});
+
+Order.hasOne(Driver, {
+    foreignKey: {
+        name: 'order_id',
+        allowNull: false
+    },
+    constraints: true
+});
+
+Driver.belongsTo(Order, {
+    foreignKey: {
+        name: 'order_id',
+        allowNull: false
+    },
+    constraints: true
+});
 //====================
 Quote.hasOne(StageQuote, {
     foreignKey: 'rite_way_id',
@@ -298,6 +331,7 @@ module.exports = {
     Carrier,
     CarrierContactInformation,
     Company,
+    Driver,
     User,
     Quote,
     VehicleMaker,
