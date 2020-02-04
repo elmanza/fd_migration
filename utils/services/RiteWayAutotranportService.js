@@ -119,6 +119,8 @@ class RiteWayAutotranportService{
     }
 
     async getRWCity(stateAbbre, cityName){
+        cityName = cityName.replace(/[^\w\s]/gi, '').trim();
+        
         let citySQL = `
                 SELECT cities.*
                 FROM cities
@@ -383,7 +385,7 @@ class RiteWayAutotranportService{
             if(FDEntity.carrier){
                 rwData.carrier = await riteWay.Carrier.findOne({
                     where: {
-                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber
+                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
                     }
                 });
 
@@ -396,12 +398,21 @@ class RiteWayAutotranportService{
                         email: FDEntity.carrier.email,
                         address: FDEntity.carrier.address1,
                         zip: FDEntity.carrier.zip_code,
-                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber
+                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
                     }
         
                     if(city.length > 0){
                         rwData.carrier.city_id = city[0].id;
                     }
+                }
+
+                if(rwData.carrier){
+                    if(FDEntity.carrier.driver){
+                        rwData.carrier.driver = {
+                            name: FDEntity.carrier.driver.driver_name,
+                            phone: FDEntity.carrier.driver.driver_phone
+                        };
+                    }                    
                 }
             }      
         }
@@ -458,6 +469,8 @@ class RiteWayAutotranportService{
         let destinationLocation = null;
         let destinationContactInfo = null;
         let vehicles = [];
+        let carrier = null;
+        let driver = null;
 
         try {
             if(company.isNew && company.name.trim() != ''){
@@ -538,6 +551,26 @@ class RiteWayAutotranportService{
                     location_origin_id: originLocation.id,
                 });
                 console.log(`order created ${quote.id}`);
+
+                if(rwData.carrier != null){
+
+                    if(rwData.carrier.isNew){
+                        carrier = await riteWay.Carrier.create(rwData.carrier);
+                        console.log(`Carrier created ${carrier.id}`);
+                    }
+                    else{
+                        carrier = rwData.carrier;
+                    }
+
+                    if(carrier.id){
+                        driver = await riteWay.Driver.create({
+                            ...rwData.carrier.driver,
+                            order_id: order.id,
+                            carrier_id: carrier.id
+                        });
+                        console.log(`Driver created ${carrier.id}`);
+                    }
+                }                
             }            
             
             quote = await riteWay.Quote.findByPk(quote.id, {
@@ -576,6 +609,14 @@ class RiteWayAutotranportService{
 
             if(originLocation){
                 await originLocation.destroy();
+            }
+
+            if(driver){
+                await driver.destroy();
+            }
+
+            if(carrier){
+                await carrier.destroy();
             }
 
             if(order){

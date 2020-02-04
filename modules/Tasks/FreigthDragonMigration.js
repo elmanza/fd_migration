@@ -169,7 +169,7 @@ class FreigthDragonMigration {
             console.log("===========================================================================");
             let res = await this.FDService.getList('2010-01-01 00:00:00', today+' 23:59:59', company.name.trim());
             if(res.Success){
-                for(let i=0; i<res.Data.length; i++){
+                for(let i=0; i<1; i++){
                     let fdEntity = res.Data[i];
                     try{
                         let success = await this.RWService.importQuote(fdEntity);
