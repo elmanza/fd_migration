@@ -461,7 +461,9 @@ class RiteWayAutotranportService{
                         transaction_id: fdPayment.transaction_id,
                         from: fdPayment.from,
                         to: fdPayment.to,
-                        user_id: user.id
+                        user_id: user.id,
+                        createdAt: fdPayment.created,
+                        updatedAt: fdPayment.created,
                     });
                 }
             }

@@ -11,11 +11,13 @@ Payment.init(
         transaction_id: {type: Sequelize.STRING, allowNull: true },
         from: {type: Sequelize.STRING, allowNull: true },
         to: {type: Sequelize.STRING, allowNull: true },
+        createdAt: { type: 'TIMESTAMP', allowNull: false },
+        updatedAt: { type: 'TIMESTAMP', allowNull: false },
     },
     {
         sequelize: ritewayDB,
         modelName: 'payments',
-        timestamps: true,
+        timestamps: false,
         underscored: true
     }
 );

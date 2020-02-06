@@ -452,7 +452,9 @@ class RwFdSynchronize {
                         from: fdPayment.from,
                         to: fdPayment.to,
                         user_id: user.id,
-                        order_id: riteWayQuote.order.id
+                        order_id: riteWayQuote.order.id,
+                        createdAt: fdPayment.created,
+                        updatedAt: fdPayment.created,
                     });
                 }
             }
