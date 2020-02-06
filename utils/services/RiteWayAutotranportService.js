@@ -414,10 +414,8 @@ class RiteWayAutotranportService{
                     };
 
                     if(FDEntity.carrier.driver){
-                        rwData.carrier.driver = {
-                            name: FDEntity.carrier.driver.driver_name,
-                            phone: FDEntity.carrier.driver.driver_phone
-                        };
+                        rwData.carrier.driver.name = FDEntity.carrier.driver.driver_name;
+                        rwData.carrier.driver.phone = FDEntity.carrier.driver.driver_phone;
                     }                    
                 }
             }

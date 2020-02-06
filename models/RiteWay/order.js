@@ -8,7 +8,7 @@ Order.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
         status: {type: Sequelize.STRING, allowNull: false},
-        estimated_delivery_date: {type: Sequelize.DATE, allowNull: false},
+        estimated_delivery_date: {type: Sequelize.DATE, allowNull: true},
         isFavorite: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
         pickedUpAt: {type: Sequelize.DATE, allowNull: true},
         deliveredAt: {type: Sequelize.DATE, allowNull: true},
