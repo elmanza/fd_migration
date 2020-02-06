@@ -420,7 +420,7 @@ class RwFdSynchronize {
 
                     let user = await riteWay.User.findOne({
                         where: Sequelize.where(
-                            'username',
+                            Sequelize.col('username'),
                             'ilike',
                             fdPayment.user.email.trim()
                         )
