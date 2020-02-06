@@ -5,6 +5,7 @@ const Company = require('./company');
 const Document = require('./document');
 const Driver = require('./driver');
 const Invoice = require('./invoice');
+const Payment = require('./payment');
 const Issue = require('./issue');
 const Order = require('./order');
 const Quote = require('./quote');
@@ -45,6 +46,22 @@ Invoice.belongsTo(Order, {
     constraints: true
 }); //adds order_id attribute to document
 
+Payment.belongsTo(Order, {
+    foreignKey: {
+        name: 'order_id',
+        allowNull: false
+    },
+    constraints: true
+}); //adds order_id attribute to document
+
+Payment.belongsTo(User, {
+    foreignKey: {
+        name: 'user_id',
+        allowNull: false
+    },
+    constraints: true
+}); //adds order_id attribute to document
+
 Issue.belongsTo(Order, {
     foreignKey: {
         name: 'order_id',
@@ -77,6 +94,15 @@ Order.belongsTo(User, {
     as: 'userAccept',
     constraints: true
 }); //adds userAcceptID attribute to document
+
+Order.hasMany(Payment, {
+    foreignKey: {
+        name: 'order_id',
+        allowNull: false
+    },
+    as: 'payments',
+    constraints: true
+}); //adds order_id attribute to history_Truck
 
 Order.hasMany(Issue, {
     foreignKey: {
@@ -342,6 +368,7 @@ module.exports = {
     State,
     Order,
     Invoice,
+    Payment,
     Issue,
     Document,
     Note,

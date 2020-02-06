@@ -12,7 +12,7 @@ Quote.init(
         ship_via: { type: Sequelize.INTEGER, defaultValue: 1, allowNull: false },
 
         picked_up_at: { type: 'TIMESTAMP', allowNull: true },
-
+        offered_at: { type: Sequelize.DATE, allowNull: true },
         origin_zip: { type: Sequelize.INTEGER, allowNull: false },
         origin_address: { type: Sequelize.STRING, allowNull: true },
 
@@ -21,7 +21,7 @@ Quote.init(
 
         state: { type: Sequelize.STRING, allowNull: false },
         tariff: { type: Sequelize.DOUBLE, allowNull: true },
-
+        special_instruction: { type: Sequelize.STRING, allowNull: true },
         additional_information: { type: Sequelize.STRING, allowNull: true },
 
         created_at: { type: 'TIMESTAMP', allowNull: true },

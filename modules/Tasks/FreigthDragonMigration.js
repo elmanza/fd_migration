@@ -60,20 +60,19 @@ class FreigthDragonMigration {
                 if(!riteWayOperator){                    
 
                     let name = fdOperator.contactname.split(' ');
-                    let password = await Crypter.encryptPassword(plainPassoword);
-
-                    riteWayOperator = await riteWay.User.create({
+                    let userData = {
                         name: name[0],
                         last_name: name.slice(1).join(' '),
                         username: fdOperator.email,
-                        password: password,
                         photo: '',
                         phone: fdOperator.phone,
                         shipper_type: '',
                         is_company_admin: false,
                         isOperator: true,
                         company_id: null
-                    });  
+                    };
+
+                    riteWayOperator = await this.RWService.createUser(userData, plainPassoword);
 
                     newRWUser = true;
                 }

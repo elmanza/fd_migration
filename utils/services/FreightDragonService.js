@@ -41,13 +41,13 @@ class FreightDragonService{
             OriginCity: riteWayQuote.originCity.name, //| Origin City name
             OriginState: riteWayQuote.originCity.state.abbreviation, // Origin State Name
             OriginCountry:"US",//| Origin Country Name
-            OriginZip: (riteWayQuote.origin_zip == null ? riteWayQuote.originCity.zip : riteWayQuote.origin_zip ), //| Origin ZipCode
+            OriginZip: riteWayQuote.origin_zip ||  riteWayQuote.originCity.zip, //| Origin ZipCode
         
             //Destination Posting information================================
             DestinationCity: riteWayQuote.destinationCity.name, //| Destination City Name
             DestinationState: riteWayQuote.destinationCity.state.abbreviation, //| Destination State Name
             DestinationCountry:"US", //| Destination Country Name
-            DestinationZip: (riteWayQuote.destination_zip == null ? riteWayQuote.destinationCity.zip : riteWayQuote.destination_zip ), //Destination ZipCode
+            DestinationZip: riteWayQuote.destination_zip || riteWayQuote.destinationCity.zip, //Destination ZipCode
 
             //Notifaction information
             send_email:0, //| 0: Dont send Email 1: Send email
@@ -61,10 +61,10 @@ class FreightDragonService{
             dataVehicle["make"+index] = vehicle.vehicle_model.vehicle_maker.name;
             dataVehicle["model"+index] = vehicle.vehicle_model.name;
             dataVehicle["type"+index] = vehicle.vehicle_type.name;
-            dataVehicle["tariff"+index] = (vehicle.tariff == null? 0:vehicle.tariff);
-            dataVehicle["deposit"+index] = (vehicle.deposit == null? 0:vehicle.deposit);
-            dataVehicle["vin"+index] = (vehicle.vin == null? 0:vehicle.vin);
-            dataVehicle["carrier_pay"+index] = (vehicle.carrierPay == null? 0:vehicle.carrierPay);
+            dataVehicle["tariff"+index] = vehicle.tariff || 0;
+            dataVehicle["deposit"+index] = vehicle.deposit || 0;
+            dataVehicle["vin"+index] = vehicle.vin || 0;
+            dataVehicle["carrier_pay"+index] = vehicle.carrierPay || 0;
 
             vehicleCount++;
 

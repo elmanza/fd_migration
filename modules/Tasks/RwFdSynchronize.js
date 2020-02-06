@@ -356,75 +356,127 @@ class RwFdSynchronize {
     async refreshRWOrder(res, riteWayQuote){
         if(res.Success){
             let fdOrder = res.Data;
-            let fdStatus = this.RWService._parseStatus(fdOrder.status);
+            let fdStatus = riteWayQuote.order.status == 'issues' ? 'issues' : this.RWService._parseStatus(fdOrder.status);
+            let totalPaid = 0;
 
-            if(riteWayQuote.order.status != 'issues'){
-                let getRWStatus = function(status){
-                    if(["active", "onhold", "posted", "notsigned", "dispatched"].includes(status)){
-                        return 'dispatched';
-                    }
-                    else if(["cancelled", "pickedup", "delivered", "issues"].includes(status)){
-                        return status;
-                    }
-                };
-
-                await riteWayQuote.order.reload();
-                //Se crea una nota por el cambio del estado
-                if(getRWStatus(fdStatus)!=getRWStatus(riteWayQuote.order.status)){
-                    await riteWay.Note.create({
-                        text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
-                        showOnCustomerPortal: true, 
-                        userId: riteWayQuote.company.operatorUser.id, 
-                        createdAt:ritewayDB.fn('NOW'), 
-                        updatedAt:ritewayDB.fn('NOW'),
-                        orderId: riteWayQuote.order.id
-                    });
+            let getRWStatus = function(status){
+                if(["active", "onhold", "posted", "notsigned", "dispatched"].includes(status)){
+                    return 'dispatched';
                 }
-                //Se actualiza el estado
-                await riteWay.Order.update({
-                    status: fdStatus
-                }, {
+                else if(["cancelled", "pickedup", "delivered", "issues"].includes(status)){
+                    return status;
+                }
+            };
+
+            await riteWayQuote.order.reload();
+            //Se crea una nota por el cambio del estado
+            if(getRWStatus(fdStatus)!=getRWStatus(riteWayQuote.order.status)){
+                await riteWay.Note.create({
+                    text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
+                    showOnCustomerPortal: true, 
+                    userId: riteWayQuote.company.operatorUser.id, 
+                    createdAt:ritewayDB.fn('NOW'), 
+                    updatedAt:ritewayDB.fn('NOW'),
+                    orderId: riteWayQuote.order.id
+                });
+            }
+
+            //Si fue entregada se crea el invoice en caso de que no exista
+            if(fdStatus == 'delivered'){
+                let invoice = await riteWay.Invoice.findOne({
                     where: {
-                        id: riteWayQuote.order.id,
-                        status: {
-                            [dbOp.ne]: 'issues'
-                        }
+                        order_id: riteWayQuote.order.id
                     }
                 });
-                //Si fue entregada se crea el invoice en caso de que no exista
-                if(fdStatus == 'delivered'){
-                    let invoice = await riteWay.Invoice.findOne({
-                        where: {
-                            order_id: riteWayQuote.order.id
-                        }
+
+                if(invoice == null){
+
+                    let amount = 0;
+
+                    riteWayQuote.vehicles.forEach(vehicle => {
+                        amount += (vehicle?Number.parseFloat(vehicle.tariff) :0);
                     });
 
-                    if(invoice == null){
 
-                        let amount = 0;
-
-                        riteWayQuote.vehicles.forEach(vehicle => {
-                            amount += (vehicle?Number.parseFloat(vehicle.tariff) :0);
-                        });
-
-
-                        await riteWay.Invoice.create({
-                            status: 'pending',
-                            amount: amount,
-                            order_id: riteWayQuote.order.id
-                        });
-                    }
+                    await riteWay.Invoice.create({
+                        status: 'pending',
+                        amount: amount,
+                        order_id: riteWayQuote.order.id
+                    });
                 }
             }
 
-            await riteWayQuote.stage_quote.update({
-                status: fdStatus,
-                fdResponse: "fd_get_order_success"
-            }); 
+            //Se guardan los pagos
+            if(fdOrder.payments.length > 0){
+                await riteWay.Payment.destroy({
+                    where: {
+                        order_id: riteWayQuote.order.id
+                    }
+                });
 
+                for(let i=0; i<fdOrder.payments.length; i++){
+                    let fdPayment = fdOrder.payments[i];
+                    let amount = Number(fdPayment.amount);
+
+                    let user = await riteWay.User.findOne({
+                        where: Sequelize.where(
+                            'username',
+                            'ilike',
+                            fdPayment.user.email.trim()
+                        )
+                    });
+                    
+                    if(user == null){
+                        let name = fdPayment.user.contactname.split(' ');
+                        let userData = {
+                            name: name[0],
+                            last_name: name.slice(1).join(' '),
+                            username: fdPayment.user.email,
+                            photo: '',
+                            phone: fdPayment.user.phone,
+                            shipper_type: '',
+                            is_company_admin: false,
+                            isOperator: true,
+                            company_id: null
+                        };
+                        user = await this.RWService.createUser(userData, name[0]);
+                    }
+
+                    if(fdPayment.from == 'Shipper' && fdPayment.to == "Company"){
+                        totalPaid += amount
+                    }
+
+                    await riteWay.Payment.create({
+                        amount: amount,
+                        transaction_id: fdPayment.transaction_id,
+                        from: fdPayment.from,
+                        to: fdPayment.to,
+                        user_id: user.id,
+                        order_id: riteWayQuote.order.id
+                    });
+                }
+            }
+
+            //Se actualiza el estado de la orden
+            await riteWay.Order.update({
+                status: fdStatus,
+                pickedUpAt: fdOrder.actual_pickup_date,
+                deliveredAt: fdOrder.delivered
+            }, {
+                where: {
+                    id: riteWayQuote.order.id
+                }
+            });
+            //Se actualiza los datos FD en la quote
             await riteWayQuote.update({
                 fd_id: fdOrder.id,
                 fd_number: fdOrder.FDOrderID,
+            });
+            //Se actualiza el estado en el stage y se determina si se debe seguir vigilando
+            await riteWayQuote.stage_quote.update({
+                status: fdStatus,
+                fdResponse: "fd_get_order_success",
+                watch: Number(fdOrder.tariff) > totalPaid && fdStatus != 'delivered' && fdStatus != 'cancelled'
             });
 
             //Search if exist note

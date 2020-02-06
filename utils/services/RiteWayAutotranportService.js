@@ -160,7 +160,7 @@ class RiteWayAutotranportService{
 
         //Quote Data ===================================================
         rwData.quantity = FDEntity.vehicles.length;
-        rwData.estimated_ship_date = FDEntity.est_ship_date?FDEntity.est_ship_date:FDEntity.avail_pickup_date;
+        rwData.estimated_ship_date = FDEntity.est_ship_date || FDEntity.avail_pickup_date;
         rwData.ship_via = (FDEntity.ship_via-1>0?FDEntity.ship_via-1:0);
         rwData.created_at = FDEntity.created;
         rwData.updated_at = FDEntity.created;
@@ -169,12 +169,12 @@ class RiteWayAutotranportService{
         rwData.tariff = Number(FDEntity.tariff);
 
 
-        rwData.origin_zip = FDEntity.origin.zip ? FDEntity.origin.zip : '';
+        rwData.origin_zip = FDEntity.origin.zip || '';
         rwData.origin_address = FDEntity.origin.address1;
         let originCity = await this.getRWCity(FDEntity.origin.state, FDEntity.origin.city);
         rwData.originCity = originCity ? originCity.id : null;
 
-        rwData.destination_zip = FDEntity.destination.zip ? FDEntity.destination.zip : '';
+        rwData.destination_zip = FDEntity.destination.zip || '';
         rwData.destination_address = FDEntity.destination.address1;
         let destinationCity = await this.getRWCity(FDEntity.destination.state, FDEntity.destination.city);
         rwData.destinationCity = destinationCity ? destinationCity.id : null;
@@ -347,15 +347,15 @@ class RiteWayAutotranportService{
         if(rwData.state == 'accepted'){
             rwData.order = {
                 status: this._parseStatus(FDEntity.status),
-                estimated_delivery_date: FDEntity.delivery_date?FDEntity.delivery_date:FDEntity.avail_pickup_date,
-                delivered_at: FDEntity.delivery_date,
-                picked_up_at: FDEntity.actual_pickup_date
+                estimated_delivery_date: FDEntity.delivery_date || FDEntity.delivered,
+                deliveredAt: FDEntity.delivered,
+                pickedUpAt: FDEntity.actual_pickup_date || FDEntity.avail_pickup_date
             };
 
             rwData.originLocation = {
                 address: FDEntity.origin.address1,
                 company_name: FDEntity.origin.company,
-                type_address_id: FDEntity.origin.location_type=='Residential'?2:1,
+                type_address_id: FDEntity.origin.location_type == 'Residential' ? 2 : 1,
                 pickup_time_start: FDEntity.origin.hours,
                 pickup_time_end: FDEntity.origin.hours,
                 contact_information: {
@@ -368,7 +368,7 @@ class RiteWayAutotranportService{
             rwData.destinationLocation = {
                 address: FDEntity.destination.address1,
                 company_name: FDEntity.destination.company,
-                type_address_id: FDEntity.destination.location_type=='Residential'?2:1,
+                type_address_id: FDEntity.destination.location_type == 'Residential' ? 2 : 1,
                 pickup_time_start: FDEntity.destination.hours,
                 pickup_time_end: FDEntity.destination.hours,
                 contact_information: {
@@ -420,37 +420,72 @@ class RiteWayAutotranportService{
                         };
                     }                    
                 }
-            }      
+            }
+            
+            //Payments...............
+            rwData.payments = [];
+            if(FDEntity.payments.length > 0){
+                for(let i=0; i<FDEntity.payments.length; i++){
+                    let fdPayment = FDEntity.payments[i];
+                    let amount = Number(fdPayment.amount);
+                    console.log(fdPayment.user.email.trim());
+                    let user = await riteWay.User.findOne({
+                        where: Sequelize.where(
+                            Sequelize.col('username'),
+                            'ilike',
+                            fdPayment.user.email.trim()
+                        )
+                    });
+                    
+                    if(user == null){
+                        let name = fdPayment.user.contactname.split(' ');
+                        let userData = {
+                            name: name[0],
+                            last_name: name.slice(1).join(' '),
+                            username: fdPayment.user.email,
+                            photo: '',
+                            phone: fdPayment.user.phone,
+                            shipper_type: '',
+                            is_company_admin: false,
+                            isOperator: true,
+                            company_id: null
+                        };
+                        user = await this.createUser(userData, name[0]);
+                    }
+
+                    if(fdPayment.from == 'Shipper' && fdPayment.to == "Company"){
+                        rwData.totalPaid += amount
+                    }
+                    rwData.payments.push({
+                        amount: amount,
+                        transaction_id: fdPayment.transaction_id,
+                        from: fdPayment.from,
+                        to: fdPayment.to,
+                        user_id: user.id
+                    });
+                }
+            }
         }
         return rwData;
     }
 
 
-    async createUser(fdOperator){        
-        let riteWayOperator = await riteWay.User.findOne({
+    async createUser(userData, plainPassoword){        
+        let riteWayUser = await riteWay.User.findOne({
             where: {
-                username:fdOperator.email
+                username: userData.username
             }
         });
 
-        if(!riteWayOperator){
-            let name = fdOperator.contactname.split(' ');                 
-
-            riteWayOperator = await riteWay.User.create({
-                name: name[0],
-                last_name: name.slice(1).join(' '),
-                username: fdOperator.email,
-                password: '',
-                photo: '',
-                phone: fdOperator.phone,
-                shipper_type: '',
-                is_company_admin: false,
-                isOperator: true,
-                company_id: null
+        if(!riteWayUser){            
+            let password = await Crypter.encryptPassword(plainPassoword);
+            riteWayUser = await riteWay.User.create({
+                ...userData,
+                password: password
             });
         }
 
-        return riteWayOperator;
+        return riteWayUser;
     }
 
     async importQuote(FDEntity, preCompany){
@@ -477,6 +512,7 @@ class RiteWayAutotranportService{
         let vehicles = [];
         let carrier = null;
         let driver = null;
+        let payments = [];
 
         try {
             if(company.isNew && company.name.trim() != ''){
@@ -575,6 +611,15 @@ class RiteWayAutotranportService{
                         });
                         console.log(`Driver created ${carrier.id}`);
                     }
+                }
+                if(rwData.payments.length>0){
+                    for(let i=0; i<rwData.payments.length; i++){
+                        let payment = rwData.payments[i];
+                        payment.order_id = order.id;
+                        let newPayment = await riteWay.Payment.create(payment);
+                        payments.push(newPayment);
+                        console.log(`Payment created ${newPayment.id}`);
+                    }
                 }                
             }            
             
@@ -598,7 +643,14 @@ class RiteWayAutotranportService{
 
         }
         catch(e){
-            //console.log(`error on the process`, e);
+            console.log(`error on the process`, e);
+
+            if(payments.length>0){
+                for(let i=0; i<payments.length; i++){
+                    let p = payments[0];
+                    await p.destroy();
+                }
+            }
 
             if(destinationContactInfo){
                 await destinationContactInfo.destroy();
@@ -629,9 +681,10 @@ class RiteWayAutotranportService{
             }
 
             if(vehicles.length>0){
-                vehicles.forEach(async v => {
+                for(let i=0; i<vehicles.length; i++){
+                    let v = vehicles[0];
                     await v.destroy();
-                });
+                }
             }
 
             if(quote){
