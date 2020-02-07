@@ -347,6 +347,8 @@ class RiteWayAutotranportService{
         if(rwData.state == 'accepted'){
             rwData.order = {
                 status: this._parseStatus(FDEntity.status),
+                createdAt:  FDEntity.ordered||FDEntity.created,
+                updatedAt:  FDEntity.ordered||FDEntity.created,
                 estimated_delivery_date: FDEntity.delivery_date || FDEntity.delivered,
                 deliveredAt: FDEntity.delivered,
                 pickedUpAt: FDEntity.actual_pickup_date || FDEntity.avail_pickup_date
@@ -413,7 +415,7 @@ class RiteWayAutotranportService{
                         phone: ''
                     };
 
-                    if(FDEntity.carrier.driver){
+                    if(FDEntity.carrier.driver != null){
                         rwData.carrier.driver.name = FDEntity.carrier.driver.driver_name;
                         rwData.carrier.driver.phone = FDEntity.carrier.driver.driver_phone;
                     }                    

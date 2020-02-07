@@ -14,11 +14,13 @@ Order.init(
         deliveredAt: {type: Sequelize.DATE, allowNull: true},
         shipper_information:{type: Sequelize.STRING, allowNull: true},
         macroPointId: {type: Sequelize.STRING, allowNull: true},
+        createdAt: {type: 'timestamp', allowNull: true},
+        updatedAt: {type: 'timestamp', allowNull: true},
     },
     {
         sequelize: ritewayDB,
         modelName: 'orders',
-        timestamps: true,
+        timestamps: false,
         underscored: true,
         paranoid: true
     }
