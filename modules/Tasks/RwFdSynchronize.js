@@ -358,6 +358,7 @@ class RwFdSynchronize {
             let fdOrder = res.Data;
             let fdStatus = riteWayQuote.order.status == 'issues' ? 'issues' : this.RWService._parseStatus(fdOrder.status);
             let totalPaid = 0;
+            let lastPaymentDate = null;
 
             let getRWStatus = function(status){
                 if(["active", "onhold", "posted", "notsigned", "dispatched"].includes(status)){
@@ -379,31 +380,6 @@ class RwFdSynchronize {
                     updatedAt:ritewayDB.fn('NOW'),
                     orderId: riteWayQuote.order.id
                 });
-            }
-
-            //Si fue entregada se crea el invoice en caso de que no exista
-            if(fdStatus == 'delivered'){
-                let invoice = await riteWay.Invoice.findOne({
-                    where: {
-                        order_id: riteWayQuote.order.id
-                    }
-                });
-
-                if(invoice == null){
-
-                    let amount = 0;
-
-                    riteWayQuote.vehicles.forEach(vehicle => {
-                        amount += (vehicle?Number.parseFloat(vehicle.tariff) :0);
-                    });
-
-
-                    await riteWay.Invoice.create({
-                        status: 'pending',
-                        amount: amount,
-                        order_id: riteWayQuote.order.id
-                    });
-                }
             }
 
             //Se guardan los pagos
@@ -443,7 +419,10 @@ class RwFdSynchronize {
                     }
 
                     if(fdPayment.from == 'Shipper' && fdPayment.to == "Company"){
-                        totalPaid += amount
+                        totalPaid += amount;
+                        if(lastPaymentDate == null || moment(lastPaymentDate).isBefore(fdPayment.created)){
+                            lastPaymentDate = fdPayment.created;
+                        }
                     }
 
                     await riteWay.Payment.create({
@@ -456,6 +435,33 @@ class RwFdSynchronize {
                         createdAt: fdPayment.created,
                         updatedAt: fdPayment.created,
                     });
+                }
+            }
+
+            //Si fue entregada se crea el invoice en caso de que no exista
+            if(fdStatus == 'delivered'){
+                let amount = Number(fdOrder.tariff);
+                let invoiceData = {
+                    status: amount > totalPaid ? 'pending' : 'paid',
+                    isPaid: !(amount > totalPaid),
+                    paided_at: amount > totalPaid ? lastPaymentDate : null,
+                    createdAt: fdOrder.delivered,
+                    updatedAt: fdOrder.delivered,
+                    amount: amount,
+                    order_id: riteWayQuote.order.id
+                };
+
+                let invoice = await riteWay.Invoice.findOne({
+                    where: {
+                        order_id: riteWayQuote.order.id
+                    }
+                });
+
+                if(invoice == null){
+                    await riteWay.Invoice.create(invoiceData);
+                }
+                else{
+                    await invoice.update(invoiceData);
                 }
             }
 

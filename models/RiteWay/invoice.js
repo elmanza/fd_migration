@@ -10,14 +10,16 @@ Invoice.init(
         status: {type: Sequelize.STRING, allowNull: false},
         amount: {type: Sequelize.INTEGER, allowNull: false},
         url_invoice: {type: Sequelize.STRING, allowNull: false, defaultValue: ''},
-        is_paid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+        isPaid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
         paided_at: {type: Sequelize.DATE, allowNull: true },
         archived:{type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
+        createdAt: {type: 'timestamp', allowNull: true},
+        updatedAt: {type: 'timestamp', allowNull: true},
     },
     {
         sequelize: ritewayDB,
         modelName: 'invoices',
-        timestamps: true,
+        timestamps: false,
         underscored: true
     }
 );

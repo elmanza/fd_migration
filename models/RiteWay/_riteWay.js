@@ -8,6 +8,7 @@ const Invoice = require('./invoice');
 const Payment = require('./payment');
 const Issue = require('./issue');
 const Order = require('./order');
+const OrderDocument = require('./order_document');
 const Quote = require('./quote');
 const State = require('./state');
 const User = require('./user');
@@ -112,6 +113,15 @@ Order.hasMany(Issue, {
     constraints: true
 }); //adds order_id attribute to issue
 
+Order.hasMany(OrderDocument, {
+    foreignKey: {
+        name: 'order_id',
+        allowNull: false
+    },
+    as: 'orderDocuments',
+    constraints: true
+}); //adds order_id attribute to order_documents
+
 Order.hasOne(Invoice, {
     foreignKey: {
         name: 'order_id',
@@ -120,6 +130,13 @@ Order.hasOne(Invoice, {
     constraints: true
 }); //adds order_id attribute to invoice
 
+OrderDocument.belongsTo(Order, {
+    foreignKey: {
+        name: 'order_id',
+        allowNull: false
+    },
+    constraints: true
+});
 
 /** Company, City and User relations
  * By: Nicolas Reyes
@@ -367,6 +384,7 @@ module.exports = {
     City,
     State,
     Order,
+    OrderDocument,
     Invoice,
     Payment,
     Issue,

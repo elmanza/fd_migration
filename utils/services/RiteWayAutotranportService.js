@@ -111,7 +111,8 @@ class RiteWayAutotranportService{
     }
 
     _parseStatus(status){
-        let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'issues', 'pickedup', 'delivered'];
+        //let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'issues', 'pickedup', 'delivered'];
+        let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'delivered', 'pickedup', 'delivered'];
         if(typeof validStatus[status-1] == 'undefined'){
             throw "Status not valid";
         }
@@ -424,6 +425,9 @@ class RiteWayAutotranportService{
             
             //Payments...............
             rwData.payments = [];
+            rwData.totalPaid = 0;
+            rwData.lastPaymentDate = null;
+
             if(FDEntity.payments.length > 0){
                 for(let i=0; i<FDEntity.payments.length; i++){
                     let fdPayment = FDEntity.payments[i];
@@ -454,7 +458,10 @@ class RiteWayAutotranportService{
                     }
 
                     if(fdPayment.from == 'Shipper' && fdPayment.to == "Company"){
-                        rwData.totalPaid += amount
+                        rwData.totalPaid += amount;
+                        if(rwData.lastPaymentDate == null || moment(rwData.lastPaymentDate).isBefore(fdPayment.created)){
+                            rwData.lastPaymentDate = fdPayment.created;
+                        }
                     }
                     rwData.payments.push({
                         amount: amount,
@@ -466,6 +473,19 @@ class RiteWayAutotranportService{
                         updatedAt: fdPayment.created,
                     });
                 }
+            }
+
+            //Invoice.................
+            rwData.invoice = null;
+            if(this._parseStatus(FDEntity.status) == 'delivered'){
+                rwData.invoice = {
+                    status: rwData.tariff > rwData.totalPaid ? 'pending' : 'paid',
+                    isPaid: !(rwData.tariff > rwData.totalPaid),
+                    paided_at: rwData.totalPaid > rwData.tariff  ? rwData.lastPaymentDate : null,
+                    createdAt: FDEntity.delivered,
+                    updatedAt: FDEntity.delivered,
+                    amount: rwData.tariff
+                };
             }
         }
         return rwData;
@@ -515,6 +535,7 @@ class RiteWayAutotranportService{
         let carrier = null;
         let driver = null;
         let payments = [];
+        let invoice = null;
 
         try {
             if(company.isNew && company.name.trim() != ''){
@@ -622,6 +643,13 @@ class RiteWayAutotranportService{
                         payments.push(newPayment);
                         console.log(`Payment created ${newPayment.id}`);
                     }
+                }
+                if(rwData.invoice){
+                    invoice = await riteWay.Invoice.create({
+                        ...rwData.invoice,
+                        order_id : order.id
+                    });
+                    console.log(`Invoice created ${invoice.id}`);
                 }                
             }            
             
@@ -629,7 +657,7 @@ class RiteWayAutotranportService{
                 include: this.quoteIncludeData
             });
             let status =  order ? order.status : quote.state;
-            let watch = (status == 'cancelled' ? false : true);
+            let watch = (status == 'cancelled' || (status == 'delivered' && invoice.isPaid) ? false : true);
 
             let stageQuoteData = {
                 riteWayId: quote.id,
@@ -652,6 +680,10 @@ class RiteWayAutotranportService{
                     let p = payments[0];
                     await p.destroy();
                 }
+            }
+
+            if(invoice){
+                await invoice.destroy();
             }
 
             if(destinationContactInfo){

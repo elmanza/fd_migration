@@ -50,9 +50,11 @@ class FreigthDragonMigration {
                 let newRWUser = false;
 
                 let riteWayOperator = await riteWay.User.findOne({
-                    where: {
-                        username:fdOperator.email
-                    }
+                    where: Sequelize.where(
+                        Sequelize.col('username'),
+                        'ilike',
+                        fdOperator.email.trim()
+                    )
                 });
 
                 //console.log(i, fdOperator.email, riteWayOperator==null);
@@ -166,8 +168,9 @@ class FreigthDragonMigration {
             console.log("===========================================================================");
             console.log("company ", company.name);
             console.log("===========================================================================");
-            let res = await this.FDService.getList('2010-01-01 00:00:00', today+' 23:59:59', company.name.trim());
+            let res = await this.FDService.getList('2019-01-01 00:00:00', today+' 23:59:59', company.name.trim());
             if(res.Success){
+                console.log("Total data ", res.Data.length, "---------");
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
