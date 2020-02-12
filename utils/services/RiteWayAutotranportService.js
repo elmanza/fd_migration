@@ -5,6 +5,7 @@ const dbOp = Sequelize.Op;
 
 const riteWay  = require("../../models/RiteWay/_riteWay");
 const StageQuote = require('../../models/Stage/quote');
+const OperatorUser = require('../../models/Stage/operator_user');
 
 const {ritewayDB} = require('../../config/database');
 
@@ -156,7 +157,170 @@ class RiteWayAutotranportService{
         return null;
     }
 
-    async parseFDData(FDEntity){
+    async processFDPayments(FDEntity, order = null, company = null){
+        let result = {
+            tariff: Number(FDEntity.tariff),
+            totalPaid: 0,
+            invoiceData: null,
+            paymentsData: []
+        };
+
+        let lastPaymentDate = null;
+
+        if(FDEntity.payments.length > 0){
+            for(let i=0; i<FDEntity.payments.length; i++){
+                let fdPayment = FDEntity.payments[i];
+                let amount = Number(fdPayment.amount);
+                
+                let user = await riteWay.User.findOne({
+                    where: Sequelize.where(
+                        Sequelize.col('username'),
+                        'ilike',
+                        fdPayment.user.email.trim()
+                    )
+                });
+                
+                if(user == null){
+                    let name = fdPayment.user.contactname.split(' ');
+                    let userData = {
+                        name: name[0],
+                        last_name: name.slice(1).join(' '),
+                        username: fdPayment.user.email,
+                        photo: '',
+                        phone: fdPayment.user.phone,
+                        shipper_type: '',
+                        is_company_admin: false,
+                        isOperator: true,
+                        company_id: null
+                    };
+
+                    if(company){
+                        userData.company_id = company.id;
+                    }
+
+                    user = await this.createUser(userData, name[0]);
+                    await OperatorUser.create({
+                        riteWayId: user.id,
+                        riteWayPass: name[0],
+                        fdEmail: fdPayment.user.email,
+                    });
+                }
+
+                if(fdPayment.from == 'Shipper' && fdPayment.to == "Company"){
+                    result.totalPaid += amount;
+                    if(lastPaymentDate == null){
+                        lastPaymentDate = fdPayment.created;
+                    }
+
+                    if(moment(fdPayment.created).isAfter(lastPaymentDate)){
+                        lastPaymentDate = fdPayment.created;
+                    }
+                }
+
+                let paymentData = {
+                    amount: amount,
+                    transaction_id: fdPayment.transaction_id,
+                    from: fdPayment.from,
+                    to: fdPayment.to,
+                    user_id: user.id,
+                    createdAt: fdPayment.created,
+                    updatedAt: fdPayment.created,
+                };
+                if(order){
+                    paymentData.order_id = order.id;
+                }
+
+                result.paymentsData.push(paymentData);
+            }
+        }
+
+        //Invoice.................
+        if(this._parseStatus(FDEntity.status) == 'delivered'){
+            result.invoiceData = {
+                status: result.tariff > result.totalPaid ? 'pending' : 'paid',
+                isPaid: !(result.tariff > result.totalPaid),
+                paided_at: result.tariff > result.totalPaid  ? null : lastPaymentDate,
+                createdAt: FDEntity.delivered,
+                updatedAt: FDEntity.delivered,
+                amount: result.tariff
+            };
+            if(order){
+                result.invoiceData.order_id = order.id;
+            }
+        }
+
+        return result;
+    }
+
+    async processFDNotes(FDEntity, order){
+        let usersList = {};
+        let notes = [];
+        for(let iN=0; iN < FDEntity.notes.length; iN++){
+            let fdNote = FDEntity.notes[iN];
+            let rwUser = null;
+            
+            if(typeof usersList[fdNote.email.trim()] == 'undefined'){
+                let user = await riteWay.User.findOne({
+                    where: {
+                        username: fdNote.email
+                    }
+                });
+                
+                if(user){
+                    usersList[user.username] = user;
+                    rwUser = usersList[user.username];
+                }
+            }
+            
+            else{
+                rwUser = usersList[fdNote.email];
+            }
+                
+            if(rwUser != null){
+                let noteData = {
+                    userId: rwUser.id,
+                    createdAt: fdNote.created,
+                    updatedAt: fdNote.created,
+                    text: fdNote.text
+                };
+
+                if(order){
+                    noteData.orderId = order.id;
+
+                    let rwNote = await riteWay.Note.findOne({
+                        where: {
+                            [dbOp.and] : [
+                                Sequelize.where(
+                                    Sequelize.col('notes.order_id'),
+                                    '=',
+                                    noteData.orderId
+                                ),
+                                Sequelize.where(
+                                    Sequelize.col('notes.user_id'),
+                                    '=',
+                                    noteData.userId
+                                ),
+                                Sequelize.where(
+                                    Sequelize.col('notes.created_at'),
+                                    '=',
+                                    fdNote.created
+                                )
+                            ]
+                        }
+                    });   
+                    if(rwNote == null){
+                        notes.push(noteData);
+                    }
+                }
+                else{
+                    notes.push(noteData);
+                }
+            }
+        }
+        return notes;
+    }
+
+    async parseFDData(FDEntity, company = null){
         let rwData = {};
 
         //Quote Data ===================================================
@@ -180,7 +344,7 @@ class RiteWayAutotranportService{
         let destinationCity = await this.getRWCity(FDEntity.destination.state, FDEntity.destination.city);
         rwData.destinationCity = destinationCity ? destinationCity.id : null;
 
-        rwData.company = null;
+        rwData.company = company;
         rwData.user = await riteWay.User.findOne({
             where: {
                 username: FDEntity.shipper.email
@@ -188,7 +352,7 @@ class RiteWayAutotranportService{
         });
         //user................
         if(rwData.user != null){
-            if(rwData.user.company_id != null && rwData.user.company_id != '' ){
+            if(rwData.user.company_id != null && rwData.user.company_id != '' && rwData.company == null){
                 rwData.company = await riteWay.Company.findByPk(rwData.user.company_id);
             }
         }
@@ -229,32 +393,31 @@ class RiteWayAutotranportService{
         if(rwData.company == null){
             
             let operator = await riteWay.User.findOne({
-                where:{
-                    username: FDEntity.assignedTo.email
-                }
+                where: Sequelize.where(
+                    Sequelize.col('username'),
+                    'ilike',
+                    FDEntity.assignedTo.email.trim()
+                )
             });
-            let operatorID = [operator];
             if(operator  == null){
-                let opQuery = `
-                select users.id, count(companies.id) from users 
-                left join companies on companies.operator_id  = users.id
-                where users.is_operator = true
-                group by users.id order by count(companies.id) asc limit 1
-                `;
-                operatorID = await ritewayDB.query(opQuery, { nest: true, type: Sequelize.QueryTypes.SELECT });
+                operator = await riteWay.User.findOne({
+                    where: Sequelize.where(
+                        Sequelize.col('username'),
+                        'ilike',
+                        'jeff@ritewayautotransport.com'
+                    )
+                });
             }
 
-            if(operatorID.length > 0){
-                rwData.company = {
-                    isNew: true,
-                    name: FDEntity.shipper.company.trim(),
-                    photo: '',
-                    email: FDEntity.shipper.email,
-                    phone: FDEntity.shipper.phone1,
-                    address: FDEntity.shipper.address1,
-                    operator_id: 631
-                };
-            }
+            rwData.company = {
+                isNew: true,
+                name: FDEntity.shipper.company.trim(),
+                photo: '',
+                email: FDEntity.shipper.email,
+                phone: FDEntity.shipper.phone1,
+                address: FDEntity.shipper.address1,
+                operator_id: operator.id
+            };
         }
         //quote status................
         if(FDEntity.type < 3){
@@ -423,70 +586,16 @@ class RiteWayAutotranportService{
                 }
             }
             
+            //Payments and invoice
+            let paymentsInvoiceData = await this.processFDPayments(FDEntity);
+
             //Payments...............
-            rwData.payments = [];
-            rwData.totalPaid = 0;
-            rwData.lastPaymentDate = null;
-
-            if(FDEntity.payments.length > 0){
-                for(let i=0; i<FDEntity.payments.length; i++){
-                    let fdPayment = FDEntity.payments[i];
-                    let amount = Number(fdPayment.amount);
-                    console.log(fdPayment.user.email.trim());
-                    let user = await riteWay.User.findOne({
-                        where: Sequelize.where(
-                            Sequelize.col('username'),
-                            'ilike',
-                            fdPayment.user.email.trim()
-                        )
-                    });
-                    
-                    if(user == null){
-                        let name = fdPayment.user.contactname.split(' ');
-                        let userData = {
-                            name: name[0],
-                            last_name: name.slice(1).join(' '),
-                            username: fdPayment.user.email,
-                            photo: '',
-                            phone: fdPayment.user.phone,
-                            shipper_type: '',
-                            is_company_admin: false,
-                            isOperator: true,
-                            company_id: null
-                        };
-                        user = await this.createUser(userData, name[0]);
-                    }
-
-                    if(fdPayment.from == 'Shipper' && fdPayment.to == "Company"){
-                        rwData.totalPaid += amount;
-                        if(rwData.lastPaymentDate == null || moment(rwData.lastPaymentDate).isBefore(fdPayment.created)){
-                            rwData.lastPaymentDate = fdPayment.created;
-                        }
-                    }
-                    rwData.payments.push({
-                        amount: amount,
-                        transaction_id: fdPayment.transaction_id,
-                        from: fdPayment.from,
-                        to: fdPayment.to,
-                        user_id: user.id,
-                        createdAt: fdPayment.created,
-                        updatedAt: fdPayment.created,
-                    });
-                }
-            }
+            rwData.payments = paymentsInvoiceData.paymentsData;
 
             //Invoice.................
-            rwData.invoice = null;
-            if(this._parseStatus(FDEntity.status) == 'delivered'){
-                rwData.invoice = {
-                    status: rwData.tariff > rwData.totalPaid ? 'pending' : 'paid',
-                    isPaid: !(rwData.tariff > rwData.totalPaid),
-                    paided_at: rwData.totalPaid > rwData.tariff  ? rwData.lastPaymentDate : null,
-                    createdAt: FDEntity.delivered,
-                    updatedAt: FDEntity.delivered,
-                    amount: rwData.tariff
-                };
-            }
+            rwData.invoice = paymentsInvoiceData.invoiceData;
+            //Notes.................
+            rwData.notes = await this.processFDNotes(FDEntity);
         }
         return rwData;
     }
@@ -510,7 +619,7 @@ class RiteWayAutotranportService{
         return riteWayUser;
     }
 
-    async importQuote(FDEntity, preCompany){
+    async importQuote(FDEntity, preCompany = null){
 
         let stageQuote = await StageQuote.findOne({
             where: {
@@ -521,9 +630,9 @@ class RiteWayAutotranportService{
             return false;
         }
 
-        let rwData = await this.parseFDData(FDEntity);
+        let rwData = await this.parseFDData(FDEntity, preCompany);
 
-        let company = (preCompany? preCompany : rwData.company);
+        let company = rwData.company;
         let user = rwData.user;
         let quote = null;
         let order = null;
@@ -536,9 +645,10 @@ class RiteWayAutotranportService{
         let driver = null;
         let payments = [];
         let invoice = null;
+        let notes = [];
 
         try {
-            if(company.isNew && company.name.trim() != ''){
+            if(company.isNew){
                 company = await riteWay.Company.create(company);
             }
     
@@ -552,6 +662,14 @@ class RiteWayAutotranportService{
             rwData.user_create_id = user.id;
 
             quote = await riteWay.Quote.create(rwData);
+            stageQuote = await StageQuote.create({
+                riteWayId: quote.id,
+                fdOrderId: FDEntity.FDOrderID,
+                fdAccountId: '',
+                fdResponse: 'Imported',
+                status: '',
+                watch: false
+            });
             console.log(`quote created ${quote.id} company: ${company.id}`);
 
             for(let i = 0; i<rwData.vehicles.length; i++){
@@ -650,7 +768,18 @@ class RiteWayAutotranportService{
                         order_id : order.id
                     });
                     console.log(`Invoice created ${invoice.id}`);
-                }                
+                }  
+                if(rwData.notes.length>0){
+                    for(let i=0; i<rwData.notes.length; i++){
+                        let note = rwData.notes[i];
+                        let newNote = await riteWay.Note.create({
+                            ...note, 
+                            orderId: order.id
+                        });
+                        notes.push(newNote);
+                        console.log(`Note created ${newNote.id}`);
+                    }
+                }              
             }            
             
             quote = await riteWay.Quote.findByPk(quote.id, {
@@ -668,12 +797,19 @@ class RiteWayAutotranportService{
                 watch: watch
             };
 
-            stageQuote = await StageQuote.create(stageQuoteData);
+            stageQuote.update(stageQuoteData);
             return true;
 
         }
         catch(e){
             console.log(`error on the process`, e);
+
+            if(notes.length>0){
+                for(let i=0; i<notes.length; i++){
+                    let n = notes[0];
+                    await n.destroy();
+                }
+            }
 
             if(payments.length>0){
                 for(let i=0; i<payments.length; i++){

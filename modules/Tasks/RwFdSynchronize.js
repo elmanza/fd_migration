@@ -382,74 +382,27 @@ class RwFdSynchronize {
                 });
             }
 
-            //Se guardan los pagos
-            if(fdOrder.payments.length > 0){
-                await riteWay.Payment.destroy({
-                    where: {
-                        order_id: riteWayQuote.order.id
-                    }
-                });
+            //Se procesa los pagos
+            let paymentsInvoiceData = await this.RWService.processFDPayments(fdOrder, riteWayQuote.order, riteWayQuote.company);
 
-                for(let i=0; i<fdOrder.payments.length; i++){
-                    let fdPayment = fdOrder.payments[i];
-                    let amount = Number(fdPayment.amount);
-
-                    let user = await riteWay.User.findOne({
-                        where: Sequelize.where(
-                            Sequelize.col('username'),
-                            'ilike',
-                            fdPayment.user.email.trim()
-                        )
-                    });
-                    
-                    if(user == null){
-                        let name = fdPayment.user.contactname.split(' ');
-                        let userData = {
-                            name: name[0],
-                            last_name: name.slice(1).join(' '),
-                            username: fdPayment.user.email,
-                            photo: '',
-                            phone: fdPayment.user.phone,
-                            shipper_type: '',
-                            is_company_admin: false,
-                            isOperator: true,
-                            company_id: null
-                        };
-                        user = await this.RWService.createUser(userData, name[0]);
-                    }
-
-                    if(fdPayment.from == 'Shipper' && fdPayment.to == "Company"){
-                        totalPaid += amount;
-                        if(lastPaymentDate == null || moment(lastPaymentDate).isBefore(fdPayment.created)){
-                            lastPaymentDate = fdPayment.created;
-                        }
-                    }
-
-                    await riteWay.Payment.create({
-                        amount: amount,
-                        transaction_id: fdPayment.transaction_id,
-                        from: fdPayment.from,
-                        to: fdPayment.to,
-                        user_id: user.id,
-                        order_id: riteWayQuote.order.id,
-                        createdAt: fdPayment.created,
-                        updatedAt: fdPayment.created,
-                    });
+            await riteWay.Payment.destroy({
+                where: {
+                    order_id: riteWayQuote.order.id
                 }
+            });
+
+            for(let i=0; i < paymentsInvoiceData.paymentsData.length; i++){
+                let payment = paymentsInvoiceData.paymentsData[i];
+                payment.order_id = riteWayQuote.order.id;
+                await riteWay.Payment.create(payment);
             }
 
             //Si fue entregada se crea el invoice en caso de que no exista
-            if(fdStatus == 'delivered'){
+            if(paymentsInvoiceData.invoiceData){
                 let amount = Number(fdOrder.tariff);
-                let invoiceData = {
-                    status: amount > totalPaid ? 'pending' : 'paid',
-                    isPaid: !(amount > totalPaid),
-                    paided_at: amount > totalPaid ? lastPaymentDate : null,
-                    createdAt: fdOrder.delivered,
-                    updatedAt: fdOrder.delivered,
-                    amount: amount,
-                    order_id: riteWayQuote.order.id
-                };
+                let invoiceData = paymentsInvoiceData.invoiceData;
+                
+                invoiceData.order_id = riteWayQuote.order.id;
 
                 let invoice = await riteWay.Invoice.findOne({
                     where: {
@@ -463,6 +416,12 @@ class RwFdSynchronize {
                 else{
                     await invoice.update(invoiceData);
                 }
+            }
+
+            //Se actualizan las notes
+            let notes = await this.RWService.processFDNotes(fdOrder, riteWayQuote.order);
+            for(let i = 0; i < notes.length; i++){
+                await riteWay.Note.create(notes[i]);
             }
 
             //Se actualiza el estado de la orden
@@ -486,63 +445,6 @@ class RwFdSynchronize {
                 fdResponse: "fd_get_order_success",
                 watch: Number(fdOrder.tariff) > totalPaid && fdStatus != 'delivered' && fdStatus != 'cancelled'
             });
-
-            //Search if exist note
-            let usersList = {};
-            
-            for(let iN=0; iN < fdOrder.notes.length; iN++){
-                let fdNote = fdOrder.notes[iN];
-                let rwUser = null;
-
-                if(typeof usersList[fdNote.email] == 'undefined'){
-                    let user = await riteWay.User.findOne({
-                        where: {
-                            username: fdNote.email
-                        }
-                    });
-
-                    if(user){
-                        usersList[user.username] = user;
-                        rwUser = usersList[user.username];
-                    }
-                }
-                else{
-                    rwUser = usersList[fdNote.email];
-                }
-                
-                if(rwUser != null){
-                    let rwNote = await riteWay.Note.findOne({
-                        where: {
-                            [dbOp.and] : [
-                                Sequelize.where(
-                                    Sequelize.col('notes.order_id'),
-                                    '=',
-                                    riteWayQuote.order.id
-                                ),
-                                Sequelize.where(
-                                    Sequelize.col('notes.user_id'),
-                                    '=',
-                                    rwUser.id
-                                ),
-                                Sequelize.where(
-                                    Sequelize.col('notes.text'),
-                                    'ilike',
-                                    `%${fdNote.text}%` 
-                                )
-                            ]
-                        }
-                    });   
-                    if(rwNote == null){
-                        await riteWay.Note.create({
-                            orderId: riteWayQuote.order.id,
-                            userId: rwUser.id,
-                            createdAt: fdNote.created,
-                            updatedAt: fdNote.created,
-                            text: fdNote.text
-                        });
-                    }                 
-                }
-            }
         }
         else{
             await riteWayQuote.stage_quote.update({
@@ -629,6 +531,10 @@ class RwFdSynchronize {
                         }
                     });
                 });
+
+                if(totalRecords == 0){
+                    this.finishedProcess.refreshRWEntitySyncTask = true;
+                }
 
                 offset++;
             }while( recordsCount < totalRecords );
@@ -720,7 +626,8 @@ class RwFdSynchronize {
                         },
                         'fd_order_id': {
                             [dbOp.not]: null
-                        }
+                        },
+                        'watch': true
                     }
                 ]
             }

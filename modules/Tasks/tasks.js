@@ -19,11 +19,10 @@ module.exports = {
     },
     membersSync: function(){
         migration.getOperatorMembers();
-    },
+    }, */
     importQuotes: function(){
         migration.getEntities();
-    }, */
-    
+    },     
     migrateAll: function(){
         migration.migration();
     },

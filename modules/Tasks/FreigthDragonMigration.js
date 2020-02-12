@@ -10,6 +10,7 @@ const {ritewayDB} = require('../../config/database');
 
 const StageQuote = require('../../models/Stage/quote');
 const OperatorUser = require('../../models/Stage/operator_user');
+const MigratedCompany = require('../../models/Stage/migrated_company');
 
 const FreightDragonService = require('../../utils/services/FreightDragonService');
 const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');
@@ -122,25 +123,45 @@ class FreigthDragonMigration {
         
         this.finishedProcess.getEntities = false;
         let today = moment().format('YYYY-MM-DD');
-        let companies = await riteWay.Company.findAll();
+        let companies = await riteWay.Company.findAll({
+            include: {
+                model: MigratedCompany,
+                as: 'migrated_company',
+                require: true
+            },
+            where: {
+                [dbOp.and] : [
+                    Sequelize.where(
+                        Sequelize.col('migrated_company.migrated'),
+                        '=',
+                        true
+                    )
+                ]
+            }
+        });
 
-        let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59');
-        if(res.Success){
-            for(let i=0; i<res.Data.length; i++){
-                let fdEntity = res.Data[i];
-                try{
-                    let success = await this.RWService.importQuote(fdEntity);
-                    if(success){
-                        console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+        for(let i = 0; i<companies.length; i++){
+            let company =  companies[i];
+            let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59', company.name.trim());
+            if(res.Success){
+                console.log("getEntities Total Entities ", res.Data.length, "-------------");
+                for(let i=0; i<res.Data.length; i++){
+                    let fdEntity = res.Data[i];
+                    try{
+                        let success = await this.RWService.importQuote(fdEntity, company);
+                        if(success){
+                            console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+                        }
+                        else{
+                            console.log(`--->Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+                        }
                     }
-                    else{
-                        console.log(`--->Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+                    catch(e){
+                        console.log("===========================================================================");
+                        console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e);
+                        console.log("===========================================================================");
                     }
-                }
-                catch(e){
-                    console.log("===========================================================================");
-                    console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e.message);
-                    console.log("===========================================================================");
+                    
                 }
             }
         }
@@ -158,23 +179,40 @@ class FreigthDragonMigration {
         this.finishedProcess.migration = false;
         let today = moment().format('YYYY-MM-DD');
         let companies = await riteWay.Company.findAll({
+            include: {
+                model: MigratedCompany,
+                as: 'migrated_company',
+                require: false
+            },
             where: {
-                id:39
+                [dbOp.and] : [
+                    Sequelize.where(
+                        Sequelize.col('migrated_company.id'),
+                        '=',
+                        null
+                    )
+                ],
+                id:78
             }
         });
 
         for(let i = 0; i<companies.length; i++){
             let company =  companies[i];
+            let migration = await MigratedCompany.create({
+                rite_way_company_id: company.id, 
+                startedAt: moment().format('YYYY-MM-DD hh:mm:ss')
+            });
+
             console.log("===========================================================================");
-            console.log("company ", company.name);
+            console.log("Migrate company ", company.name, moment().format('YYYY-MM-DD hh:mm:ss'));
             console.log("===========================================================================");
             let res = await this.FDService.getList('2019-01-01 00:00:00', today+' 23:59:59', company.name.trim());
             if(res.Success){
-                console.log("Total data ", res.Data.length, "---------");
+                console.log("Total Entities ", res.Data.length, "-------------");
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
-                        let success = await this.RWService.importQuote(fdEntity);
+                        let success = await this.RWService.importQuote(fdEntity, company);
                         if(success){
                             console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
                         }
@@ -184,19 +222,19 @@ class FreigthDragonMigration {
                     }
                     catch(e){
                         console.log("===========================================================================");
-                        console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e, {
-                            shipper: fdEntity.shipper,
-                            origin: fdEntity.origin,
-                            destination: fdEntity.destination,
-                            carrier: fdEntity.carrier
-                        });
+                        console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e);
                         console.log("===========================================================================");
                     }
                     
                 }
             }
+            migration.update({
+                finishedAt: moment().format('YYYY-MM-DD hh:mm:ss'),
+                migrated: true
+            });
+            console.log("finished ", moment().format('YYYY-MM-DD hh:mm:ss'));
         }
-        this.finishedProcess.migration = false;
+        this.finishedProcess.migration = true;
     }
 }
 

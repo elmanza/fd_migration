@@ -22,6 +22,7 @@ const Location = require('./location');
 const TypeAddress = require('./type_address');
 
 const StageQuote = require('../Stage/quote');
+const MigratedCompany = require('../Stage/migrated_company');
 
 City.belongsTo(State, {
     foreignKey: {
@@ -365,6 +366,23 @@ Quote.hasOne(StageQuote, {
 StageQuote.belongsTo(Quote, {
     foreignKey: {
         name: 'rite_way_id',
+        allowNull: false
+    },
+    constraints: false,
+});
+
+Company.hasOne(MigratedCompany, {
+    foreignKey: {
+        name: 'rite_way_company_id',
+        allowNull: false
+    },
+    as: 'migrated_company',
+    constraints: false,
+});
+
+MigratedCompany.belongsTo(Company, {
+    foreignKey: {
+        name: 'rite_way_company_id',
         allowNull: false
     },
     constraints: false,
