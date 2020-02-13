@@ -240,8 +240,8 @@ class RiteWayAutotranportService{
                 status: result.tariff > result.totalPaid ? 'pending' : 'paid',
                 isPaid: !(result.tariff > result.totalPaid),
                 paided_at: result.tariff > result.totalPaid  ? null : lastPaymentDate,
-                createdAt: FDEntity.delivered,
-                updatedAt: FDEntity.delivered,
+                createdAt: FDEntity.delivered||FDEntity.actual_pickup_date||FDEntity.avail_pickup_date||FDEntity.created,
+                updatedAt: FDEntity.delivered||FDEntity.actual_pickup_date||FDEntity.avail_pickup_date||FDEntity.created,
                 amount: result.tariff
             };
             if(order){
