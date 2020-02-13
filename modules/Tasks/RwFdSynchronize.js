@@ -53,6 +53,16 @@ class RwFdSynchronize {
                                 model: riteWay.TypeAddress
                             }
                         ]
+                    },
+                    {
+                        model: riteWay.Driver,
+                        require: false,
+                        include: [
+                            {
+                                model: riteWay.Carrier,
+                                require: false,
+                            }
+                        ]
                     }
                 ]
             },
@@ -301,13 +311,17 @@ class RwFdSynchronize {
     async refreshRWQuote(res, riteWayQuote){
         if(res.Success){
             let fdQuote = res.Data;
-            
-            await riteWayQuote.update({
+            let quoteData = {
+                tariff: Number(fdQuote.tariff),
+                state: 'waiting',
                 fd_id: fdQuote.id,
                 fd_number: fdQuote.FDOrderID,
-            });
+            };
+            let stageStatus = '';
 
-            if(Number(fdQuote.tariff) > 0){   
+            await riteWayQuote.update(quoteData);
+
+            if(quoteData.tariff > 0){   
 
                 for(let j=0; j<riteWayQuote.vehicles.length; j++){
                     let rwVehicle = riteWayQuote.vehicles[j];
@@ -332,16 +346,84 @@ class RwFdSynchronize {
                         }
                     }
                 }
-
-                await riteWayQuote.update({
-                    state: 'offered',
-                    tariff: Number(fdQuote.tariff)
-                });
-                await riteWayQuote.stage_quote.update({
-                    status: 'offered',
-                    fdResponse: "fd_get_quote_sucess"
-                }); 
             }
+
+            if(fdQuote.type < 3){
+                if(quoteData.tariff > 0){
+                    quoteData.state = 'offered';
+                }
+                else{
+                    quoteData.state = 'waiting';
+                }
+            }
+            else{
+                quoteData.state = 'accepted'
+            }
+
+            stageStatus = quoteData.state;
+
+            if(quoteData.state == 'accepted'){
+
+                let {originLocation, destinationLocation} = this.RWService.getOriginDestinationLocations(fdQuote);
+                let orderData = this.RWService.getOrderData(fdQuote);
+                
+                stageStatus = orderData.status;
+
+                if(riteWayQuote.order){
+                    //Update origin
+                    await riteWayQuote.order.originLocation.update(originLocation);
+                    if(riteWayQuote.order.originLocation.contact_information){
+                        await riteWayQuote.order.originLocation.contact_information.update(originLocation.contact_information);
+                    }
+                    else{
+                        await riteWay.ContactInformation.create({
+                                ...originLocation.contact_information, 
+                                location_id: originLocation.id,
+                        });
+                    }
+                    //Update destination
+                    await riteWayQuote.order.destinationLocation.update(destinationLocation);
+                    if(riteWayQuote.order.destinationLocation.contact_information){
+                        await riteWayQuote.order.destinationLocation.contact_information.update(destinationLocation.contact_information);
+                    }
+                    else{
+                        await riteWay.ContactInformation.create({
+                                ...destinationLocation.contact_information, 
+                                location_id: destinationLocation.id,
+                        });
+                    }
+                    //Update order
+                    await riteWayQuote.order.update(orderData);
+                }
+                else{
+                    originLocation = await riteWay.Location.create(originLocation);
+                    await riteWay.ContactInformation.create({
+                        ...originLocation.contact_information, 
+                        location_id: originLocation.id
+                    });
+                    destinationLocation = await riteWay.Location.create(destinationLocation);
+                    await riteWay.ContactInformation.create(
+                    {
+                        ...destinationLocation.contact_information,
+                        location_id: destinationLocation.id,
+    
+                    });
+                    await riteWay.Order.create({
+                        ...orderData, 
+                        quote_id: riteWayQuote.id, 
+                        user_accept_id: riteWayQuote.user.id,
+                        location_destination_id: destinationLocation.id,
+                        location_origin_id: originLocation.id,
+                    });
+                }
+            }
+
+            await riteWayQuote.update(quoteData);
+            await riteWayQuote.stage_quote.update({
+                status: stageStatus,
+                fdResponse: "fd_get_quote_sucess"
+            });
+
             return res.Success ? "Quote refreshed. Quote ID "+riteWayQuote.id: 'fd_get_order_error';
         }
         else{
@@ -380,6 +462,28 @@ class RwFdSynchronize {
                     updatedAt:ritewayDB.fn('NOW'),
                     orderId: riteWayQuote.order.id
                 });
+            }
+
+            //Se asigna el carrier y driver
+            let {carrier, driver} = await this.RWService.processFDCarrierDriver(fdOrder, riteWayQuote.order);
+            if(carrier != null){
+
+                if(typeof carrier.id == 'undefined'){
+                    carrier = await riteWay.Carrier.create(carrier);
+                }
+
+                if(riteWayQuote.order.driver){
+                    riteWayQuote.order.driver.update(driver);
+                }
+                else{
+                    if(typeof carrier.id != 'undefined' && driver != null){
+                        await riteWay.Driver.create({
+                            ...driver,
+                            order_id: riteWayQuote.order.id,
+                            carrier_id: carrier.id
+                        });
+                    }
+                }           
             }
 
             //Se procesa los pagos e invoice
