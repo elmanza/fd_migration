@@ -281,6 +281,7 @@ class RiteWayAutotranportService{
                     userId: rwUser.id,
                     createdAt: fdNote.created,
                     updatedAt: fdNote.created,
+                    showOnCustomerPortal:false,
                     text: fdNote.text
                 };
 
@@ -318,6 +319,105 @@ class RiteWayAutotranportService{
             }
         }
         return notes;
+    }
+
+    async processFDCarrierDriver(FDEntity, order = null){
+        let result = {
+            carrier: null,
+            driver: null
+        };
+
+        if(FDEntity.carrier){
+            result.carrier = await riteWay.Carrier.findOne({
+                where: {
+                    insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
+                }
+            });
+
+            if(result.carrier == null){
+                let city = await this.getRWCity(FDEntity.carrier.state, FDEntity.carrier.city);
+    
+                result.carrier = {
+                    company_name: FDEntity.carrier.company_name.trim(),
+                    email: FDEntity.carrier.email,
+                    address: FDEntity.carrier.address1,
+                    zip: FDEntity.carrier.zip_code,
+                    insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
+                }
+                
+                if(city){
+                    result.carrier.city_id = city.id;
+                }
+            }
+
+            if(result.carrier){
+
+                result.driver = {
+                    name: '',
+                    phone: ''
+                };
+
+                if(FDEntity.carrier.driver != null){
+                    result.driver.name = FDEntity.carrier.driver.driver_name;
+                    result.driver.phone = FDEntity.carrier.driver.driver_phone;
+                    if(order){
+                        result.driver.order_id = order.id;
+                    }
+                }                    
+            }
+        }
+
+        return result;
+    }
+
+    getOriginDestinationLocations(FDEntity){
+        let result = {
+            originLocation: null,
+            destinationLocation: null
+        };
+
+        let locationType = function(locationType){
+            return locationType == 'Residential' ? 2 : 1;
+        };
+        
+        result.originLocation = {
+            address: FDEntity.origin.address1,
+            company_name: FDEntity.origin.company,
+            type_address_id: locationType(FDEntity.origin.location_type),
+            pickup_time_start: FDEntity.origin.hours,
+            pickup_time_end: FDEntity.origin.hours,
+            contact_information: {
+                name: FDEntity.origin.name,
+                phone: FDEntity.origin.phone1,
+                email: ''
+            }
+        };
+
+        result.destinationLocation = {
+            address: FDEntity.destination.address1,
+            company_name: FDEntity.destination.company,
+            type_address_id: locationType(FDEntity.destination.location_type),
+            pickup_time_start: FDEntity.destination.hours,
+            pickup_time_end: FDEntity.destination.hours,
+            contact_information: {
+                name: FDEntity.destination.name,
+                phone: FDEntity.destination.phone1,
+                email: ''
+            }
+        };
+
+        return result;
+    }
+
+    getOrderData(FDEntity){
+        return {
+            status: this._parseStatus(FDEntity.status),
+            createdAt:  FDEntity.ordered||FDEntity.created,
+            updatedAt:  FDEntity.ordered||FDEntity.created,
+            estimated_delivery_date: FDEntity.delivery_date || FDEntity.delivered,
+            deliveredAt: FDEntity.delivered,
+            pickedUpAt: FDEntity.actual_pickup_date || FDEntity.avail_pickup_date
+        };
     }
 
     async parseFDData(FDEntity, company = null){
@@ -509,82 +609,22 @@ class RiteWayAutotranportService{
         //Order Data ===================================================
         rwData.order = null;
         if(rwData.state == 'accepted'){
-            rwData.order = {
-                status: this._parseStatus(FDEntity.status),
-                createdAt:  FDEntity.ordered||FDEntity.created,
-                updatedAt:  FDEntity.ordered||FDEntity.created,
-                estimated_delivery_date: FDEntity.delivery_date || FDEntity.delivered,
-                deliveredAt: FDEntity.delivered,
-                pickedUpAt: FDEntity.actual_pickup_date || FDEntity.avail_pickup_date
-            };
+            rwData.order = this.getOrderData(FDEntity);
+            
+            let {originLocation, destinationLocation} = this.getOriginDestinationLocations(FDEntity);
+            
+            rwData.originLocation = originLocation;
+            rwData.destinationLocation = destinationLocation;
 
-            rwData.originLocation = {
-                address: FDEntity.origin.address1,
-                company_name: FDEntity.origin.company,
-                type_address_id: FDEntity.origin.location_type == 'Residential' ? 2 : 1,
-                pickup_time_start: FDEntity.origin.hours,
-                pickup_time_end: FDEntity.origin.hours,
-                contact_information: {
-                    name: FDEntity.origin.name,
-                    phone: FDEntity.origin.phone1,
-                    email: ''
-                }
-            };
-    
-            rwData.destinationLocation = {
-                address: FDEntity.destination.address1,
-                company_name: FDEntity.destination.company,
-                type_address_id: FDEntity.destination.location_type == 'Residential' ? 2 : 1,
-                pickup_time_start: FDEntity.destination.hours,
-                pickup_time_end: FDEntity.destination.hours,
-                contact_information: {
-                    name: FDEntity.destination.name,
-                    phone: FDEntity.destination.phone1,
-                    email: ''
-                }
-            };
-    
-    
             //Carrier................
-            rwData.carrier = null;
+            let carrierDriverData = await this.processFDCarrierDriver(FDEntity);
+            rwData.carrier = carrierDriverData.carrier;
+            rwData.driver = carrierDriverData.driver;
 
-            if(FDEntity.carrier){
-                rwData.carrier = await riteWay.Carrier.findOne({
-                    where: {
-                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
-                    }
-                });
-
-                if(rwData.carrier == null){
-                    let city = await this.getRWCity(FDEntity.carrier.state, FDEntity.carrier.city);
-        
-                    rwData.carrier = {
-                        isNew: true,
-                        company_name: FDEntity.carrier.company_name.trim(),
-                        email: FDEntity.carrier.email,
-                        address: FDEntity.carrier.address1,
-                        zip: FDEntity.carrier.zip_code,
-                        insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
-                    }
-                    
-                    if(city){
-                        rwData.carrier.city_id = city.id;
-                    }
-                }
-
-                if(rwData.carrier){
-
-                    rwData.carrier.driver = {
-                        name: '',
-                        phone: ''
-                    };
-
-                    if(FDEntity.carrier.driver != null){
-                        rwData.carrier.driver.name = FDEntity.carrier.driver.driver_name;
-                        rwData.carrier.driver.phone = FDEntity.carrier.driver.driver_phone;
-                    }                    
-                }
+            if(typeof rwData.carrier.id == 'undefined'){
+                rwData.carrier = {...rwData.carrier, isNew:true };
             }
+            
             
             //Payments and invoice
             let paymentsInvoiceData = await this.processFDPayments(FDEntity);
@@ -734,7 +774,6 @@ class RiteWayAutotranportService{
                     location_origin_id: originLocation.id,
                 });
                 console.log(`order created ${quote.id}`);
-
                 if(rwData.carrier != null){
 
                     if(rwData.carrier.isNew){
@@ -744,13 +783,13 @@ class RiteWayAutotranportService{
                     else{
                         carrier = rwData.carrier;
                     }
-                    if(carrier.id && rwData.carrier.driver != null){
+                    if(typeof carrier.id != 'undefined' && rwData.driver != null){
                         driver = await riteWay.Driver.create({
-                            ...rwData.carrier.driver,
+                            ...rwData.driver,
                             order_id: order.id,
                             carrier_id: carrier.id
                         });
-                        console.log(`Driver created ${carrier.id}`);
+                        console.log(`Driver created ${driver.id}`);
                     }
                 }
                 if(rwData.payments.length>0){
@@ -840,10 +879,6 @@ class RiteWayAutotranportService{
 
             if(driver){
                 await driver.destroy();
-            }
-
-            if(carrier){
-                await carrier.destroy();
             }
 
             if(order){

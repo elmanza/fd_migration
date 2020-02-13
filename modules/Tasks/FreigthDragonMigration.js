@@ -144,7 +144,7 @@ class FreigthDragonMigration {
             let company =  companies[i];
             let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59', company.name.trim());
             if(res.Success){
-                console.log("getEntities Total Entities ", res.Data.length, "-------------");
+                console.log((new Date()).toString() ,"getEntities Total Entities ", res.Data.length);
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
@@ -190,9 +190,13 @@ class FreigthDragonMigration {
                         Sequelize.col('migrated_company.id'),
                         '=',
                         null
+                    ),
+                    Sequelize.where(
+                        Sequelize.col('companies.email'),
+                        '!=',
+                        'demo@ritewayautotransport.com'
                     )
-                ],
-                id:78
+                ]
             }
         });
 

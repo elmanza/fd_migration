@@ -5,7 +5,7 @@ rw_fd_sync = new RwFdSynchronize();
 migration = new FreigthDragonMigration();
 
 module.exports = {
-    /* createQuotes: function(){
+    createQuotes: function(){
         rw_fd_sync.createFDQuoteSyncTask();
     },
     refreshRWEntity: function(){
@@ -19,11 +19,11 @@ module.exports = {
     },
     membersSync: function(){
         migration.getOperatorMembers();
-    }, */
-    importQuotes: function(){
+    },
+    /* importQuotes: function(){
         migration.getEntities();
     },     
     migrateAll: function(){
         migration.migration();
-    },
+    }, */
 }

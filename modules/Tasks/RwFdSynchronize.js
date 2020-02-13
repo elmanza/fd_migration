@@ -382,7 +382,7 @@ class RwFdSynchronize {
                 });
             }
 
-            //Se procesa los pagos
+            //Se procesa los pagos e invoice
             let paymentsInvoiceData = await this.RWService.processFDPayments(fdOrder, riteWayQuote.order, riteWayQuote.company);
 
             await riteWay.Payment.destroy({
@@ -390,14 +390,14 @@ class RwFdSynchronize {
                     order_id: riteWayQuote.order.id
                 }
             });
-
+            //Se crean los pagos
             for(let i=0; i < paymentsInvoiceData.paymentsData.length; i++){
                 let payment = paymentsInvoiceData.paymentsData[i];
                 payment.order_id = riteWayQuote.order.id;
                 await riteWay.Payment.create(payment);
             }
 
-            //Si fue entregada se crea el invoice en caso de que no exista
+            //Se crea el invoice en caso de que no exista
             if(paymentsInvoiceData.invoiceData){
                 let amount = Number(fdOrder.tariff);
                 let invoiceData = paymentsInvoiceData.invoiceData;
@@ -635,12 +635,10 @@ class RwFdSynchronize {
         .then( stageQuotes => {
             this.sendNotes(stageQuotes)
             .then(result => {
-                console.log("sendNotesSyncTask");
-                console.log(result);
+                //console.log("sendNotesSyncTask", result);
             })
             .catch(error => {
-                console.log("sendNotesSyncTask Error");
-                console.log(error);
+                console.log("sendNotesSyncTask Error", error);
             })
             .finally(()=>{
                 this.finishedProcess.sendNotesSyncTask = true;
