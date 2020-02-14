@@ -1,4 +1,4 @@
-const FreightDragonHttpService = require('../FreightDragonHTTPService');
+const FreightDragonHttpService = require('../../FreightDragonHTTPService');
 
 class Resource extends FreightDragonHttpService {
     constructor(urlResource){

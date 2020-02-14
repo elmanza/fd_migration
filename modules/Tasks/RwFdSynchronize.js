@@ -12,6 +12,7 @@ const StageQuote = require('../../models/Stage/quote');
 
 const FreightDragonService = require('../../utils/services/FreightDragonService');
 const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');
+const {Storage} = require('../../config/conf');
 
 class RwFdSynchronize {
     constructor(){

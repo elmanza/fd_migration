@@ -1,6 +1,6 @@
 const moment = require('moment');
-const MemberResource = require('./http/resources/MemberResource');
-const EntityResource = require('./http/resources/EntityResource');
+const MemberResource = require('./http/resources/FreightDragon/MemberResource');
+const EntityResource = require('./http/resources/FreightDragon/EntityResource');
 
 class FreightDragonService{
     constructor(){
@@ -127,7 +127,8 @@ class FreightDragonService{
 
     update(FDOrderID, riteWayQuote){
         let fdEntityD = this.parseRWData(riteWayQuote);
-        return this.entityResource.update({FDOrderID, ...fdEntityD});
+        return this.entityResource.get({FDOrderID});
+        //return this.entityResource.update({FDOrderID, ...fdEntityD});
     }
 
     get(FDOrderID){
