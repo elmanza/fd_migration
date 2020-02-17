@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const moment = require('moment');
+const path = require('path');
 
 const Sequelize = require('sequelize');
 const dbOp = Sequelize.Op;
@@ -309,6 +310,54 @@ class RwFdSynchronize {
     }
 
     //Refresh RW ENtities---------------------------------------------------------
+
+    async syncFiles(res, riteWayQuote){
+        let fdFiles = (res.Success ? res.Data.files : []);
+        let hashFiles = {};
+        let filesToFD = [];
+        let filesToRW = [];
+
+        riteWayQuote.order.orderDocuments.forEach(rwFile => {
+            hashFiles[rwFile.name] = {
+                existIn: 'rw',
+                url: rwFile.urlFile
+            };
+        });
+
+        riteWayQuote.vehicles.forEach(vehicle => {
+            let fileName = null;
+            if(vehicle.gatePass != null && vehicle.gatePass != ''){
+                fileName = path.basename(vehicle.gatePass);
+            }
+
+            if(fileName != null){
+                hashFiles[rwFile.name] = {
+                    existIn: 'rw',
+                    url: vehicle.gatePass
+                };
+            }
+        });
+
+        fdFiles.forEach(fdFile => {
+            if(typeof hashFiles[fdFile.name_original] == 'undefined'){
+                hashFiles[fdFile.name_original] = {
+                    existIn: 'fd',
+                    url: fdFile.url
+                };
+            }
+            else{
+                hashFiles[fdFile.name_original].existIn = 'both'
+            }
+        });
+
+        filesToFD = Object.values(hashFiles).filter(file => file.existIn == 'rw');
+        filesToRW = Object.values(hashFiles).filter(file => file.existIn == 'fd');
+
+        this.RWService.sendFiles(filesToRW);
+        this.FDService.sendFiles(filesToFD);
+        
+    }
+
     async refreshRWQuote(res, riteWayQuote){
         if(res.Success){
             let fdQuote = res.Data;

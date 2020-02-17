@@ -1,9 +1,11 @@
 
 const requestProm = require('request-promise');
 const RWAConf = require('../../../config/RWAConf');
+const HTTPService = require('./HTTPService');
 
-class RiteWayHTTPService{
+class RiteWayHTTPService extends HTTPService {
     constructor(){
+        super();
         this.host = RWAConf.host;
         this.credentials = RWAConf.credentials
     }

@@ -2,6 +2,11 @@ const moment = require('moment');
 const MemberResource = require('./http/resources/FreightDragon/MemberResource');
 const EntityResource = require('./http/resources/FreightDragon/EntityResource');
 
+const {FDConf, RWAConf} = require('../../config/conf');
+const {Storage} = require('../../config/conf');
+const https = require('https');
+const fs = require('fs');
+
 class FreightDragonService{
     constructor(){
         this.memberResource = new MemberResource();
@@ -152,6 +157,20 @@ class FreightDragonService{
 
     getMemberList(){
         return this.memberResource.getList();
+    }
+
+    getFile(entityID, fdFile){
+        const urlFile = FDConf.host + fdFile.url;
+        const file = fs.createWriteStream(Storage.DOWNLOADS_PATH + `/${entityID}/${fdFile.name}`);
+
+        const request = https.get(urlFile, function(response) {
+            console.log(response.data, urlFile);
+            response.pipe(file).on('finish', (s)=>console.log("File downloaded ", urlFile));
+        });
+    }
+
+    sendFile(file){
+        
     }
 
 }

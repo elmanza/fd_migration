@@ -11,6 +11,7 @@ const {ritewayDB} = require('../../config/database');
 
 const Crypter = require('../crypter');
 
+const {FDConf, RWAConf} = require('../../config/conf');
 const {Storage} = require('../../config/conf');
 const https = require('https');
 const fs = require('fs');
@@ -425,19 +426,14 @@ class RiteWayAutotranportService{
         };
     }
 
-    sendDocuments(FDEntity){
-        let fdFiles = [];
+    getFile(rwQuoteID, fdFile){
+        const urlFile = RWAConf.host + fdFile.url;
+        const file = fs.createWriteStream(Storage.DOWNLOADS_PATH + `/${rwQuoteID}/${fdFile.name}`);
 
-        for(let i = 0; i < FDEntity.files.length; i++){
-            let fdFile = FDEntity.files[i];
-            const urlFile = process.env.FD_LeanTech_Host + fdFile.url;
-            const file = fs.createWriteStream(Storage.DOWNLOADS_PATH + `/${fdFile.name_original}`);
-
-            const request = https.get(urlFile, function(response) {
-                console.log(response.data, urlFile);
-                response.pipe(file).on('finish', (s)=>console.log("asdasdadasd",s));
-            });
-        }
+        const request = https.get(urlFile, function(response) {
+            console.log(response.data, urlFile);
+            response.pipe(file).on('finish', (s)=>console.log("File downloaded ", urlFile));
+        });
     }
 
     async parseFDData(FDEntity, company = null){
