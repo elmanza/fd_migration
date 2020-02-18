@@ -50,7 +50,7 @@ class RiteWayHTTPService extends HTTPService {
             uri: this.getUrl(resourceUrl),
             formData: data,
             json:true
-        }
+        };
 
         if(doLoggin){
             await this.addToken(options);

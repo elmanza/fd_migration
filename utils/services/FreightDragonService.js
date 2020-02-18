@@ -159,16 +159,6 @@ class FreightDragonService{
         return this.memberResource.getList();
     }
 
-    getFile(entityID, fdFile){
-        const urlFile = FDConf.host + fdFile.url;
-        const file = fs.createWriteStream(Storage.DOWNLOADS_PATH + `/${entityID}/${fdFile.name}`);
-
-        const request = https.get(urlFile, function(response) {
-            console.log(response.data, urlFile);
-            response.pipe(file).on('finish', (s)=>console.log("File downloaded ", urlFile));
-        });
-    }
-
     sendFile(file){
         
     }

@@ -316,6 +316,7 @@ class RwFdSynchronize {
         let hashFiles = {};
         let filesToFD = [];
         let filesToRW = [];
+        let folder = `tmp/order_${riteWayQuote.order.id}`
 
         riteWayQuote.order.orderDocuments.forEach(rwFile => {
             hashFiles[rwFile.name] = {

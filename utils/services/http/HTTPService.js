@@ -7,18 +7,18 @@ class HTTPService{
     constructor(){
     }
 
-    static async getAndSendFile(fileData){
+    static async downloadFile(fileData){
         try{
             fs.mkdirSync(Storage.DOWNLOADS_PATH + `/${fileData.folderName}`);
         }
         catch(e){}
         const fileUrl = fileData.origin;
-        const file = fs.createWriteStream(Storage.DOWNLOADS_PATH + `/${fileData.folderName}/${fileData.name}`);
+        let filePath = Storage.DOWNLOADS_PATH + `/${fileData.folderName}/${fileData.name}`;
+        const file = fs.createWriteStream(filePath);
 
         let makeDownloadPromise = () => {
             return new Promise((resolve, reject)=>{
                 https.get(fileUrl, response => {
-                    console.log(response.headers);
                     if(response.statusCode == 200 && response.headers['content-type'] != 'text/html'){
                         response.pipe(file).on('finish', () => resolve(true));
                         response.pipe(file).on('error', () => resolve(false));
@@ -29,12 +29,7 @@ class HTTPService{
                 });
             });
         };
-
-        let downloaded = await makeDownloadPromise();
-        console.log(downloaded);
-        if(downloaded){
-            
-        }        
+        return await makeDownloadPromise();    
     }
 }
 

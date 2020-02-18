@@ -11,11 +11,6 @@ const {ritewayDB} = require('../../config/database');
 
 const Crypter = require('../crypter');
 
-const {FDConf, RWAConf} = require('../../config/conf');
-const {Storage} = require('../../config/conf');
-const https = require('https');
-const fs = require('fs');
-
 
 class RiteWayAutotranportService{
     constructor(){
@@ -115,6 +110,7 @@ class RiteWayAutotranportService{
                 as: 'stage_quote'
             }
         ];
+        
     }
 
     _parseStatus(status){
@@ -424,16 +420,6 @@ class RiteWayAutotranportService{
             deliveredAt: FDEntity.delivered,
             pickedUpAt: FDEntity.actual_pickup_date || FDEntity.avail_pickup_date
         };
-    }
-
-    getFile(rwQuoteID, fdFile){
-        const urlFile = RWAConf.host + fdFile.url;
-        const file = fs.createWriteStream(Storage.DOWNLOADS_PATH + `/${rwQuoteID}/${fdFile.name}`);
-
-        const request = https.get(urlFile, function(response) {
-            console.log(response.data, urlFile);
-            response.pipe(file).on('finish', (s)=>console.log("File downloaded ", urlFile));
-        });
     }
 
     async parseFDData(FDEntity, company = null){

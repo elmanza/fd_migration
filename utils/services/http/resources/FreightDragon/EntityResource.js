@@ -28,6 +28,10 @@ class EntityResource extends Resource {
     sendNotes(data){
         return this.sendPostRequest('add_notes/', data);
     }
+
+    uploadDocuments(data){
+        return this.sendPostRequest('upload_file/', data);
+    }
 }
 
 module.exports = EntityResource;
