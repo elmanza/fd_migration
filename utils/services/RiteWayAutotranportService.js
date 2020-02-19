@@ -11,6 +11,7 @@ const {ritewayDB} = require('../../config/database');
 
 const Crypter = require('../crypter');
 
+
 class RiteWayAutotranportService{
     constructor(){
         this.quoteIncludeData = [
@@ -109,6 +110,7 @@ class RiteWayAutotranportService{
                 as: 'stage_quote'
             }
         ];
+        
     }
 
     _parseStatus(status){

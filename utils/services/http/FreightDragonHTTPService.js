@@ -1,9 +1,11 @@
 
 const requestProm = require('request-promise');
 const FDConf = require('../../../config/FDConf');
+const HTTPService = require('./HTTPService');
 
-class FreightDragonHTTPServices{
+class FreightDragonHTTPServices extends HTTPService{
     constructor(){
+        super();
         this.host = FDConf.apiUrl;
         this.credentials = FDConf.credentials
     }

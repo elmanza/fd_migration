@@ -11,6 +11,7 @@ MigratedCompany.init(
         rite_way_company_id: {type: Sequelize.INTEGER, allowNull: false, unique: true},
         startedAt: {type: 'timestamp', allowNull: false},
         finishedAt: {type: 'timestamp', allowNull: true},
+        status: {type: Sequelize.STRING, allowNull: true},
         migrated: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
     },
     {
