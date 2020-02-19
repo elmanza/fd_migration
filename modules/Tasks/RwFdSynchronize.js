@@ -195,6 +195,11 @@ class RwFdSynchronize {
                         Sequelize.col('quotes.state'),
                         '=',
                         'waiting'
+                    ),
+                    Sequelize.where(
+                        Sequelize.col('quotes.fd_number'),
+                        'IS',
+                        null
                     ), 
                     Sequelize.where(
                         Sequelize.col('stage_quote.id'),

@@ -215,6 +215,7 @@ class FreigthDragonMigration {
                 console.log("Total Entities ", res.Data.length, "-------------");
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
+                    let message = `Index ${i} FDOrderID ${fdEntity.FDOrderID} ${((i+1)/res.Data.length*100).toFixed(6)}%`;
                     try{
                         let success = await this.RWService.importQuote(fdEntity, company);
                         if(success){
@@ -229,10 +230,13 @@ class FreigthDragonMigration {
                         console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e);
                         console.log("===========================================================================");
                     }
+                    await migration.update({
+                        status: message
+                    });
                     
                 }
             }
-            migration.update({
+            await migration.update({
                 finishedAt: moment().format('YYYY-MM-DD hh:mm:ss'),
                 migrated: true
             });
