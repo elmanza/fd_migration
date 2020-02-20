@@ -13,12 +13,15 @@ const StageQuote = require('../../models/Stage/quote');
 
 const FreightDragonService = require('../../utils/services/FreightDragonService');
 const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');
+const HTTPService = require('../../utils/services/http/HTTPService');
+
 const {Storage} = require('../../config/conf');
 
 class RwFdSynchronize {
     constructor(){
         this.FDService = new FreightDragonService();
         this.RWService = new RiteWayAutotranportService();
+        this.httpService = new HTTPService();
 
         this.finishedProcess = {
             createFDQuoteSyncTask:true,
@@ -321,7 +324,8 @@ class RwFdSynchronize {
         riteWayQuote.order.orderDocuments.forEach(rwFile => {
             hashFiles[rwFile.name] = {
                 existIn: 'rw',
-                url: rwFile.urlFile
+                url: rwFile.urlFile,
+                name: rwFile.name
             };
         });
 
@@ -332,9 +336,10 @@ class RwFdSynchronize {
             }
 
             if(fileName != null){
-                hashFiles[rwFile.name] = {
+                hashFiles[fileName] = {
                     existIn: 'rw',
-                    url: vehicle.gatePass
+                    url: vehicle.gatePass,
+                    name: fileName
                 };
             }
         });
@@ -343,7 +348,8 @@ class RwFdSynchronize {
             if(typeof hashFiles[fdFile.name_original] == 'undefined'){
                 hashFiles[fdFile.name_original] = {
                     existIn: 'fd',
-                    url: fdFile.url
+                    url: fdFile.url,
+                    name: fdFile.name_original
                 };
             }
             else{
@@ -351,11 +357,21 @@ class RwFdSynchronize {
             }
         });
 
-        filesToFD = Object.values(hashFiles).filter(file => file.existIn == 'rw');
-        filesToRW = Object.values(hashFiles).filter(file => file.existIn == 'fd');
+        files = Object.values(hashFiles).file(file => file.existIn != 'both');
 
-        this.RWService.sendFiles(filesToRW);
-        this.FDService.sendFiles(filesToFD);
+        for(let i = 0; i < files.length; i++){
+            let file = files[i];
+            let dFilePath = await this.httpService.downloadFile(file.url, folder, file.name);
+            if(dFilePath){
+                file.path = dFilePath;
+                if(file.existIn == 'rw'){
+                    this.FDService.sendFiles(file);
+                }
+                else{
+                    this.RWService.sendFiles(riteWayQuote.order.id, file);
+                }
+            }
+        };
         
     }
 

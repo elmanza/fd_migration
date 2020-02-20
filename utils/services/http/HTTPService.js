@@ -7,13 +7,15 @@ class HTTPService{
     constructor(){
     }
 
-    static async downloadFile(fileData){
+    static async downloadFile(fileUrl, folderName, fileName){
         try{
-            fs.mkdirSync(Storage.DOWNLOADS_PATH + `/${fileData.folderName}`);
+            fs.mkdirSync(Storage.DOWNLOADS_PATH + `/${folderName}`);
         }
-        catch(e){}
-        const fileUrl = fileData.origin;
-        let filePath = Storage.DOWNLOADS_PATH + `/${fileData.folderName}/${fileData.name}`;
+        catch(e){
+            return false;
+        }
+        
+        let filePath = Storage.DOWNLOADS_PATH + `/${folderName}/${fileName}`;
         const file = fs.createWriteStream(filePath);
 
         let makeDownloadPromise = () => {

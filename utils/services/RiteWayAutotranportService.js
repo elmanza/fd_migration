@@ -11,6 +11,8 @@ const {ritewayDB} = require('../../config/database');
 
 const Crypter = require('../crypter');
 
+const OrderResource = require('./http/resources/RiteWayAutotransport/OrderResource');
+
 
 class RiteWayAutotranportService{
     constructor(){
@@ -110,7 +112,8 @@ class RiteWayAutotranportService{
                 as: 'stage_quote'
             }
         ];
-        
+
+        this.orderResource = new OrderResource();        
     }
 
     _parseStatus(status){
@@ -900,6 +903,10 @@ class RiteWayAutotranportService{
 
             throw e;
         }     
+    }
+
+    sendFile(orderId, fileData){
+        this.orderResource.uploadDocuments(orderId, fileData);
     }
 }
 
