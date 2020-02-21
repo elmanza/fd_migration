@@ -6,7 +6,7 @@ class OrderResource extends RiteWayHTTPService {
         this.resourceUrl = '/order';
     }
 
-    uploadDocuments(orderId, fileData){
+    uploadDocument(orderId, fileData){
         let url = this.resourceUrl + `/${orderId}/uploadDocuments`;
 
         let formData = {

@@ -99,8 +99,8 @@ class FreightDragonService{
                 destinationData['DestinationType'] = destination.type_address.name;
 
                 try{
-                    originData['OriginHours'] = origin.pickup_time_start +' to '+origin.pickup_time_end;
-                    destinationData['DestinationHours'] = destination.pickup_time_start +' to '+destination.pickup_time_end;
+                    originData['OriginHours'] = origin.pickup_time_start != origin.pickup_time_end ? origin.pickup_time_start +' to '+origin.pickup_time_end : origin.pickup_time_start;
+                    destinationData['DestinationHours'] = destination.pickup_time_start != destination.pickup_time_end ? destination.pickup_time_start +' to '+destination.pickup_time_end : destination.pickup_time_start;
                 }
                 catch(e){ }
                 
@@ -159,8 +159,8 @@ class FreightDragonService{
         return this.memberResource.getList();
     }
 
-    sendFile(file){
-        
+    sendFile(FDOrderID, file){
+        return this.entityResource.uploadDocument(FDOrderID, file);
     }
 
 }

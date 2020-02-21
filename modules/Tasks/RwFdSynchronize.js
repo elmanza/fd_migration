@@ -315,6 +315,7 @@ class RwFdSynchronize {
     //Refresh RW ENtities---------------------------------------------------------
 
     async syncFiles(res, riteWayQuote){
+        let FDEntity = res.Data;
         let fdFiles = (res.Success ? res.Data.files : []);
         let hashFiles = {};
         let filesToFD = [];
@@ -365,7 +366,7 @@ class RwFdSynchronize {
             if(dFilePath){
                 file.path = dFilePath;
                 if(file.existIn == 'rw'){
-                    this.FDService.sendFiles(file);
+                    this.FDService.sendFiles(FDEntity.FDOrderID, file);
                 }
                 else{
                     this.RWService.sendFiles(riteWayQuote.order.id, file);

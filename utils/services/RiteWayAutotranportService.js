@@ -905,8 +905,8 @@ class RiteWayAutotranportService{
         }     
     }
 
-    sendFile(orderId, fileData){
-        this.orderResource.uploadDocuments(orderId, fileData);
+    uploadDocument(orderId, fileData){
+        this.orderResource.uploadDocument(orderId, fileData);
     }
 }
 
