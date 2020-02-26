@@ -622,10 +622,15 @@ class RwFdSynchronize {
                 }
             });
             //Se actualiza los datos FD en la quote
-            await riteWayQuote.update({
+            let quoteData = {
                 fd_id: fdOrder.id,
                 fd_number: fdOrder.FDOrderID,
-            });
+            };
+            if(riteWayQuote.offered_at == null){
+                quoteData.offered_at = fdQuote.ordered||fdQuote.created;
+            }
+
+            await riteWayQuote.update(quoteData);
             //Se actualiza el estado en el stage y se determina si se debe seguir vigilando
             await riteWayQuote.stage_quote.update({
                 status: fdStatus,
