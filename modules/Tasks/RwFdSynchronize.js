@@ -696,7 +696,6 @@ class RwFdSynchronize {
                 let result = await StageQuote.findAndCountAll({
                     where: {
                         'watch': true,
-                        id:3593,
                         'fdOrderId': {
                             [dbOp.not]: null
                         }
