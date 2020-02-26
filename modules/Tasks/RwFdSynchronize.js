@@ -388,9 +388,13 @@ class RwFdSynchronize {
                 tariff: Number(fdQuote.tariff),
                 state: 'waiting',
                 fd_id: fdQuote.id,
-                fd_number: fdQuote.FDOrderID,
+                fd_number: fdQuote.FDOrderID
             };
             let stageStatus = '';
+
+            if(riteWayQuote.offered_at == null){
+                quoteData.offered_at = fdQuote.ordered||fdQuote.created;
+            }
 
             await riteWayQuote.update(quoteData);
 
@@ -427,6 +431,12 @@ class RwFdSynchronize {
                 }
                 else{
                     quoteData.state = 'waiting';
+                }
+
+                let fdStatus = this.RWService._parseStatus(fdQuote.status);
+                if(fdStatus == 'cancelled'){
+                    quoteData.state = fdStatus;
+                    quoteData.deletedAt = fdQuote.archived;
                 }
             }
             else{
@@ -533,7 +543,7 @@ class RwFdSynchronize {
                     userId: riteWayQuote.company.operatorUser.id, 
                     createdAt:ritewayDB.fn('NOW'), 
                     updatedAt:ritewayDB.fn('NOW'),
-                    orderId: riteWayQuote.order.id
+                    quoteId: riteWayQuote.id
                 });
             }
 
@@ -596,16 +606,16 @@ class RwFdSynchronize {
             }
 
             //Se actualizan las notes
-            let notes = await this.RWService.processFDNotes(fdOrder, riteWayQuote.order);
+            let notes = await this.RWService.processFDNotes(fdOrder, riteWayQuote);
             for(let i = 0; i < notes.length; i++){
                 await riteWay.Note.create(notes[i]);
             }
 
             //Se actualiza el estado de la orden
+            let orderData = this.RWService.getOrderData(fdOrder);
             await riteWay.Order.update({
-                status: fdStatus,
-                pickedUpAt: fdOrder.actual_pickup_date,
-                deliveredAt: fdOrder.delivered
+                ...orderData,
+                status: fdStatus
             }, {
                 where: {
                     id: riteWayQuote.order.id
@@ -620,7 +630,7 @@ class RwFdSynchronize {
             await riteWayQuote.stage_quote.update({
                 status: fdStatus,
                 fdResponse: "fd_get_order_success",
-                watch: Number(fdOrder.tariff) > totalPaid && fdStatus != 'delivered' && fdStatus != 'cancelled'
+                watch: Number(fdOrder.tariff) > paymentsInvoiceData.totalPaid && fdStatus != 'cancelled'
             });
         }
         else{
@@ -655,9 +665,9 @@ class RwFdSynchronize {
         }
         else if(riteWayQuote.order != null){
             //Update the entity with all data
-            let res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
+            //let res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
             //-------------------------------------
-            res = await this.FDService.get(stageQuote.fdOrderId);            
+            let res = await this.FDService.get(stageQuote.fdOrderId);            
             return await this.refreshRWOrder(res, riteWayQuote);
         }
         else{
@@ -699,7 +709,7 @@ class RwFdSynchronize {
                         console.log("refreshRWEntitySyncTask ",result);
                     })
                     .catch(error => {
-                        console.log("refreshRWEntitySyncTask Error ", error, stageQuote.id);
+                        console.log("refreshRWEntitySyncTask Error ", error, stageQuote.fdOrderId);
                     })
                     .finally(()=>{
                         recProccesed--;
@@ -736,7 +746,7 @@ class RwFdSynchronize {
                     required:true
                 },
                 where:{
-                    orderId: stageQuote.quote.order.id
+                    quoteId: stageQuote.quote.id
                 }
             });
 
@@ -772,18 +782,21 @@ class RwFdSynchronize {
                 {
                     model: riteWay.Quote,
                     require: true,
-                    include: [{
+                    include: [
+                        {
                             model: riteWay.Order,
                             require: true,
+                            include: []
+                        },
+                        {
+                            model: riteWay.Note,
+                            require: true,
                             include: [{
-                                model: riteWay.Note,
-                                require: true,
-                                include: [{
-                                    model: riteWay.User,
-                                    require: true
-                                }]
+                                model: riteWay.User,
+                                require: true
                             }]
-                    }],
+                        }
+                    ],
                     paranoid: false
                 }
             ],

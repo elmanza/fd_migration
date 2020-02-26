@@ -229,7 +229,16 @@ VehicleModel.belongsTo(VehicleMaker, {
     constraints: true
 });
 
-Note.belongsTo(Order, {
+VehicleMaker.hasMany(VehicleModel, {
+    foreignKey: {
+        name: 'maker_id',
+        allowNull: false
+    },
+    constraints: true
+});
+
+//Change relation
+Note.belongsTo(Quote, {
     constraints: true
 });
 
@@ -237,7 +246,8 @@ Note.belongsTo(User, {
     constraints: true
 });
 
-Order.hasMany(Note, {
+//Change relation
+Quote.hasMany(Note, {
     constraints: true
 }); //adds userAcceptID attribute to document
 
@@ -249,6 +259,14 @@ Company.belongsTo(User, {
     constraints: false,
     as:'operatorUser'
 });
+Company.hasMany(Quote, {
+    foreignKey: {
+        name: 'company_id',
+        allowNull: false
+    },
+    constraints: true,
+    as:'quoteInfo'
+})
 // ContactInformation,
 // Location,
 // TypeAddress

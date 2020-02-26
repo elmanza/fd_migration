@@ -120,7 +120,7 @@ class RiteWayAutotranportService{
         //let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'issues', 'pickedup', 'delivered'];
         let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'delivered', 'pickedup', 'delivered'];
         if(typeof validStatus[status-1] == 'undefined'){
-            throw "Status not valid";
+            throw "Status not valid "+status;
         }
         return validStatus[status-1];
     }
@@ -257,7 +257,7 @@ class RiteWayAutotranportService{
         return result;
     }
 
-    async processFDNotes(FDEntity, order){
+    async processFDNotes(FDEntity, quote){
         let usersList = {};
         let notes = [];
         for(let iN=0; iN < FDEntity.notes.length; iN++){
@@ -290,16 +290,16 @@ class RiteWayAutotranportService{
                     text: fdNote.text
                 };
 
-                if(order){
-                    noteData.orderId = order.id;
+                if(quote){
+                    noteData.quoteId = quote.id;
 
                     let rwNote = await riteWay.Note.findOne({
                         where: {
                             [dbOp.and] : [
                                 Sequelize.where(
-                                    Sequelize.col('notes.order_id'),
+                                    Sequelize.col('notes.quote_id'),
                                     '=',
-                                    noteData.orderId
+                                    noteData.quoteId
                                 ),
                                 Sequelize.where(
                                     Sequelize.col('notes.user_id'),
@@ -421,7 +421,8 @@ class RiteWayAutotranportService{
             updatedAt:  FDEntity.ordered||FDEntity.created,
             estimated_delivery_date: FDEntity.delivery_date || FDEntity.delivered,
             deliveredAt: FDEntity.delivered,
-            pickedUpAt: FDEntity.actual_pickup_date || FDEntity.avail_pickup_date
+            pickedUpAt: FDEntity.actual_pickup_date || FDEntity.avail_pickup_date,
+            deletedAt: FDEntity.archived
         };
     }
 
@@ -432,6 +433,7 @@ class RiteWayAutotranportService{
         rwData.quantity = FDEntity.vehicles.length;
         rwData.estimated_ship_date = FDEntity.est_ship_date || FDEntity.avail_pickup_date;
         rwData.ship_via = (FDEntity.ship_via-1>0?FDEntity.ship_via-1:0);
+        rwData.offered_at = FDEntity.ordered||FDEntity.created;
         rwData.created_at = FDEntity.created;
         rwData.updated_at = FDEntity.created;
         rwData.fd_id = FDEntity.id;
@@ -626,10 +628,11 @@ class RiteWayAutotranportService{
             rwData.carrier = carrierDriverData.carrier;
             rwData.driver = carrierDriverData.driver;
 
-            if(typeof rwData.carrier.id == 'undefined'){
-                rwData.carrier = {...rwData.carrier, isNew:true };
+            if(rwData.carrier != null){
+                if(typeof rwData.carrier.id == 'undefined'){
+                    rwData.carrier = {...rwData.carrier, isNew:true };
+                }
             }
-            
             
             //Payments and invoice
             let paymentsInvoiceData = await this.processFDPayments(FDEntity);
@@ -818,7 +821,7 @@ class RiteWayAutotranportService{
                         let note = rwData.notes[i];
                         let newNote = await riteWay.Note.create({
                             ...note, 
-                            orderId: order.id
+                            quoteId: quote.id
                         });
                         notes.push(newNote);
                         console.log(`Note created ${newNote.id}`);
@@ -830,7 +833,7 @@ class RiteWayAutotranportService{
                 include: this.quoteIncludeData
             });
             let status =  order ? order.status : quote.state;
-            let watch = (status == 'cancelled' || (status == 'delivered' && invoice.isPaid) ? false : true);
+            let watch = (status == 'cancelled'? false : true);
 
             let stageQuoteData = {
                 riteWayId: quote.id,
