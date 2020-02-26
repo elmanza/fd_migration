@@ -29,8 +29,17 @@ class EntityResource extends Resource {
         return this.sendPostRequest('add_notes/', data);
     }
 
-    uploadDocuments(data){
-        return this.sendPostRequest('upload_file/', data);
+    uploadDocument(FDOrderID, fileData){
+        let formData = {
+            FDOrderID,
+            DOCUMENT: {
+                value: fs.createReadStream(fileData.path),
+                options: {
+                    filename: fileData.name
+                }
+            }
+        };
+        return this.sendPostRequest('upload_file/', formData);
     }
 }
 
