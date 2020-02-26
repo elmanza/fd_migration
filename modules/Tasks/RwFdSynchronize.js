@@ -627,7 +627,7 @@ class RwFdSynchronize {
                 fd_number: fdOrder.FDOrderID,
             };
             if(riteWayQuote.offered_at == null){
-                quoteData.offered_at = fdQuote.ordered||fdQuote.created;
+                quoteData.offered_at = fdOrder.ordered||fdOrder.created;
             }
 
             await riteWayQuote.update(quoteData);
