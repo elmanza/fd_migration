@@ -567,18 +567,6 @@ class RwFdSynchronize {
             };
 
             await riteWayQuote.order.reload();
-            //Se crea una nota por el cambio del estado
-            if(getRWStatus(fdStatus)!=getRWStatus(riteWayQuote.order.status)){
-                await riteWay.Note.create({
-                    text: `The order ${riteWayQuote.id} changes status to ${getRWStatus(fdStatus)}`,
-                    showOnCustomerPortal: true, 
-                    userId: riteWayQuote.company.operatorUser.id, 
-                    createdAt:ritewayDB.fn('NOW'), 
-                    updatedAt:ritewayDB.fn('NOW'),
-                    quoteId: riteWayQuote.id
-                });
-            }
-
             //Se asigna el carrier y driver
             let {carrier, driver} = await this.RWService.processFDCarrierDriver(fdOrder, riteWayQuote.order);
             if(carrier != null){
