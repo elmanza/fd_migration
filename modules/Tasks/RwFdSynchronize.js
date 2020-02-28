@@ -15,6 +15,9 @@ const FreightDragonService = require('../../utils/services/FreightDragonService'
 const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');
 const HTTPService = require('../../utils/services/http/HTTPService');
 
+
+const {FDConf} = require('../../config/conf');
+
 const {Storage} = require('../../config/conf');
 
 class RwFdSynchronize {
@@ -325,7 +328,7 @@ class RwFdSynchronize {
         let hashFiles = {};
         let filesToFD = [];
         let filesToRW = [];
-        let folder = `tmp/order_${riteWayQuote.order.id}`
+        let folder = `tmp/quote_${riteWayQuote.id}`
 
         riteWayQuote.order.orderDocuments.forEach(rwFile => {
             hashFiles[rwFile.name] = {
@@ -367,7 +370,7 @@ class RwFdSynchronize {
 
         for(let i = 0; i < files.length; i++){
             let file = files[i];
-            let dFilePath = await this.httpService.downloadFile(file.url, folder, file.name);
+            let dFilePath = await HTTPService.downloadFile(file.url, folder, file.name);
             if(dFilePath){
                 file.path = dFilePath;
                 if(file.existIn == 'rw'){
@@ -379,6 +382,35 @@ class RwFdSynchronize {
             }
         };
         
+    }
+
+    async syncInvoice(res, riteWayQuote){
+
+        let invoice = await riteWay.Invoice.findOne({
+            where: {
+                order_id: riteWayQuote.order.id
+            }
+        });
+
+        if(invoice == null || !res.Success){
+            return;
+        }
+
+        let fdInvoiceURL = (res.Data.invoice_file ? FDConf.host + res.Data.invoice_file : null);
+        let folder = `tmp/quote_${riteWayQuote.id}/invoice`;
+        if(fdInvoiceURL){
+            let fileName = path.basename(fdInvoiceURL);
+            let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);    
+            console.log(filePath);
+            if(filePath){
+                let fileData = {
+                    name: fileName,
+                    path: filePath
+                };
+
+                this.RWService.uploadInvoice(invoice.id, fileData);
+            }            
+        }
     }
 
     async refreshRWQuote(res, riteWayQuote){
@@ -603,6 +635,8 @@ class RwFdSynchronize {
                 else{
                     await invoice.update(invoiceData);
                 }
+
+                await this.syncInvoice(res, riteWayQuote);
             }
 
             //Se actualizan las notes
@@ -625,6 +659,7 @@ class RwFdSynchronize {
             let quoteData = {
                 fd_id: fdOrder.id,
                 fd_number: fdOrder.FDOrderID,
+                tariff: Number(fdOrder.tariff),
             };
             if(riteWayQuote.offered_at == null){
                 quoteData.offered_at = fdOrder.ordered||fdOrder.created;
@@ -696,6 +731,7 @@ class RwFdSynchronize {
                 let result = await StageQuote.findAndCountAll({
                     where: {
                         'watch': true,
+                        'riteWayId':3782,
                         'fdOrderId': {
                             [dbOp.not]: null
                         }

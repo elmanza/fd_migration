@@ -58,6 +58,21 @@ class RiteWayHTTPService extends HTTPService {
         
         return await requestProm(options);
     }
+
+    async sendPutRequest(resourceUrl, data = {}, doLoggin){
+        let options = {
+            method: "PUT",
+            uri: this.getUrl(resourceUrl),
+            formData: data,
+            json:true
+        };
+
+        if(doLoggin){
+            await this.addToken(options);
+        }
+        
+        return await requestProm(options);
+    }
 }
 
 module.exports = RiteWayHTTPService;

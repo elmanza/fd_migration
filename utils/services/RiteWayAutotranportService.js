@@ -12,7 +12,7 @@ const {ritewayDB} = require('../../config/database');
 const Crypter = require('../crypter');
 
 const OrderResource = require('./http/resources/RiteWayAutotransport/OrderResource');
-
+const InvoiceResource = require('./http/resources/RiteWayAutotransport/InvoiceResource');
 
 class RiteWayAutotranportService{
     constructor(){
@@ -113,7 +113,8 @@ class RiteWayAutotranportService{
             }
         ];
 
-        this.orderResource = new OrderResource();        
+        this.orderResource = new OrderResource();    
+        this.invoiceResource = new InvoiceResource();    
     }
 
     _parseStatus(status){
@@ -554,7 +555,7 @@ class RiteWayAutotranportService{
                 color: vehicle.color,
                 inop: vehicle.inop,
                 tariff: Number(vehicle.tariff),
-                carrier_pay: Number(vehicle.carrier_pay),
+                carrierPay: Number(vehicle.carrier_pay),
                 deposit: Number(vehicle.deposit),
             }
 
@@ -912,6 +913,10 @@ class RiteWayAutotranportService{
 
     uploadDocument(orderId, fileData){
         this.orderResource.uploadDocument(orderId, fileData);
+    }
+
+    uploadInvoice(invoiceId, fileData){
+        this.invoiceResource.uploadInvoiceFile(invoiceId, fileData);
     }
 }
 

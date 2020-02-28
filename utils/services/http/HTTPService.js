@@ -2,6 +2,10 @@
 const requestProm = require('request-promise');
 const Storage = require('../../../config/storage');
 const util = require('util');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const mkdirp = require('mkdirp');
 
 class HTTPService{
     constructor(){
@@ -9,9 +13,10 @@ class HTTPService{
 
     static async downloadFile(fileUrl, folderName, fileName){
         try{
-            fs.mkdirSync(Storage.DOWNLOADS_PATH + `/${folderName}`);
+            mkdirp.sync(Storage.DOWNLOADS_PATH + `/${folderName}`);
         }
         catch(e){
+            console.log("Error download file", e)
             return false;
         }
         
@@ -22,7 +27,7 @@ class HTTPService{
             return new Promise((resolve, reject)=>{
                 https.get(fileUrl, response => {
                     if(response.statusCode == 200 && response.headers['content-type'] != 'text/html'){
-                        response.pipe(file).on('finish', () => resolve(true));
+                        response.pipe(file).on('finish', () => resolve(filePath));
                         response.pipe(file).on('error', () => resolve(false));
                     }
                     else{
