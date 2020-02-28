@@ -59,7 +59,7 @@ class FreightDragonService{
             save_shipper:0, //0 or 1(when new shipper is added than mandatory 0 = false 1 = true)
             update_shipper:1,// 0 or 1 (when existing is getting updated than mandatory 0=false 1=true
 
-            NotesFromShipper: riteWayQuote.special_instruction,
+            NotesFromShipper: riteWayQuote.special_instruction ? riteWayQuote.special_instruction : '',
         };
         let vehicleCount = 0;
         riteWayQuote.vehicles.forEach((vehicle, index) => {
