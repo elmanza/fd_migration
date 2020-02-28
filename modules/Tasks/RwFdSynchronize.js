@@ -697,7 +697,7 @@ class RwFdSynchronize {
             //Update the entity with all data
             let res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
             //-------------------------------------
-            let res = await this.FDService.get(stageQuote.fdOrderId);            
+            res = await this.FDService.get(stageQuote.fdOrderId);            
             return await this.refreshRWOrder(res, riteWayQuote);
         }
         else{
