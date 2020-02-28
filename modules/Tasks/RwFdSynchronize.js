@@ -624,7 +624,9 @@ class RwFdSynchronize {
                     await invoice.update(invoiceData);
                 }
 
-                await this.syncInvoice(res, riteWayQuote);
+                if(invoice.url_invoice == null){
+                    await this.syncInvoice(res, riteWayQuote);
+                }
             }
 
             //Se actualizan las notes
