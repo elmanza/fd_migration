@@ -695,9 +695,9 @@ class RwFdSynchronize {
         }
         else if(riteWayQuote.order != null){
             //Update the entity with all data
-            let res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
+            //let res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
             //-------------------------------------
-            res = await this.FDService.get(stageQuote.fdOrderId);            
+            let res = await this.FDService.get(stageQuote.fdOrderId);            
             return await this.refreshRWOrder(res, riteWayQuote);
         }
         else{
