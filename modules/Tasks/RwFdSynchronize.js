@@ -624,7 +624,7 @@ class RwFdSynchronize {
                     await invoice.update(invoiceData);
                 }
 
-                if(invoice.url_invoice == null){
+                if(invoice.url_invoice == null || invoice.url_invoice == ''){
                     await this.syncInvoice(res, riteWayQuote);
                 }
             }
