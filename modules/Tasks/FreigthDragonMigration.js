@@ -213,6 +213,9 @@ class FreigthDragonMigration {
             let res = await this.FDService.getList('2019-01-01 00:00:00', today+' 23:59:59', company.name.trim());
             if(res.Success){
                 console.log("Total Entities ", res.Data.length, "-------------");
+                await migration.update({
+                    status: "Total Entities "+ res.Data.length
+                });
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     let message = `Index ${i} FDOrderID ${fdEntity.FDOrderID} ${((i+1)/res.Data.length*100).toFixed(6)}%`;
