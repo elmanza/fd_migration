@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const {ritewayDB} = require('../../config/database');
-const {Company}  = require("../../models/RiteWay/_riteWay");
+const FdCompanies = require("./fd_companies");
 const Model = Sequelize.Model;
 
 class MigratedCompany extends Model{}
@@ -8,7 +8,7 @@ class MigratedCompany extends Model{}
 MigratedCompany.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        rite_way_company_id: {type: Sequelize.INTEGER, allowNull: false, unique: true},
+        //rite_way_company_id: {type: Sequelize.INTEGER, allowNull: false, unique: true},
         startedAt: {type: 'timestamp', allowNull: false},
         finishedAt: {type: 'timestamp', allowNull: true},
         status: {type: Sequelize.STRING, allowNull: true},
@@ -21,6 +21,11 @@ MigratedCompany.init(
         underscored: true
     }
 );
+
+MigratedCompany.belongsTo(FdCompanies, {
+    foreignKey: 'fd_company_id',
+    constraints: true
+});
 
 MigratedCompany.sync();
 

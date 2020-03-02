@@ -391,7 +391,7 @@ StageQuote.belongsTo(Quote, {
 
 Company.hasOne(MigratedCompany, {
     foreignKey: {
-        name: 'rite_way_company_id',
+        name: 'fd_company_id',
         allowNull: false
     },
     as: 'migrated_company',
@@ -400,7 +400,7 @@ Company.hasOne(MigratedCompany, {
 
 MigratedCompany.belongsTo(Company, {
     foreignKey: {
-        name: 'rite_way_company_id',
+        name: 'fd_company_id',
         allowNull: false
     },
     constraints: false,

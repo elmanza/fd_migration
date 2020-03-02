@@ -203,7 +203,7 @@ class FreigthDragonMigration {
         for(let i = 0; i<companies.length; i++){
             let company =  companies[i];
             let migration = await MigratedCompany.create({
-                rite_way_company_id: company.id, 
+                fd_company_id: company.id, 
                 startedAt: moment().format('YYYY-MM-DD hh:mm:ss')
             });
 
