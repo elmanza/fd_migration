@@ -671,13 +671,30 @@ class RiteWayAutotranportService{
     }
 
     async importQuote(FDEntity, preCompany = null){
+        let rwQuote = await riteWay.Quote.findOne({
+            where: {
+                fd_number: FDEntity.FDOrderID
+            }
+        });
 
         let stageQuote = await StageQuote.findOne({
             where: {
                 fdOrderId: FDEntity.FDOrderID
             }
         });
-        if(stageQuote){
+
+        if(rwQuote != null && stageQuote == null){
+            stageQuote = await StageQuote.create({
+                riteWayId: rwQuote.id,
+                fdOrderId: FDEntity.FDOrderID,
+                fdAccountId: '',
+                fdResponse: 'Imported',
+                status: '',
+                watch: true
+            });
+        }
+
+        if(stageQuote != null || rwQuote != null){
             return false;
         }
 
