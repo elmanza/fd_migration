@@ -184,7 +184,7 @@ class RiteWayAutotranportService{
                     where: Sequelize.where(
                         Sequelize.col('username'),
                         'ilike',
-                        fdPayment.user.email.trim()
+                        fdPayment.user.email.trim().toLowerCase()
                     )
                 });
                 
@@ -193,7 +193,7 @@ class RiteWayAutotranportService{
                     let userData = {
                         name: name[0],
                         last_name: name.slice(1).join(' '),
-                        username: fdPayment.user.email,
+                        username: fdPayment.user.email.trim().toLowerCase(),
                         photo: '',
                         phone: fdPayment.user.phone,
                         shipper_type: '',
@@ -210,7 +210,7 @@ class RiteWayAutotranportService{
                     await OperatorUser.create({
                         riteWayId: user.id,
                         riteWayPass: name[0],
-                        fdEmail: fdPayment.user.email,
+                        fdEmail: fdPayment.user.email.trim().toLowerCase(),
                     });
                 }
 
@@ -267,10 +267,10 @@ class RiteWayAutotranportService{
             let fdNote = FDEntity.notes[iN];
             let rwUser = null;
             
-            if(typeof usersList[fdNote.email.trim()] == 'undefined'){
+            if(typeof usersList[fdNote.email.trim().toLowerCase()] == 'undefined'){
                 let user = await riteWay.User.findOne({
                     where: {
-                        username: fdNote.email
+                        username: fdNote.email.trim().toLowerCase()
                     }
                 });
                 
@@ -281,7 +281,7 @@ class RiteWayAutotranportService{
             }
             
             else{
-                rwUser = usersList[fdNote.email];
+                rwUser = usersList[fdNote.email.trim().toLowerCase()];
             }
                 
             if(rwUser != null){
@@ -347,7 +347,7 @@ class RiteWayAutotranportService{
     
                 result.carrier = {
                     company_name: FDEntity.carrier.company_name.trim(),
-                    email: FDEntity.carrier.email,
+                    email: FDEntity.carrier.email.trim().toLowerCase(),
                     address: FDEntity.carrier.address1,
                     zip: FDEntity.carrier.zip_code,
                     insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
@@ -457,7 +457,7 @@ class RiteWayAutotranportService{
         rwData.company = company;
         rwData.user = await riteWay.User.findOne({
             where: {
-                username: FDEntity.shipper.email
+                username: FDEntity.shipper.email.trim().toLowerCase()
             }
         });
         //user................
@@ -473,7 +473,7 @@ class RiteWayAutotranportService{
                 isNew: true,
                 name: FDEntity.shipper.fname,
                 last_name: FDEntity.shipper.lname,
-                username: FDEntity.shipper.email,
+                username: FDEntity.shipper.email.trim().toLowerCase(),
                 password: password,
                 photo: '',
                 phone: FDEntity.shipper.phone1,
@@ -506,7 +506,7 @@ class RiteWayAutotranportService{
                 where: Sequelize.where(
                     Sequelize.col('username'),
                     'ilike',
-                    FDEntity.assignedTo.email.trim()
+                    FDEntity.assignedTo.email.trim().toLowerCase()
                 )
             });
             if(operator  == null){
@@ -523,7 +523,7 @@ class RiteWayAutotranportService{
                 isNew: true,
                 name: FDEntity.shipper.company.trim(),
                 photo: '',
-                email: FDEntity.shipper.email,
+                email: FDEntity.shipper.email.trim().toLowerCase(),
                 phone: FDEntity.shipper.phone1,
                 address: FDEntity.shipper.address1,
                 operator_id: operator.id
@@ -929,11 +929,15 @@ class RiteWayAutotranportService{
     }
 
     uploadDocument(orderId, fileData){
-        this.orderResource.uploadDocument(orderId, fileData);
+        return this.orderResource.uploadDocument(orderId, fileData);
+    }
+
+    uploadBOL(orderId, fileData){
+        return this.orderResource.uploadBOL(orderId, fileData);
     }
 
     uploadInvoice(invoiceId, fileData){
-        this.invoiceResource.uploadInvoiceFile(invoiceId, fileData);
+        return this.invoiceResource.uploadInvoiceFile(invoiceId, fileData);
     }
 }
 

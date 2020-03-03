@@ -20,6 +20,21 @@ class OrderResource extends RiteWayHTTPService {
 
         return this.sendPostRequest(url, formData, true);
     }
+
+    uploadBOL(orderId, fileData){
+        let url = this.resourceUrl + `/${orderId}`;
+
+        let formData = {
+            bol: {
+                value: fs.createReadStream(fileData.path),
+                options: {
+                    filename: fileData.name
+                }
+            }
+        };
+
+        return this.sendPostRequest(url, formData, true);
+    }
 }
 
 module.exports = OrderResource;

@@ -16,7 +16,7 @@ const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotran
 const HTTPService = require('../../utils/services/http/HTTPService');
 
 
-const {FDConf} = require('../../config/conf');
+const {FDConf, RWAConf} = require('../../config/conf');
 
 const {Storage} = require('../../config/conf');
 
@@ -71,6 +71,11 @@ class RwFdSynchronize {
                                 require: false,
                             }
                         ]
+                    },
+                    {
+                        model: riteWay.OrderDocument,
+                        as: 'orderDocuments',
+                        require: false
                     }
                 ]
             },
@@ -333,7 +338,7 @@ class RwFdSynchronize {
         riteWayQuote.order.orderDocuments.forEach(rwFile => {
             hashFiles[rwFile.name] = {
                 existIn: 'rw',
-                url: rwFile.urlFile,
+                url: RWAConf.host + rwFile.urlFile,
                 name: rwFile.name
             };
         });
@@ -347,17 +352,28 @@ class RwFdSynchronize {
             if(fileName != null){
                 hashFiles[fileName] = {
                     existIn: 'rw',
-                    url: vehicle.gatePass,
+                    url: RWAConf.host + vehicle.gatePass,
                     name: fileName
                 };
             }
         });
 
+        //BOL
+        if(riteWayQuote.order.bol != null && riteWayQuote.order.bol != ''){
+            let bolFileName = path.basename(riteWayQuote.order.bol);
+            hashFiles[bolFileName] = {
+                existIn: 'rw',
+                url: RWAConf.host + riteWayQuote.order.bol,
+                name: bolFileName
+            };
+        }
+
+        //FD Files
         fdFiles.forEach(fdFile => {
             if(typeof hashFiles[fdFile.name_original] == 'undefined'){
                 hashFiles[fdFile.name_original] = {
                     existIn: 'fd',
-                    url: fdFile.url,
+                    url: FDConf.host + fdFile.url,
                     name: fdFile.name_original
                 };
             }
@@ -366,22 +382,42 @@ class RwFdSynchronize {
             }
         });
 
-        files = Object.values(hashFiles).file(file => file.existIn != 'both');
+        let files = Object.values(hashFiles);
+        
+        let gatePassesFileFromFD  = files.filter(file => file.existIn == 'fd' && file.name.indexOf('gate_pass_') == 0);
+        let bolFileFromFD = files.filter(file => file.existIn == 'fd' && file.name.indexOf('bol_') == 0);
+
+        files = files.filter(file => file.existIn != 'both' && file.name.indexOf('gate_pass_') == -1 && file.name.indexOf('bol_') == -1);
 
         for(let i = 0; i < files.length; i++){
             let file = files[i];
             let dFilePath = await HTTPService.downloadFile(file.url, folder, file.name);
             if(dFilePath){
                 file.path = dFilePath;
-                if(file.existIn == 'rw'){
-                    this.FDService.sendFiles(FDEntity.FDOrderID, file);
+                try{
+                    if(file.existIn == 'rw'){
+                        await this.FDService.sendFiles(FDEntity.FDOrderID, file);
+                    }
+                    else{
+                        await this.RWService.uploadDocument(riteWayQuote.order.id, file);
+                    }
                 }
-                else{
-                    this.RWService.sendFiles(riteWayQuote.order.id, file);
+                catch(error){
+                    console.log('Error when the system try sync documents files, filename: '+file.name+' of '+file.existIn);
                 }
+                
             }
         };
-        
+
+        //Upload BOL
+        if(bolFileFromFD.length > 0){
+            try{
+                await this.RWService.uploadBOL(riteWayQuote.order.id, bolFileFromFD[0]);
+            }
+            catch(error){
+                console.log('Error when the system try sync BOL file, filename: '+bolFileFromFD[0].name+' of '+bolFileFromFD[0].existIn);
+            }
+        }
     }
 
     async syncInvoice(res, riteWayQuote){
@@ -401,14 +437,19 @@ class RwFdSynchronize {
         if(fdInvoiceURL){
             let fileName = path.basename(fdInvoiceURL);
             let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);    
-            console.log(filePath);
             if(filePath){
                 let fileData = {
                     name: fileName,
                     path: filePath
                 };
 
-                this.RWService.uploadInvoice(invoice.id, fileData);
+                try{
+                    await this.RWService.uploadInvoice(invoice.id, fileData);
+                }
+                catch(error){
+                    console.log("Error when the system upload invoice file on Rite Way System, File " + fileName);
+                }
+                
             }            
         }
     }
@@ -625,9 +666,12 @@ class RwFdSynchronize {
                 }
 
                 if(invoice.url_invoice == null || invoice.url_invoice == ''){
-                    await this.syncInvoice(res, riteWayQuote);
+                    this.syncInvoice(res, riteWayQuote);
                 }
             }
+
+            //Sync documents
+            this.syncFiles(res, riteWayQuote);
 
             //Se actualizan las notes
             let notes = await this.RWService.processFDNotes(fdOrder, riteWayQuote);

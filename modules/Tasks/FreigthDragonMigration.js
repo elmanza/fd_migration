@@ -64,7 +64,7 @@ class FreigthDragonMigration {
                     let userData = {
                         name: name[0],
                         last_name: name.slice(1).join(' '),
-                        username: fdOperator.email,
+                        username: fdOperator.email.trim().toLowerCase(),
                         photo: '',
                         phone: fdOperator.phone,
                         shipper_type: '',
@@ -80,7 +80,7 @@ class FreigthDragonMigration {
 
                 let stOperatorUser = await OperatorUser.findOne({
                     where: {
-                        fdEmail: fdOperator.email
+                        fdEmail: fdOperator.email.trim().toLowerCase()
                     }
                 });              
 
@@ -90,7 +90,7 @@ class FreigthDragonMigration {
                         riteWayPass: newRWUser ? plainPassoword : "",
                         fdId: fdOperator.id,
                         fdUsername: fdOperator.username,
-                        fdEmail: fdOperator.email,
+                        fdEmail: fdOperator.email.trim().toLowerCase(),
                     });
                 }
                 else{
@@ -98,7 +98,7 @@ class FreigthDragonMigration {
                         riteWayId: riteWayOperator.id,
                         fdId: fdOperator.id,
                         fdUsername: fdOperator.username,
-                        fdEmail: fdOperator.email,
+                        fdEmail: fdOperator.email.trim().toLowerCase(),
                     });
                 }
             }
