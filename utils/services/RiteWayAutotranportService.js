@@ -4,7 +4,7 @@ const Sequelize = require('sequelize');
 const dbOp = Sequelize.Op;
 
 const riteWay  = require("../../models/RiteWay/_riteWay");
-const StageQuote = require('../../models/Stage/quote');
+const {Quote:StageQuote} = require('../../models/Stage/index');
 const OperatorUser = require('../../models/Stage/operator_user');
 
 const {ritewayDB} = require('../../config/database');

@@ -24,8 +24,6 @@ Quote.init(
     }
 );
 
-Quote.sync();
-
 module.exports = Quote;
 //order status
 //pick up, in transit, delivered, damage

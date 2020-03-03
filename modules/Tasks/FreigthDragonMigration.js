@@ -8,9 +8,7 @@ const dbOp = Sequelize.Op;
 const riteWay  = require("../../models/RiteWay/_riteWay");
 const {ritewayDB} = require('../../config/database');
 
-const StageQuote = require('../../models/Stage/quote');
-const OperatorUser = require('../../models/Stage/operator_user');
-const MigratedCompany = require('../../models/Stage/migrated_company');
+const {FdCompanies, MigratedCompany, OperatorUser} = require('../../models/Stage/index');
 
 const FreightDragonService = require('../../utils/services/FreightDragonService');
 const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');
@@ -123,12 +121,17 @@ class FreigthDragonMigration {
         
         this.finishedProcess.getEntities = false;
         let today = moment().format('YYYY-MM-DD');
-        let companies = await riteWay.Company.findAll({
-            include: {
-                model: MigratedCompany,
-                as: 'migrated_company',
-                require: true
-            },
+        let fdCompanies = await FdCompanies.findAll({
+            include: [
+                {
+                    model: MigratedCompany,
+                    as: 'migrated_company',
+                    require: false
+                },
+                {
+                    model: riteWay.Company
+                }
+            ],
             where: {
                 [dbOp.and] : [
                     Sequelize.where(
@@ -140,15 +143,15 @@ class FreigthDragonMigration {
             }
         });
 
-        for(let i = 0; i<companies.length; i++){
-            let company =  companies[i];
-            let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59', company.name.trim());
+        for(let i = 0; i<fdCompanies.length; i++){
+            let fdCompany =  fdCompanies[i];
+            let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59', fdCompany.company.name.trim());
             if(res.Success){
                 console.log((new Date()).toString() ,"getEntities Total Entities ", res.Data.length);
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
-                        let success = await this.RWService.importQuote(fdEntity, company);
+                        let success = await this.RWService.importQuote(fdEntity, fdCompany.company);
                         if(success){
                             console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
                         }
@@ -178,12 +181,17 @@ class FreigthDragonMigration {
         
         this.finishedProcess.migration = false;
         let today = moment().format('YYYY-MM-DD');
-        let companies = await riteWay.Company.findAll({
-            include: {
-                model: MigratedCompany,
-                as: 'migrated_company',
-                require: false
-            },
+        let fdCompanies = await FdCompanies.findAll({
+            include: [
+                {
+                    model: MigratedCompany,
+                    as: 'migrated_company',
+                    require: false
+                },
+                {
+                    model: riteWay.Company
+                }
+            ],
             where: {
                 [dbOp.and] : [
                     Sequelize.where(
@@ -192,25 +200,26 @@ class FreigthDragonMigration {
                         null
                     ),
                     Sequelize.where(
-                        Sequelize.col('companies.email'),
+                        Sequelize.col('company.email'),
                         '!=',
                         'demo@ritewayautotransport.com'
                     )
                 ]
-            }
+            },
+            limit:1
         });
 
-        for(let i = 0; i<companies.length; i++){
-            let company =  companies[i];
+        for(let i = 0; i<fdCompanies.length; i++){
+            let fdCompany =  fdCompanies[i];
             let migration = await MigratedCompany.create({
-                fd_company_id: company.id, 
+                fd_company_id: fdCompany.id, 
                 startedAt: moment().format('YYYY-MM-DD hh:mm:ss')
             });
 
             console.log("===========================================================================");
-            console.log("Migrate company ", company.name, moment().format('YYYY-MM-DD hh:mm:ss'));
+            console.log("Migrate company ", fdCompany.name, moment().format('YYYY-MM-DD hh:mm:ss'));
             console.log("===========================================================================");
-            let res = await this.FDService.getList('2019-01-01 00:00:00', today+' 23:59:59', company.name.trim());
+            let res = await this.FDService.getList('2019-01-01 00:00:00', today+' 23:59:59', fdCompany.name.trim());
             if(res.Success){
                 console.log("Total Entities ", res.Data.length, "-------------");
                 await migration.update({
@@ -220,7 +229,7 @@ class FreigthDragonMigration {
                     let fdEntity = res.Data[i];
                     let message = `Index ${i} FDOrderID ${fdEntity.FDOrderID} ${((i+1)/res.Data.length*100).toFixed(6)}%`;
                     try{
-                        let success = await this.RWService.importQuote(fdEntity, company);
+                        let success = await this.RWService.importQuote(fdEntity, fdCompany.company);
                         if(success){
                             console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
                         }

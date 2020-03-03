@@ -14,16 +14,10 @@ FdCompanies.init(
         sequelize: ritewayDB,
         modelName: 'fd_companies',
         schema: 'stage',
-        timestamps: true,
+        timestamps: false,
         underscored: true
     }
 );
-
-FdCompanies.belongsTo(Company, {
-    foreignKey: 'company_id',
-    constraints: true
-});
-FdCompanies.sync();
 
 module.exports = FdCompanies;
 //order status

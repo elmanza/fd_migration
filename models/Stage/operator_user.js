@@ -25,13 +25,6 @@ OperatorUser.init(
     }
 );
 
-OperatorUser.belongsTo(User, {
-    foreignKey: 'rite_way_id',
-    constraints: true
-});
-
-OperatorUser.sync();
-
 module.exports = OperatorUser;
 //order status
 //pick up, in transit, delivered, damage

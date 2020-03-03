@@ -9,7 +9,7 @@ const dbOp = Sequelize.Op;
 const riteWay  = require("../../models/RiteWay/_riteWay");
 const {ritewayDB} = require('../../config/database');
 
-const StageQuote = require('../../models/Stage/quote');
+const {Quote:StageQuote} = require('../../models/Stage/index');
 
 const FreightDragonService = require('../../utils/services/FreightDragonService');
 const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');

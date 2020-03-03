@@ -21,9 +21,6 @@ const ContactInformation = require('./contact_information');
 const Location = require('./location');
 const TypeAddress = require('./type_address');
 
-const StageQuote = require('../Stage/quote');
-const MigratedCompany = require('../Stage/migrated_company');
-
 City.belongsTo(State, {
     foreignKey: {
         name: 'state_id',
@@ -373,37 +370,6 @@ Driver.belongsTo(Order, {
         allowNull: false
     },
     constraints: true
-});
-//====================
-Quote.hasOne(StageQuote, {
-    foreignKey: 'rite_way_id',
-    as: 'stage_quote',
-    constraints: true
-});
-
-StageQuote.belongsTo(Quote, {
-    foreignKey: {
-        name: 'rite_way_id',
-        allowNull: false
-    },
-    constraints: false,
-});
-
-Company.hasOne(MigratedCompany, {
-    foreignKey: {
-        name: 'fd_company_id',
-        allowNull: false
-    },
-    as: 'migrated_company',
-    constraints: false,
-});
-
-MigratedCompany.belongsTo(Company, {
-    foreignKey: {
-        name: 'fd_company_id',
-        allowNull: false
-    },
-    constraints: false,
 });
 
 module.exports = {

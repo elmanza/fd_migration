@@ -22,13 +22,6 @@ MigratedCompany.init(
     }
 );
 
-MigratedCompany.belongsTo(FdCompanies, {
-    foreignKey: 'fd_company_id',
-    constraints: true
-});
-
-MigratedCompany.sync();
-
 module.exports = MigratedCompany;
 //order status
 //pick up, in transit, delivered, damage
