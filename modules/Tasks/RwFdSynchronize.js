@@ -458,7 +458,7 @@ class RwFdSynchronize {
         if(res.Success){
             let fdQuote = res.Data;
             let quoteData = {
-                tariff: Number(fdQuote.tariff),
+                tariff: (fdQuote.all_tariffed ? Number(fdQuote.tariff) : 0),
                 state: 'waiting',
                 fd_id: fdQuote.id,
                 fd_number: fdQuote.FDOrderID
