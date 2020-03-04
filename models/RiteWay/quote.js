@@ -31,6 +31,7 @@ Quote.init(
 
         created_at: { type: 'TIMESTAMP', allowNull: true },
         updated_at: { type: 'TIMESTAMP', allowNull: true },
+        deletedAt: {type: 'timestamp', allowNull: true},
 
         fd_id: { type: Sequelize.INTEGER, allowNull: true },
         fd_number: { type: Sequelize.STRING, allowNull: true },
@@ -39,8 +40,7 @@ Quote.init(
         sequelize: ritewayDB,
         modelName: 'quotes',
         timestamps: false,
-        underscored: true,
-        paranoid: true
+        underscored: true
     }
 );
 

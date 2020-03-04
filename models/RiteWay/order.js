@@ -19,13 +19,13 @@ Order.init(
         bol:{type: Sequelize.STRING, allowNull: true},
         createdAt: {type: 'timestamp', allowNull: true},
         updatedAt: {type: 'timestamp', allowNull: true},
+        deletedAt: {type: 'timestamp', allowNull: true}
     },
     {
         sequelize: ritewayDB,
         modelName: 'orders',
         timestamps: false,
-        underscored: true,
-        paranoid: true
+        underscored: true
     }
 );
 

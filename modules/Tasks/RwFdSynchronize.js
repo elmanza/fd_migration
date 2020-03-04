@@ -510,6 +510,7 @@ class RwFdSynchronize {
                 if(fdStatus == 'cancelled'){
                     quoteData.state = fdStatus;
                     quoteData.deletedAt = fdQuote.archived;
+                    quoteData.reason = fdQuote.cancel_reason;
                 }
             }
             else{
@@ -577,7 +578,8 @@ class RwFdSynchronize {
             await riteWayQuote.update(quoteData);
             await riteWayQuote.stage_quote.update({
                 status: stageStatus,
-                fdResponse: "fd_get_quote_sucess"
+                fdResponse: "fd_get_quote_sucess",
+                watch: (stageStatus == 'cancelled') ? false : true
             });
 
             return res.Success ? "Quote refreshed. Quote ID "+riteWayQuote.id: 'fd_get_order_error';
@@ -698,6 +700,11 @@ class RwFdSynchronize {
             if(riteWayQuote.offered_at == null){
                 quoteData.offered_at = fdOrder.ordered||fdOrder.created;
             }
+            if(fdStatus == 'cancelled'){
+                quoteData.state = fdStatus;
+                quoteData.deletedAt = fdOrder.archived;
+                quoteData.reason = fdOrder.cancel_reason;
+            }
 
             await riteWayQuote.update(quoteData);
             //Se actualiza el estado en el stage y se determina si se debe seguir vigilando
@@ -718,8 +725,7 @@ class RwFdSynchronize {
 
     async refreshRWEntity(stageQuote){
         let riteWayQuote = await riteWay.Quote.findByPk(stageQuote.riteWayId, {
-            include: this.quoteIncludeData,
-            paranoid: false
+            include: this.quoteIncludeData
         });        
         if(riteWayQuote.state == 'waiting'){
             let isOffered  = true;
@@ -870,8 +876,7 @@ class RwFdSynchronize {
                                 require: true
                             }]
                         }
-                    ],
-                    paranoid: false
+                    ]
                 }
             ],
             where: {
