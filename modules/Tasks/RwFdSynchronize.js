@@ -671,7 +671,7 @@ class RwFdSynchronize {
             }
 
             //Sync documents
-            this.syncFiles(res, riteWayQuote);
+            //this.syncFiles(res, riteWayQuote);
 
             //Se actualizan las notes
             let notes = await this.RWService.processFDNotes(fdOrder, riteWayQuote);
