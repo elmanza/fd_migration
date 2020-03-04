@@ -838,7 +838,7 @@ class RwFdSynchronize {
                     })))).toString('base64'),
                 };
                 let res = await this.FDService.sendNotes(rData);
-                console.log(res.Success ? notes.length+" notes of Quote ID "+stageQuote.quote.id+" sended": 'fd_get_order_error');
+                //console.log(res.Success ? notes.length+" notes of Quote ID "+stageQuote.quote.id+" sended": 'fd_get_order_error');
             }
         }
         return true;
