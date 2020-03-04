@@ -751,7 +751,7 @@ class RwFdSynchronize {
             return await this.refreshRWOrder(res, riteWayQuote);
         }
         else{
-            return null;
+            return await this.refreshRWQuote(res, riteWayQuote);
         }
 }
 
@@ -805,7 +805,6 @@ class RwFdSynchronize {
                     this.finishedProcess.refreshRWEntitySyncTask = true;
                 }
                 page++;
-                console.log(result.rows.length, recordsCount, totalRecords);
             }while( recordsCount < totalRecords );
             return true;
         }
