@@ -767,6 +767,8 @@ class RwFdSynchronize {
             let totalRecords = 0;
             let recordsCount = 0;
             let offset = 0;
+            let page = 0;
+            let limit = 100;
             do{
                 let result = await StageQuote.findAndCountAll({
                     where: {
@@ -775,8 +777,8 @@ class RwFdSynchronize {
                             [dbOp.not]: null
                         }
                     },
-                    offset,
-                    limit: 100
+                    offset: page * limit,
+                    limit
                 });
 
                 totalRecords = result.count;
@@ -802,8 +804,8 @@ class RwFdSynchronize {
                 if(totalRecords == 0){
                     this.finishedProcess.refreshRWEntitySyncTask = true;
                 }
-
-                offset++;
+                page++;
+                console.log(result.rows.length, recordsCount, totalRecords);
             }while( recordsCount < totalRecords );
             return true;
         }
