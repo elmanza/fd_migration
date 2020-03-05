@@ -726,10 +726,10 @@ class RwFdSynchronize {
     async refreshRWEntity(stageQuote){
         let riteWayQuote = await riteWay.Quote.findByPk(stageQuote.riteWayId, {
             include: this.quoteIncludeData
-        });        
+        });
+        let res = await this.FDService.get(stageQuote.fdOrderId);
         if(riteWayQuote.state == 'waiting'){
             let isOffered  = true;
-            let res = null;
 
             riteWayQuote.vehicles.forEach(vehicle => {
                 isOffered = isOffered && Number(vehicle.tariff) > 0;
@@ -745,9 +745,9 @@ class RwFdSynchronize {
         }
         else if(riteWayQuote.order != null){
             //Update the entity with all data
-            //let res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
+            //res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
             //-------------------------------------
-            let res = await this.FDService.get(stageQuote.fdOrderId);            
+            res = await this.FDService.get(stageQuote.fdOrderId);            
             return await this.refreshRWOrder(res, riteWayQuote);
         }
         else{
