@@ -429,6 +429,96 @@ class RiteWayAutotranportService{
         };
     }
 
+    async processVehicles(FDEntity, quote){
+        let totalVehicles = quote.vehicles;
+        for(let j=0; j<quote.vehicles.length; j++){
+            let rwVehicle = quote.vehicles[j];
+            let updated = false;
+            for(let k=0; k<FDEntity.vehicles.length; k++){
+                let fdVehicle = FDEntity.vehicles[k];
+                if((rwVehicle.vin ==  fdVehicle.vin) ||
+                    (
+                        rwVehicle.year ==  fdVehicle.year
+                        && rwVehicle.vehicle_model.vehicle_maker.name == fdVehicle.make
+                        && rwVehicle.vehicle_model.name == fdVehicle.model
+                        && rwVehicle.vehicle_type.name == fdVehicle.type
+                    )){
+                    
+                    updated = true;
+                    await rwVehicle.update({
+                            vin: fdVehicle.vin,
+                            year: fdVehicle.year,
+                            tariff: Number(fdVehicle.tariff),
+                            deposit: Number(fdVehicle.deposit),
+                            carrierPay: Number(fdVehicle.carrier_pay),
+                    });
+                    FDEntity.vehicles.splice(k, 1);
+                    break;
+                }
+            }
+
+            if(!updated){
+                await rwVehicle.destroy();
+            }
+        }
+
+        for(let i=0; i < FDEntity.vehicles.length; i++){
+            let fdVehicle = FDEntity.vehicles[i];
+            let vehicleType = await riteWay.VehicleType.findOne({
+                where: Sequelize.where(
+                    Sequelize.col('name'),
+                    'ILIKE',
+                    `%${fdVehicle.type}%`
+                )
+            });
+            let vehicleModel = null;
+            let vehicleMaker = await riteWay.VehicleMaker.findOne({
+                where: Sequelize.where(
+                    Sequelize.col('name'),
+                    'ILIKE',
+                    `%${fdVehicle.make}%`
+                )
+            });
+
+            if(vehicleMaker){
+                vehicleModel = await riteWay.VehicleModel.findOne({
+                    where: {
+                        [dbOp.and] : [
+                            Sequelize.where(
+                                Sequelize.col('name'),
+                                'ILIKE',
+                                `%${fdVehicle.model}%`
+                            ),
+                            {
+                                maker_id: vehicleMaker.id
+                            }
+                        ]
+                    }
+                });
+            }
+
+            await riteWay.Vehicle.create({
+                quote_id: quote.id,
+
+                year: fdVehicle.year,
+                lot: fdVehicle.lot,
+                vin: fdVehicle.vin,
+                plate: fdVehicle.plate,
+                state: fdVehicle.state,
+                color: fdVehicle.color,
+                inop: fdVehicle.inop,
+                tariff: Number(fdVehicle.tariff),
+                carrierPay: Number(fdVehicle.carrier_pay),
+                deposit: Number(fdVehicle.deposit),
+
+                model_id: vehicleModel.id,
+                type_id: vehicleType.id
+            });
+        }
+
+        quote.reload();
+    }
+
     async parseFDData(FDEntity, company = null){
         let rwData = {};
 

@@ -469,33 +469,8 @@ class RwFdSynchronize {
                 quoteData.offered_at = fdQuote.ordered||fdQuote.created;
             }
 
-            await riteWayQuote.update(quoteData);
-
             if(quoteData.tariff > 0){   
-
-                for(let j=0; j<riteWayQuote.vehicles.length; j++){
-                    let rwVehicle = riteWayQuote.vehicles[j];
-
-                    for(let k=0; k<fdQuote.vehicles.length; k++){
-                        let fdVehicle = fdQuote.vehicles[k];
-                        if(
-                            (rwVehicle.vin ==  fdVehicle.vin) || 
-                            (
-                                rwVehicle.year ==  fdVehicle.year
-                                && rwVehicle.vehicle_model.vehicle_maker.name == fdVehicle.make
-                                && rwVehicle.vehicle_model.name == fdVehicle.model
-                                && rwVehicle.vehicle_type.name == fdVehicle.type
-                            )
-                            ){
-                            await rwVehicle.update({
-                                tariff: Number(fdVehicle.tariff),
-                                deposit: Number(fdVehicle.deposit),
-                                carrierPay: Number(fdVehicle.carrier_pay),
-                            });
-                            break;
-                        }
-                    }
-                }
+                await this.RWService.processVehicles(fdQuote, riteWayQuote);
             }
 
             if(fdQuote.type < 3){
@@ -608,7 +583,7 @@ class RwFdSynchronize {
                     return status;
                 }
             };
-
+            await this.RWService.processVehicles(fdOrder, riteWayQuote);
             await riteWayQuote.order.reload();
             //Se asigna el carrier y driver
             let {carrier, driver} = await this.RWService.processFDCarrierDriver(fdOrder, riteWayQuote.order);
