@@ -160,7 +160,12 @@ class RwFdSynchronize {
                     status: "waiting"
                 };
 
+                let quoteData = {
+                    fd_number: res.EntityID
+                };
+
                 stageQuote = await StageQuote.create(stageQuoteData);
+                await riteWayQuote.update(quoteData);
             }
             else{
                 let stageQuoteData = {
