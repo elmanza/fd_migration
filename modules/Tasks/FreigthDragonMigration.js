@@ -147,7 +147,7 @@ class FreigthDragonMigration {
             let fdCompany =  fdCompanies[i];
             let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59', fdCompany.company.name.trim());
             if(res.Success){
-                Logger.info((new Date()).toString() + " getEntities Total Entities "+ res.Data.length);
+                Logger.info((new Date()).toString() + " getEntities "+fdCompany.company.name.trim()+" Total Entities "+ res.Data.length);
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
