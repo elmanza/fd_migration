@@ -10,6 +10,7 @@ const OperatorUser = require('../../models/Stage/operator_user');
 const {ritewayDB} = require('../../config/database');
 
 const Crypter = require('../crypter');
+const Logger = require('../logger');
 
 const OrderResource = require('./http/resources/RiteWayAutotransport/OrderResource');
 const InvoiceResource = require('./http/resources/RiteWayAutotransport/InvoiceResource');
@@ -122,7 +123,7 @@ class RiteWayAutotranportService{
         let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'delivered', 'pickedup', 'delivered'];
         if(typeof validStatus[status-1] == 'undefined'){
             //revisar este estado.
-            console.log("Status not valid "+status);
+            Logger.warn("Status not valid "+status);
             return 'active';
         }
         return validStatus[status-1];
@@ -828,7 +829,7 @@ class RiteWayAutotranportService{
                 status: '',
                 watch: false
             });
-            console.log(`quote created ${quote.id} company: ${company.id}`);
+            Logger.info(`quote created ${quote.id} company: ${company.id}`);
 
             for(let i = 0; i<rwData.vehicles.length; i++){
                 let vehicle = rwData.vehicles[i];
@@ -862,20 +863,20 @@ class RiteWayAutotranportService{
 
                 let newVehicle = await riteWay.Vehicle.create(vehicle);
                 vehicles.push(newVehicle);
-                console.log(`vehicle created ${newVehicle.id}`);
+                Logger.info(`vehicle created ${newVehicle.id}`);
             }
 
 
             if(rwData.order){
                 originLocation = await riteWay.Location.create(rwData.originLocation);
-                console.log(`originLocation created ${originLocation.id}`);
+                Logger.info(`originLocation created ${originLocation.id}`);
                 originContactInfo = await riteWay.ContactInformation.create({
                     ...rwData.originLocation.contact_information, 
                     location_id: originLocation.id
                 });
 
                 destinationLocation = await riteWay.Location.create(rwData.destinationLocation);
-                console.log(`destinationLocation created ${destinationLocation.id}`);
+                Logger.info(`destinationLocation created ${destinationLocation.id}`);
                 destinationContactInfo = await riteWay.ContactInformation.create(
                     {
                         ...rwData.destinationLocation.contact_information, 
@@ -891,12 +892,12 @@ class RiteWayAutotranportService{
                     location_destination_id: destinationLocation.id,
                     location_origin_id: originLocation.id,
                 });
-                console.log(`order created ${quote.id}`);
+                Logger.info(`order created ${quote.id}`);
                 if(rwData.carrier != null){
 
                     if(rwData.carrier.isNew){
                         carrier = await riteWay.Carrier.create(rwData.carrier);
-                        console.log(`Carrier created ${carrier.id}`);
+                        Logger.info(`Carrier created ${carrier.id}`);
                     }
                     else{
                         carrier = rwData.carrier;
@@ -907,7 +908,7 @@ class RiteWayAutotranportService{
                             order_id: order.id,
                             carrier_id: carrier.id
                         });
-                        console.log(`Driver created ${driver.id}`);
+                        Logger.info(`Driver created ${driver.id}`);
                     }
                 }
                 if(rwData.payments.length>0){
@@ -916,7 +917,7 @@ class RiteWayAutotranportService{
                         payment.order_id = order.id;
                         let newPayment = await riteWay.Payment.create(payment);
                         payments.push(newPayment);
-                        console.log(`Payment created ${newPayment.id}`);
+                        Logger.info(`Payment created ${newPayment.id}`);
                     }
                 }
                 if(rwData.invoice){
@@ -924,7 +925,7 @@ class RiteWayAutotranportService{
                         ...rwData.invoice,
                         order_id : order.id
                     });
-                    console.log(`Invoice created ${invoice.id}`);
+                    Logger.info(`Invoice created ${invoice.id}`);
                 }  
                 if(rwData.notes.length>0){
                     for(let i=0; i<rwData.notes.length; i++){
@@ -934,7 +935,7 @@ class RiteWayAutotranportService{
                             quoteId: quote.id
                         });
                         notes.push(newNote);
-                        console.log(`Note created ${newNote.id}`);
+                        Logger.info(`Note created ${newNote.id}`);
                     }
                 }              
             }            
@@ -959,7 +960,8 @@ class RiteWayAutotranportService{
 
         }
         catch(e){
-            console.log(`error on the process`, e);
+            Logger.error(`error on the import process`);
+            Logger.error(e);
 
             if(notes.length>0){
                 for(let i=0; i<notes.length; i++){

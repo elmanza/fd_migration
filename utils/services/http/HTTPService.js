@@ -6,6 +6,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
+const Logger = require('../../logger');
 
 class HTTPService{
     constructor(){
@@ -16,7 +17,8 @@ class HTTPService{
             mkdirp.sync(Storage.DOWNLOADS_PATH + `/${folderName}`);
         }
         catch(e){
-            console.log("Error download file", e)
+            Logger.error("Error download file");
+            Logger.error(e);
             return false;
         }
         

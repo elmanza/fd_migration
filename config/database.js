@@ -11,8 +11,8 @@ function getSequelizeConnection(params){
             host: params.dbHost,
             dialect: params.dbDialect,
             pool: {
-                max: 5,
-                min: 0,
+                max: 10,
+                min: 5,
                 acquire: 30000,
                 idle: 10000
             },

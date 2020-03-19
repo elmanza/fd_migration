@@ -2,6 +2,7 @@ const FdCompanies = require('./fd_companies');
 const MigratedCompany = require('./migrated_company');
 const Quote = require('./quote');
 const OperatorUser = require('./operator_user');
+const Log = require('./log');
 
 const {Company, User, Quote:RWQuote}  = require("../../models/RiteWay/_riteWay");
 
@@ -53,10 +54,12 @@ OperatorUser.sync();
 FdCompanies.sync();
 MigratedCompany.sync();
 Quote.sync();
+Log.sync();
 
 module.exports = {
     Quote,
     FdCompanies,
     MigratedCompany,
-    OperatorUser
+    OperatorUser, 
+    Log
 }

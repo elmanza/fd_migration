@@ -128,7 +128,6 @@ class FreightDragonService{
     }
 
     quoteToOrder(FDOrderID){
-        console.log(FDOrderID);
         return this.entityResource.quoteToOrder({FDOrderID});
     }
 

@@ -14,6 +14,7 @@ const FreightDragonService = require('../../utils/services/FreightDragonService'
 const RiteWayAutotranportService = require('../../utils/services/RiteWayAutotranportService');
 
 const Crypter = require('../../utils/crypter');
+const Logger = require('../../utils/logger');
 
 class FreigthDragonMigration {
     constructor(){
@@ -33,7 +34,7 @@ class FreigthDragonMigration {
             return null;
 
         }
-        console.log((new Date()).toString() + "membersSync task is called........................");
+        Logger.info((new Date()).toString() + "membersSync task is called.");
         this.finishedProcess.getOperatorMembers = false;
 
         let res = await this.FDService.getMemberList();
@@ -55,8 +56,7 @@ class FreigthDragonMigration {
                         fdOperator.email.trim()
                     )
                 });
-
-                //console.log(i, fdOperator.email, riteWayOperator==null);
+                //Logger.info(`${fdOperator.email} is imported: ${riteWayOperator==null}`);
 
                 if(!riteWayOperator){                    
 
@@ -117,7 +117,7 @@ class FreigthDragonMigration {
             return null;
 
         }
-        console.log((new Date()).toString() + "getEntities task is called........................");
+        Logger.info((new Date()).toString() + "getEntities task is called.");
         
         this.finishedProcess.getEntities = false;
         let today = moment().format('YYYY-MM-DD');
@@ -147,22 +147,21 @@ class FreigthDragonMigration {
             let fdCompany =  fdCompanies[i];
             let res = await this.FDService.getList(today+' 00:00:00', today+' 23:59:59', fdCompany.company.name.trim());
             if(res.Success){
-                console.log((new Date()).toString() ,"getEntities Total Entities ", res.Data.length);
+                Logger.info((new Date()).toString() + " getEntities Total Entities "+ res.Data.length);
                 for(let i=0; i<res.Data.length; i++){
                     let fdEntity = res.Data[i];
                     try{
                         let success = await this.RWService.importQuote(fdEntity, fdCompany.company);
                         if(success){
-                            console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+                            Logger.info(`Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%) ${fdEntity.FDOrderID}`);
                         }
                         else{
-                            console.log(`--->Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+                            Logger.info(`Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%) ${fdEntity.FDOrderID}`);
                         }
                     }
                     catch(e){
-                        console.log("===========================================================================");
-                        console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e);
-                        console.log("===========================================================================");
+                        Logger.error(`Error import (${((i+1)/res.Data.length*100).toFixed(6)}%) ${fdEntity.FDOrderID}: ${e.message}`);
+                        Logger.error(e);
                     }
                     
                 }
@@ -177,7 +176,7 @@ class FreigthDragonMigration {
             return null;
 
         }
-        console.log((new Date()).toString() + "migration task is called........................");
+        Logger.info((new Date()).toString() + "migration task is called.");
         
         this.finishedProcess.migration = false;
         let today = moment().format('YYYY-MM-DD');
@@ -215,13 +214,10 @@ class FreigthDragonMigration {
                 fd_company_id: fdCompany.id, 
                 startedAt: moment().format('YYYY-MM-DD hh:mm:ss')
             });
-
-            console.log("===========================================================================");
-            console.log("Migrate company ", fdCompany.name, moment().format('YYYY-MM-DD hh:mm:ss'));
-            console.log("===========================================================================");
+            Logger.info("Migration of "+ fdCompany.name);
             let res = await this.FDService.getList('2019-01-01 00:00:00', today+' 23:59:59', fdCompany.name.trim());
             if(res.Success){
-                console.log("Total Entities ", res.Data.length, "-------------");
+                Logger.info("Total Entities "+ res.Data.length);
                 await migration.update({
                     status: "Total Entities "+ res.Data.length
                 });
@@ -231,16 +227,15 @@ class FreigthDragonMigration {
                     try{
                         let success = await this.RWService.importQuote(fdEntity, fdCompany.company);
                         if(success){
-                            console.log(`--->Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+                            Logger.info(`Sucess import (${((i+1)/res.Data.length*100).toFixed(6)}%) ${fdEntity.FDOrderID}`);
                         }
                         else{
-                            console.log(`--->Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID);
+                            Logger.info(`Not imported  (${((i+1)/res.Data.length*100).toFixed(6)}%) ${fdEntity.FDOrderID}`);
                         }
                     }
                     catch(e){
-                        console.log("===========================================================================");
-                        console.log(`--->Error import (${((i+1)/res.Data.length*100).toFixed(6)}%)`, i, fdEntity.FDOrderID, e);
-                        console.log("===========================================================================");
+                        Logger.error(`Error import (${((i+1)/res.Data.length*100).toFixed(6)}%) ${fdEntity.FDOrderID}: ${e.message}`);
+                        Logger.error(e);
                     }
                     await migration.update({
                         status: message
@@ -252,7 +247,7 @@ class FreigthDragonMigration {
                 finishedAt: moment().format('YYYY-MM-DD hh:mm:ss'),
                 migrated: true
             });
-            console.log("finished ", moment().format('YYYY-MM-DD hh:mm:ss'));
+            Logger.info("Migration of "+ fdCompany.name +" finished "+ moment().format('YYYY-MM-DD hh:mm:ss'));
         }
         this.finishedProcess.migration = true;
     }

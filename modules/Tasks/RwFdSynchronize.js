@@ -19,6 +19,7 @@ const HTTPService = require('../../utils/services/http/HTTPService');
 const {FDConf, RWAConf} = require('../../config/conf');
 
 const {Storage} = require('../../config/conf');
+const Logger = require('../../utils/logger');
 
 class RwFdSynchronize {
     constructor(){
@@ -189,7 +190,7 @@ class RwFdSynchronize {
         if(!this.finishedProcess.createFDQuoteSyncTask){
             return null;
         }        
-        console.log((new Date()).toString() + "createQuotes task is called........................");
+        Logger.info((new Date()).toString() + "createQuotes task is called.");
         let recProccesed = 0;
         this.finishedProcess.createFDQuoteSyncTask = false;
 
@@ -233,10 +234,14 @@ class RwFdSynchronize {
                 recProccesed++;              
                 this.createFDQuote(quote)
                 .then(result => {
-                    console.log("createFDQuoteSyncTask ", result);
+                    Logger.info({
+                        message: "createFDQuoteSyncTask ", 
+                        result
+                    });
                 })
                 .catch(error => {
-                    console.log("createFDQuoteSyncTask Error ", error);
+                    Logger.error("createFDQuoteSyncTask Error " + quote.id +": "+e.message);
+                    Logger.error(error);
                 })
                 .finally(()=>{
                     recProccesed--;
@@ -276,7 +281,7 @@ class RwFdSynchronize {
         if(!this.finishedProcess.quoteToOrderSyncTask){
             return null;
         }
-        console.log((new Date()).toString() + "quotesToOrders task is called........................");
+        Logger.info((new Date()).toString() + "quotesToOrders task is called.");
         let recProccesed = 0;
         this.finishedProcess.quoteToOrderSyncTask = false;
 
@@ -314,11 +319,15 @@ class RwFdSynchronize {
             quotes.forEach(quote => {        
                 recProccesed++;         
                 this.quoteToOrder(quote)
-                .then(res => {
-                    console.log("quoteToOrderSyncTask", res);
+                .then(result => {
+                    Logger.info({
+                        message: "quoteToOrderSyncTask", 
+                        result
+                    });
                 })
                 .catch(error => {
-                    console.log("quoteToOrderSyncTask Error", error);
+                    Logger.error("createFDQuoteSyncTask Error " + quote.id +": "+e.message);
+                    Logger.error(error);
                 })
                 .finally(()=>{
                     recProccesed--;
@@ -408,7 +417,7 @@ class RwFdSynchronize {
                     }
                 }
                 catch(error){
-                    console.log('Error when the system try sync documents files, filename: '+file.name+' of '+file.existIn);
+                    Logger.error('Error when the system try sync documents files, filename: '+file.name+' of '+file.existIn);
                 }
                 
             }
@@ -420,7 +429,7 @@ class RwFdSynchronize {
                 await this.RWService.uploadBOL(riteWayQuote.order.id, bolFileFromFD[0]);
             }
             catch(error){
-                console.log('Error when the system try sync BOL file, filename: '+bolFileFromFD[0].name+' of '+bolFileFromFD[0].existIn);
+                Logger.error('Error when the system try sync BOL file, filename: '+bolFileFromFD[0].name+' of '+bolFileFromFD[0].existIn);
             }
         }
     }
@@ -452,7 +461,7 @@ class RwFdSynchronize {
                     await this.RWService.uploadInvoice(invoice.id, fileData);
                 }
                 catch(error){
-                    console.log("Error when the system upload invoice file on Rite Way System, File " + fileName);
+                    Logger.error("Error when the system upload invoice file on Rite Way System, File " + fileName);
                 }
                 
             }            
@@ -739,7 +748,7 @@ class RwFdSynchronize {
         if(!this.finishedProcess.refreshRWEntitySyncTask){
             return null;
         }
-        console.log((new Date()).toString() + "refreshRWEntity task is called........................");
+        Logger.info((new Date()).toString() + "refreshRWEntity task is called.");
         let recProccesed = 0;
         this.finishedProcess.refreshRWEntitySyncTask = false;
         
@@ -768,10 +777,14 @@ class RwFdSynchronize {
                     recProccesed++;
                     this.refreshRWEntity(stageQuote)
                     .then(result => {
-                        console.log("refreshRWEntitySyncTask ",result);
+                        Logger.info({
+                            message: "refreshRWEntitySyncTask ",
+                            result
+                        });
                     })
                     .catch(error => {
-                        console.log("refreshRWEntitySyncTask Error ", error, stageQuote.fdOrderId);
+                        Logger.error("refreshRWEntitySyncTask Error "+stageQuote.fdOrderId+": "+error.message);
+                        Logger.error(error);
                     })
                     .finally(()=>{
                         recProccesed--;
@@ -825,7 +838,6 @@ class RwFdSynchronize {
                     })))).toString('base64'),
                 };
                 let res = await this.FDService.sendNotes(rData);
-                //console.log(res.Success ? notes.length+" notes of Quote ID "+stageQuote.quote.id+" sended": 'fd_get_order_error');
             }
         }
         return true;
@@ -835,7 +847,7 @@ class RwFdSynchronize {
         if(!this.finishedProcess.sendNotesSyncTask){
             return null;
         }
-        console.log((new Date()).toString() + "sendOrderNotes task is called........................");
+        Logger.info((new Date()).toString() + "sendOrderNotes task is called.");
         this.finishedProcess.sendNotesSyncTask = false;
 
         StageQuote.findAll({
@@ -885,10 +897,13 @@ class RwFdSynchronize {
         .then( stageQuotes => {
             this.sendNotes(stageQuotes)
             .then(result => {
-                //console.log("sendNotesSyncTask", result);
+                Logger.info({
+                    message: "sendNotesSyncTask", 
+                    result
+                });
             })
             .catch(error => {
-                console.log("sendNotesSyncTask Error", error);
+                Logger.error(error);
             })
             .finally(()=>{
                 this.finishedProcess.sendNotesSyncTask = true;
