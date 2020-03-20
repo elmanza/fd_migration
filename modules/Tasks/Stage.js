@@ -14,7 +14,7 @@ class Stage {
     }
 
     async sendErrorReport(){
-        const sql = `select * from stage.logs where date_trunc('hour', created_at) = date_trunc('hour', '${moment().format('YYYY-MM-DD HH:mm:ss')}'::timestamp ) and "level" = 'error'`;
+        const sql = `select * from stage.logs where date_trunc('hour', created_at) = date_trunc('hour', '${moment().subtract(1, 'hours').format('YYYY-MM-DD HH:mm:ss')}'::timestamp ) and "level" = 'error'`;
         const records = await ritewayDB.query(sql, { type: ritewayDB.QueryTypes.SELECT});
         const htmlBody = reports.errorReportHtml(records);
         return this.mailManager.sendMail(['hgallardo@lean-tech.io'], 'Sync Process Error Report', htmlBody);
