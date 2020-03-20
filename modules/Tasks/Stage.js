@@ -14,10 +14,14 @@ class Stage {
     }
 
     async sendErrorReport(){
-        const sql = `select * from stage.logs where date_trunc('hour', created_at) = date_trunc('hour', '${moment().subtract(1, 'hours').format('YYYY-MM-DD HH:mm:ss')}'::timestamp ) and "level" = 'error'`;
+        const datetime = moment().subtract(1, 'hours').format('YYYY-MM-DD HH:mm:ss');
+        const sql = `select * from stage.logs where date_trunc('hour', created_at) = date_trunc('hour', '${datetime}'::timestamp ) and "level" = 'error'`;
         const records = await ritewayDB.query(sql, { type: ritewayDB.QueryTypes.SELECT});
-        const htmlBody = reports.errorReportHtml(records);
-        return this.mailManager.sendMail(['hgallardo@lean-tech.io'], 'Sync Process Error Report', htmlBody);
+        
+        if(records.length > 0){
+            const htmlBody = reports.errorReportHtml(datetime, records);
+            return this.mailManager.sendMail(['hgallardo@lean-tech.io'], 'Sync Process Error Report', htmlBody);
+        }
     }
 }
 

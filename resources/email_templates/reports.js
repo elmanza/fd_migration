@@ -1,4 +1,4 @@
-const errorReportHtml = (records) => {
+const errorReportHtml = (datetime, records) => {
     let html = '';
     let recordsHtml = records.map( error => {
         return `
@@ -34,7 +34,7 @@ const errorReportHtml = (records) => {
     </head>
     <body>
     
-    <h2>Errors</h2>
+    <h2>Errors ${datetime}</h2>
     
     <table>
       <tr>
