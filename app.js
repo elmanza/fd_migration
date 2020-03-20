@@ -11,3 +11,6 @@ Object.keys(tasks).forEach(task =>{
 
 let stage = new Stage();
 cronTasks['cleanLogs'] = cron.schedule('0 0 0 * * *', stage.cleanLogs);
+cronTasks['sendErrorReport'] = cron.schedule('0 0 * * * *', ()=>{
+    stage.sendErrorReport();
+});

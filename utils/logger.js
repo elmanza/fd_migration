@@ -7,7 +7,7 @@ Logger.debugLevel = level;
 Logger.debugStorage = storage;
 
 Logger.log = (level, message) => {
-    let levels = ['info', 'warn', 'error'];
+    let levels = ['debug', 'info', 'warn', 'error'];
     let strMessage = message;
     if (levels.indexOf(level) <= levels.indexOf(Logger.debugLevel) ) {
         if (typeof message !== 'string') {
@@ -42,6 +42,10 @@ Logger.warn = (message) => {
 
 Logger.error = (message) => {
     Logger.log('error', message);
+}
+
+Logger.debug = (message) => {
+    Logger.log('debug', message);
 }
 
 module.exports = Logger;

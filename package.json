@@ -17,6 +17,7 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.5",
     "sequelize": "^5.21.3",
+    "aws-sdk": "^2.617.0",
     "bcrypt": "^3.0.7"
   }
 }
