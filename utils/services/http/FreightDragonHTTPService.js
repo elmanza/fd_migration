@@ -11,7 +11,7 @@ class FreightDragonHTTPServices extends HTTPService{
     }
 
     getDataWCredentials(data){
-        return {...this.credentials, ...data};
+        return {...this.credentials, ...this.filterNulls(data)};
     }
 
     getUrl(url){

@@ -240,7 +240,7 @@ class RwFdSynchronize {
                     });
                 })
                 .catch(error => {
-                    Logger.error("createFDQuoteSyncTask Error " + quote.id +": "+e.message);
+                    Logger.error("createFDQuoteSyncTask Error " + quote.id +": "+error.message);
                     Logger.error(error);
                 })
                 .finally(()=>{

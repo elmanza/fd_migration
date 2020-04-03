@@ -48,7 +48,7 @@ class RiteWayHTTPService extends HTTPService {
         let options = {
             method: "POST",
             uri: this.getUrl(resourceUrl),
-            formData: data,
+            formData: this.filterNulls(data),
             json:true
         };
 
@@ -63,7 +63,7 @@ class RiteWayHTTPService extends HTTPService {
         let options = {
             method: "PUT",
             uri: this.getUrl(resourceUrl),
-            formData: data,
+            formData: this.filterNulls(data),
             json:true
         };
 

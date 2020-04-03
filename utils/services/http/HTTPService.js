@@ -12,6 +12,18 @@ class HTTPService{
     constructor(){
     }
 
+    filterNulls(data){
+        let dataWithoutNulls = {};
+
+        Object.keys(data).forEach(key => {
+            if(data[key] != null){
+                dataWithoutNulls[key] = data[key];
+            }
+        });
+        
+        return dataWithoutNulls;
+    }
+
     static async downloadFile(fileUrl, folderName, fileName){
         try{
             mkdirp.sync(Storage.DOWNLOADS_PATH + `/${folderName}`);
