@@ -719,12 +719,13 @@ class RwFdSynchronize {
         let res = await this.FDService.get(stageQuote.fdOrderId);
         if(riteWayQuote.state == 'waiting' || riteWayQuote.state == 'offered'){
             let isOffered  = true;
-
+            let rwTariff = 0;
             riteWayQuote.vehicles.forEach(vehicle => {
                 isOffered = isOffered && Number(vehicle.tariff) > 0;
+                rwTariff += Number(vehicle.tariff);
             });
             
-            if(isOffered){
+            if(isOffered && rwTariff != Number(res.Data.tariff)){
                 //Update the entity with all data
                 res = await this.FDService.update(stageQuote.fdOrderId, riteWayQuote);
                 res = await this.FDService.get(stageQuote.fdOrderId);
