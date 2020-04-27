@@ -462,6 +462,7 @@ class RwFdSynchronize {
                 }
                 catch(error){
                     Logger.error("Error when the system upload invoice file on Rite Way System, File " + fileName);
+                    Logger.error(error);
                 }
                 
             }            
