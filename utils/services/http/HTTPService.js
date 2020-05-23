@@ -41,8 +41,10 @@ class HTTPService{
             return new Promise((resolve, reject)=>{
                 https.get(fileUrl, response => {
                     if(response.statusCode == 200 && response.headers['content-type'] != 'text/html'){
-                        response.pipe(file).on('finish', () => resolve(filePath));
-                        response.pipe(file).on('error', () => resolve(false));
+                        response.pipe(file).on('finish', () => {
+                            file.close()
+                            resolve(filePath);
+                        }).on('error', (e) => resolve(false));
                     }
                     else{
                         resolve(false);

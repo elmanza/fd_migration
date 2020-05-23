@@ -350,7 +350,7 @@ class RiteWayAutotranportService{
                     company_name: FDEntity.carrier.company_name.trim(),
                     email: FDEntity.carrier.email.trim().toLowerCase(),
                     address: FDEntity.carrier.address1,
-                    zip: FDEntity.carrier.zip_code,
+                    zip: FDEntity.carrier.zip_code.replace(/\D/g, ""),
                     insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim()
                 }
                 
@@ -465,21 +465,28 @@ class RiteWayAutotranportService{
 
         for(let i=0; i < FDEntity.vehicles.length; i++){
             let fdVehicle = FDEntity.vehicles[i];
-            let vehicleType = await riteWay.VehicleType.findOne({
+            let [vehicleType, vtCrated] = await riteWay.VehicleType.findOrCreate({
                 where: Sequelize.where(
                     Sequelize.col('name'),
                     'ILIKE',
-                    `%${fdVehicle.type}%`
-                )
+                    `%${fdVehicle.type.trim()}%`
+                ),
+                defaults: {
+                    name: fdVehicle.type.trim()
+                }
             });
             let vehicleModel = null;
-            let vehicleMaker = await riteWay.VehicleMaker.findOne({
+            let [vehicleMaker, vmCrated]  = await riteWay.VehicleMaker.findOrCreate({
                 where: Sequelize.where(
                     Sequelize.col('name'),
                     'ILIKE',
-                    `%${fdVehicle.make}%`
-                )
+                    `%${fdVehicle.make.trim()}%`
+                ),
+                defaults: {
+                    name: fdVehicle.make.trim()
+                }
             });
+
 
             if(vehicleMaker){
                 vehicleModel = await riteWay.VehicleModel.findOne({
@@ -535,12 +542,12 @@ class RiteWayAutotranportService{
         rwData.tariff = Number(FDEntity.tariff);
 
 
-        rwData.origin_zip = FDEntity.origin.zip || '';
+        rwData.origin_zip = FDEntity.origin.zip.replace(/\D/g, "") || '';
         rwData.origin_address = FDEntity.origin.address1;
         let originCity = await this.getRWCity(FDEntity.origin.state, FDEntity.origin.city);
         rwData.originCity = originCity ? originCity.id : null;
 
-        rwData.destination_zip = FDEntity.destination.zip || '';
+        rwData.destination_zip = FDEntity.destination.zip.replace(/\D/g, "") || '';
         rwData.destination_address = FDEntity.destination.address1;
         let destinationCity = await this.getRWCity(FDEntity.destination.state, FDEntity.destination.city);
         rwData.destinationCity = destinationCity ? destinationCity.id : null;

@@ -644,16 +644,14 @@ class RwFdSynchronize {
                 
                 invoiceData.order_id = riteWayQuote.order.id;
 
-                let invoice = await riteWay.Invoice.findOne({
+                let [invoice, invoiceCreated] = await riteWay.Invoice.findOrCreate({
                     where: {
                         order_id: riteWayQuote.order.id
-                    }
+                    },
+                    defaults: invoiceData
                 });
 
-                if(invoice == null){
-                    await riteWay.Invoice.create(invoiceData);
-                }
-                else{
+                if(invoice){
                     await invoice.update(invoiceData);
                 }
 
