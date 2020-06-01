@@ -489,18 +489,22 @@ class RiteWayAutotranportService{
 
 
             if(vehicleMaker){
-                vehicleModel = await riteWay.VehicleModel.findOne({
+                [vehicleModel, vmodelCreated] = await riteWay.VehicleModel.findOrCreate({
                     where: {
                         [dbOp.and] : [
                             Sequelize.where(
                                 Sequelize.col('name'),
                                 'ILIKE',
-                                `%${fdVehicle.model}%`
+                                `%${fdVehicle.model.trim()}%`
                             ),
                             {
                                 maker_id: vehicleMaker.id
                             }
                         ]
+                    },
+                    defaults: {
+                        name: fdVehicle.model.trim(),
+                        maker_id: vehicleMaker.id
                     }
                 });
             }
