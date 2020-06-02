@@ -489,6 +489,7 @@ class RiteWayAutotranportService{
 
 
             if(vehicleMaker){
+                let vmodelCreated = null;
                 [vehicleModel, vmodelCreated] = await riteWay.VehicleModel.findOrCreate({
                     where: {
                         [dbOp.and] : [
