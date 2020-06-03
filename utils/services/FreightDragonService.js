@@ -136,8 +136,8 @@ class FreightDragonService{
         return this.entityResource.update({FDOrderID, ...fdEntityD});
     }
 
-    get(FDOrderID){
-        return this.entityResource.get({FDOrderID});
+    get(FDOrderID, recreateInvoice = false){
+        return this.entityResource.get({FDOrderID, recreateInvoice});
     }
 
     getList(iniDate, endDate, companyName){

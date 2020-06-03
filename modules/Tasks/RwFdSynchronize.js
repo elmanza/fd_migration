@@ -435,7 +435,7 @@ class RwFdSynchronize {
     }
 
     async syncInvoice(res, riteWayQuote){
-
+        res = await this.FDService.get(res.Data.FDOrderID, true);
         let invoice = await riteWay.Invoice.findOne({
             where: {
                 order_id: riteWayQuote.order.id
@@ -450,7 +450,7 @@ class RwFdSynchronize {
         let folder = `tmp/quote_${riteWayQuote.id}/invoice`;
         if(fdInvoiceURL){
             let fileName = path.basename(fdInvoiceURL);
-            let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);    
+            let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);   
             if(filePath){
                 let fileData = {
                     name: fileName,
