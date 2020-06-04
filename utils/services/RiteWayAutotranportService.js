@@ -396,8 +396,8 @@ class RiteWayAutotranportService{
             pickup_time_start: FDEntity.origin.hours,
             pickup_time_end: FDEntity.origin.hours,
             contact_information: {
-                name: FDEntity.origin.name,
-                phone: FDEntity.origin.phone1,
+                name: FDEntity.origin.name || '',
+                phone: FDEntity.origin.phone1 || '',
                 email: ''
             }
         };
@@ -409,8 +409,8 @@ class RiteWayAutotranportService{
             pickup_time_start: FDEntity.destination.hours,
             pickup_time_end: FDEntity.destination.hours,
             contact_information: {
-                name: FDEntity.destination.name,
-                phone: FDEntity.destination.phone1,
+                name: FDEntity.destination.name || '',
+                phone: FDEntity.destination.phone1 || '',
                 email: ''
             }
         };
