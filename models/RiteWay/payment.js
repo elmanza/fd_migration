@@ -7,7 +7,7 @@ class Payment extends Model { }
 Payment.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        amount: {type: Sequelize.INTEGER, allowNull: true},
+        amount: {type: Sequelize.DOUBLE, allowNull: true},
         transaction_id: {type: Sequelize.STRING, allowNull: true },
         from: {type: Sequelize.STRING, allowNull: true },
         to: {type: Sequelize.STRING, allowNull: true },
