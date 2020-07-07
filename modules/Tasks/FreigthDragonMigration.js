@@ -205,16 +205,28 @@ class FreigthDragonMigration {
                         'demo@ritewayautotransport.com'
                     )
                 ]
-            },
-            limit: 1
+            }
         });
 
         for (let i = 0; i < fdCompanies.length; i++) {
             let fdCompany = fdCompanies[i];
-            let migration = await MigratedCompany.create({
-                fd_company_id: fdCompany.id,
-                startedAt: moment().format('YYYY-MM-DD hh:mm:ss')
-            });
+            let migration;
+            
+            if(fdCompany.migrated_company){
+                migration = fdCompany.migrated_company;
+                migration.update({
+                    status: null,
+                    startedAt: moment().format('YYYY-MM-DD hh:mm:ss'),
+                    finishedAt: null
+                });
+            }
+            else{
+                migration = await MigratedCompany.create({
+                    fd_company_id: fdCompany.id,
+                    startedAt: moment().format('YYYY-MM-DD hh:mm:ss')
+                });
+            }
+
             Logger.info("Migration of " + fdCompany.name);
             let res = await this.FDService.getList('2019-01-01 00:00:00', today + ' 23:59:59', fdCompany.name.trim());
             if (res.Success) {

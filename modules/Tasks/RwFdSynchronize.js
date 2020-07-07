@@ -696,10 +696,11 @@ class RwFdSynchronize {
 
             await riteWayQuote.update(quoteData);
             //Se actualiza el estado en el stage y se determina si se debe seguir vigilando
+            const isPaidAndDelivered = Number(fdOrder.tariff) <= paymentsInvoiceData.totalPaid && fdStatus == 'delivered';
             await riteWayQuote.stage_quote.update({
                 status: fdStatus,
                 fdResponse: "fd_get_order_success",
-                watch: Number(fdOrder.tariff) > paymentsInvoiceData.totalPaid && fdStatus != 'cancelled'
+                watch: !isPaidAndDelivered && fdStatus != 'cancelled'
             });
         }
         else{
@@ -758,6 +759,10 @@ class RwFdSynchronize {
             let limit = 100;
             do{
                 let result = await StageQuote.findAndCountAll({
+                    include: {
+                        model: riteWay.Quote,
+                        required: true
+                    },
                     where: {
                         'watch': true,
                         'fdOrderId': {
@@ -770,13 +775,13 @@ class RwFdSynchronize {
 
                 totalRecords = result.count;
                 recordsCount += result.rows.length;
-
+                
                 result.rows.forEach(stageQuote => {
                     recProccesed++;
                     this.refreshRWEntity(stageQuote)
                     .then(result => {
                         Logger.info({
-                            message: "refreshRWEntitySyncTask ",
+                            message: "refreshRWEntitySyncTask "+stageQuote.fdOrderId,
                             result
                         });
                     })
