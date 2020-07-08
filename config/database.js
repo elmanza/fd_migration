@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const Sequelize = require('sequelize');
 
-function getSequelizeConnection(params){
+function getSequelizeConnection(params) {
     const sequelizeDatabaseConnection = new Sequelize(
         params.dbName,
         params.dbUsername,
@@ -11,8 +11,8 @@ function getSequelizeConnection(params){
             host: params.dbHost,
             dialect: params.dbDialect,
             pool: {
-                max: 50,
-                min: 30,
+                max: params.pool.max,
+                min: params.pool.min,
                 acquire: 300000,
                 idle: 300000
             },
@@ -29,6 +29,10 @@ riteWayDBConn = getSequelizeConnection({
     dbHost: process.env.DB_HOST,
     dbName: process.env.DB_NAME,
     dbDialect: process.env.DB_DIALECT,
+    pool: {
+        max: process.env.DB_POOL_MAX,
+        min: process.env.DB_POOL_MIN
+    }
 });
 
 module.exports = {
