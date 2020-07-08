@@ -30,8 +30,8 @@ riteWayDBConn = getSequelizeConnection({
     dbName: process.env.DB_NAME,
     dbDialect: process.env.DB_DIALECT,
     pool: {
-        max: process.env.DB_POOL_MAX,
-        min: process.env.DB_POOL_MIN
+        max: parseInt(process.env.DB_POOL_MAX),
+        min: parseInt(process.env.DB_POOL_MIN)
     }
 });
 
