@@ -123,7 +123,7 @@ class RiteWayAutotranportService{
         let validStatus = ['active', 'onhold', 'cancelled', 'posted', 'notsigned', 'dispatched', 'delivered', 'pickedup', 'delivered'];
         if(typeof validStatus[status-1] == 'undefined'){
             //revisar este estado.
-            Logger.warn("Status not valid "+status);
+            //Logger.warn("Status not valid "+status);
             return 'active';
         }
         return validStatus[status-1];
