@@ -614,7 +614,6 @@ class RwFdSynchronize {
 
             //Se procesa los pagos e invoice
             let paymentsInvoiceData = await this.RWService.processFDPayments(fdOrder, riteWayQuote.order, riteWayQuote.company);
-
             await riteWay.Payment.destroy({
                 where: {
                     order_id: riteWayQuote.order.id
@@ -660,11 +659,9 @@ class RwFdSynchronize {
             }
 
             //Se actualiza el estado de la orden
-            let orderData = this.RWService.getOrderData(fdOrder);
-            await riteWay.Order.update({
-                ...orderData,
-                status: fdStatus
-            }, {
+            let orderData = { ...this.RWService.getOrderData(fdOrder), status: fdStatus};
+            
+            await riteWay.Order.update(orderData, {
                 where: {
                     id: riteWayQuote.order.id
                 }
