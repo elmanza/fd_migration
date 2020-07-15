@@ -11,6 +11,9 @@ module.exports = {
     refreshRWEntity: function(){
         rw_fd_sync.refreshRWEntitySyncTask();
     },
+    downloadInvoices: function(){
+        rw_fd_sync.downloadInvoicesSyncTask();
+    },
     quotesToOrders: function(){
         rw_fd_sync.quoteToOrderSyncTask();
     },
