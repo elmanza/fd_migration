@@ -31,7 +31,8 @@ class RwFdSynchronize {
             createFDQuoteSyncTask: true,
             quoteToOrderSyncTask: true,
             sendNotesSyncTask: true,
-            refreshRWEntitySyncTask: true
+            refreshRWEntitySyncTask: true,
+            downloadInvoicesSyncTask: true,
         };
 
         this.quoteIncludeData = [
@@ -434,8 +435,8 @@ class RwFdSynchronize {
         }
     }
 
-    async syncInvoice(res, riteWayQuote) {
-        res = await this.FDService.get(res.Data.FDOrderID, true);
+    async syncInvoice(riteWayQuote) {
+        let res = await this.FDService.get(riteWayQuote.fd_number, true);
         let invoice = await riteWay.Invoice.findOne({
             where: {
                 order_id: riteWayQuote.order.id
@@ -464,7 +465,7 @@ class RwFdSynchronize {
                     Logger.error("Error when the system upload invoice file on Rite Way System, File " + fileName);
                     Logger.error(error);
                 }
-
+                return;
             }
         }
     }
@@ -643,10 +644,6 @@ class RwFdSynchronize {
                 if (invoice) {
                     await invoice.update(invoiceData);
                 }
-
-                if (invoice.url_invoice == null || invoice.url_invoice.trim() == '') {
-                    this.syncInvoice(res, riteWayQuote);
-                }
             }
 
             //Sync documents
@@ -659,8 +656,8 @@ class RwFdSynchronize {
             }
 
             //Se actualiza el estado de la orden
-            let orderData = { ...this.RWService.getOrderData(fdOrder), status: fdStatus};
-            
+            let orderData = { ...this.RWService.getOrderData(fdOrder), status: fdStatus };
+
             await riteWay.Order.update(orderData, {
                 where: {
                     id: riteWayQuote.order.id
@@ -903,6 +900,31 @@ class RwFdSynchronize {
                         this.finishedProcess.sendNotesSyncTask = true;
                     });
             });
+    }
+
+    //Download Invoices
+    async downloadInvoicesSyncTask() {
+        if (!this.finishedProcess.downloadInvoicesSyncTask) {
+            return null;
+        }
+        
+        this.finishedProcess.downloadInvoicesSyncTask = false;
+        Logger.info((new Date()).toString() + "downloadInvoicesSyncTask task is called.");
+
+        let quotes = await riteWay.Quote.findAll({
+            include: this.quoteIncludeData,
+            where: Sequelize.where(
+                Sequelize.col('order.id'),
+                'in',
+                Sequelize.literal(`(select order_id from invoices where url_invoice is null or url_invoice = '')`)
+            )
+        });
+
+        for (const quote of quotes) {
+            await this.syncInvoice(quote)
+        }
+
+        this.finishedProcess.downloadInvoicesSyncTask = true;
     }
 }
 
