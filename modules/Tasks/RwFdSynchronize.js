@@ -585,7 +585,6 @@ class RwFdSynchronize {
     }
 
     async refreshRWOrder(res, riteWayQuote) {
-        console.log('.....................');
         if (res.Success) {
             let fdOrder = res.Data;
             let fdStatus = riteWayQuote.order.status == 'issues' ? 'issues' : this.RWService._parseStatus(fdOrder.status);
@@ -740,7 +739,6 @@ class RwFdSynchronize {
         let limit = 50;
         let where = {
             'watch': true,
-            'status': ['delivered'],
             'fdOrderId': {
                 [dbOp.not]: null
             }
