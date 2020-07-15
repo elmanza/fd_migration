@@ -912,12 +912,27 @@ class RwFdSynchronize {
         Logger.info((new Date()).toString() + "downloadInvoicesSyncTask task is called.");
 
         let quotes = await riteWay.Quote.findAll({
-            include: this.quoteIncludeData,
-            where: Sequelize.where(
-                Sequelize.col('order.id'),
-                'in',
-                Sequelize.literal(`(select order_id from invoices where url_invoice is null or url_invoice = '')`)
-            )
+            include: {
+                model: riteWay.Order,
+                require: true
+            },
+            where: [
+                Sequelize.where(
+                    Sequelize.col('order.id'),
+                    'in',
+                    Sequelize.literal(`(select order_id from invoices where url_invoice is null or url_invoice = '')`)
+                ),
+                Sequelize.where(
+                    Sequelize.col('order.deleted_at'),
+                    'is',
+                    null
+                ),
+                Sequelize.where(
+                    Sequelize.col('quotes.deleted_at'),
+                    'is',
+                    null
+                )
+            ]
         });
 
         for (const quote of quotes) {
