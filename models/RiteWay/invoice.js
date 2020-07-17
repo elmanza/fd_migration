@@ -8,7 +8,7 @@ Invoice.init(
     {
         id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
         status: {type: Sequelize.STRING, allowNull: false},
-        amount: {type: Sequelize.INTEGER, allowNull: false},
+        amount: {type: Sequelize.DOUBLE, allowNull: false},
         url_invoice: {type: Sequelize.STRING, allowNull: false, defaultValue: ''},
         isPaid: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false},
         paided_at: {type: Sequelize.DATE, allowNull: true },
