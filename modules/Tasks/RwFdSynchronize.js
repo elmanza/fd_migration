@@ -33,6 +33,7 @@ class RwFdSynchronize {
             sendNotesSyncTask: true,
             refreshRWQuoteSyncTask: true,
             refreshRWEntitySyncTask: true,
+            refreshRWDeliveredEntitySyncTask: true,
             downloadInvoicesSyncTask: true,
         };
 
@@ -808,6 +809,9 @@ class RwFdSynchronize {
         let limit = 50;
         let where = {
             'watch': true,
+            'status': {
+                [dbOp.notIn] : ['waiting', 'offered', 'delivered']
+            },
             'fdOrderId': {
                 [dbOp.not]: null
             }
@@ -862,6 +866,74 @@ class RwFdSynchronize {
         await Promise.all(batchs);
         this.finishedProcess.refreshRWEntitySyncTask = true;
         Logger.info((new Date()).toString() + "refreshRWEntity task is FINISHED.");
+    }
+
+    async refreshRWDeliveredEntitySyncTask() {
+        if (!this.finishedProcess.refreshRWDeliveredEntitySyncTask) {
+            return null;
+        }
+        Logger.info((new Date()).toString() + "refreshRWDeliveredEntitySyncTask task is called.");
+        this.finishedProcess.refreshRWDeliveredEntitySyncTask = false;
+
+        //query
+        let limit = 50;
+        let where = {
+            'watch': true,
+            'status': 'delivered',
+            'fdOrderId': {
+                [dbOp.not]: null
+            }
+        };
+
+        let total = await StageQuote.count({ where });
+        let pageCount = Math.ceil(total / limit);
+
+        //Process records
+        let processRecords = async (page) => {
+            Logger.info(`refreshRWDeliveredEntitySyncTask processRecords Batch: ${page}`);
+            let records = await StageQuote.findAll({
+                include: {
+                    model: riteWay.Quote,
+                    required: true
+                },
+                where,
+                offset: page * limit,
+                limit
+            });
+            let refreshProcess = [];
+
+            for (let index in records) {
+                let stageQuote = records[index];
+                refreshProcess.push(new Promise((resolve, reject) => {
+                    this.refreshRWEntity(stageQuote)
+                        .then(result => {
+                            Logger.info({
+                                message: `refreshRWDeliveredEntitySyncTask ${stageQuote.fdOrderId} (Batch: ${page} index: ${index})`,
+                                result
+                            });
+                            resolve(true);
+                        })
+                        .catch(error => {
+                            Logger.error(`refreshRWDeliveredEntitySyncTask ${stageQuote.fdOrderId} Error ${stageQuote.fdOrderId} :  ${error.message} (Batch: ${page} index: ${index})`);
+                            Logger.error(error);
+                            resolve(error);
+                        });
+                }));
+            }
+
+            await Promise.all(refreshProcess);
+            Logger.info(`refreshRWDeliveredEntitySyncTask processRecords Batch: ${page} FINISHED`);
+        };
+
+        let batchs = [];
+
+        for (let page = 0; page <= pageCount; page++) {
+            batchs.push(processRecords(page));
+        }
+
+        await Promise.all(batchs);
+        this.finishedProcess.refreshRWDeliveredEntitySyncTask = true;
+        Logger.info((new Date()).toString() + "refreshRWDeliveredEntitySyncTask task is FINISHED.");
     }
 
 
