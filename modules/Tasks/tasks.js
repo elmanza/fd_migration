@@ -5,7 +5,7 @@ rw_fd_sync = new RwFdSynchronize();
 migration = new FreigthDragonMigration();
 
 module.exports = {
-    /* createQuotes: function(){
+    createQuotes: function(){
         rw_fd_sync.createFDQuoteSyncTask();
     },
     refreshRWQuote: function(){
@@ -13,10 +13,10 @@ module.exports = {
     },
     refreshRWEntity: function(){
         rw_fd_sync.refreshRWEntitySyncTask();
-    }, */
+    },
     refreshRWDeliveredEntity: function(){
         rw_fd_sync.refreshRWDeliveredEntitySyncTask();
-    }/* ,
+    },
     downloadInvoices: function(){
         rw_fd_sync.downloadInvoicesSyncTask();
     },
@@ -34,5 +34,5 @@ module.exports = {
     },     
     migrateAll: function(){
         migration.migration();
-    }, */
+    },
 }
