@@ -8,6 +8,9 @@ module.exports = {
     createQuotes: function(){
         rw_fd_sync.createFDQuoteSyncTask();
     },
+    refreshRWQuote: function(){
+        rw_fd_sync.refreshRWQuoteSyncTask();
+    },
     refreshRWEntity: function(){
         rw_fd_sync.refreshRWEntitySyncTask();
     },
