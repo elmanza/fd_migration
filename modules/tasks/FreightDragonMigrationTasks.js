@@ -13,8 +13,8 @@ class FreightDragonMigrationTasks {
 
         this.pools = {
             migrateAll: workerpool.pool(__dirname + '/../workers/FreightDragonMigration.js', {
-                minWorkers: 10,
-                maxWorkers: 20,
+                minWorkers: 1,
+                maxWorkers: 1,
                 workerType: 'thread'
             }),
             migrateTodayEntities: workerpool.pool(__dirname + '/../workers/FreightDragonMigration.js', {

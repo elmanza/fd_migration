@@ -249,7 +249,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 fdAccountId: '',
                 fdResponse: 'Imported',
                 status: status,
-                watch: watch
+                watch: false
             };
             await StageQuote.create(stageQuoteData, { transaction });
             await transaction.commit();
