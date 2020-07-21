@@ -1,29 +1,66 @@
-const Sequelize = require('sequelize');
-const {ritewayDB} = require('../../config/database');
-const Model = Sequelize.Model;
+/* jshint indent: 2 */
 
-class Quote extends Model{}
-
-Quote.init(
-    {
-        id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        riteWayId: {type: Sequelize.INTEGER, allowNull: false, unique: true},
-        fdOrderId: {type: Sequelize.STRING, allowNull: true},
-        fdAccountId: {type: Sequelize.STRING, allowNull: true},
-        fdResponse: {type: Sequelize.STRING, allowNull: true},
-        status: {type: Sequelize.STRING, allowNull: false}, //error, waiting, offered, pick up, in transit, delivered
-        //status: {}, //macropoint
-        watch: {type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true},
-    },
-    {
-        sequelize: ritewayDB,
-        modelName: 'quotes',
+module.exports = function (sequelize, DataTypes) {
+    const StageQuote = sequelize.define('StageQuote', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+        },
+        riteWayId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            unique: true,
+            references: {
+                model: 'quotes',
+                key: 'id'
+            }
+        },
+        fdOrderId: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        fdAccountId: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        fdResponse: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        status: {
+            type: DataTypes.STRING,
+            allowNull: false
+        }, //error, waiting, offered, pick up, in transit, delivered
+        watch: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true
+        },
+    }, {
+        tableName: 'quotes',
         schema: 'stage',
         timestamps: true,
         underscored: true
-    }
-);
+    });
 
-module.exports = Quote;
-//order status
-//pick up, in transit, delivered, damage
+    StageQuote.associate = (Models, RWModels) => {
+        const { Quote:RWQuote } = RWModels;
+
+        RWQuote.hasOne(StageQuote, {
+            foreignKey: 'rite_way_id',
+            as: 'stage_quote',
+            constraints: true
+        });
+
+        StageQuote.belongsTo(RWQuote, {
+            foreignKey: {
+                name: 'rite_way_id',
+                allowNull: false
+            },
+            constraints: false,
+        });
+    };
+
+    return StageQuote;
+};

@@ -1,24 +1,54 @@
-const Sequelize = require('sequelize');
-const {ritewayDB} = require('../../config/database');
-const {Company}  = require("../../models/RiteWay/_riteWay");
-const Model = Sequelize.Model;
+/* jshint indent: 2 */
 
-class FdCompanies extends Model{}
-
-FdCompanies.init(
-    {
-        id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-        name: {type: Sequelize.STRING, allowNull: false,},
+module.exports = function (sequelize, DataTypes) {
+  const FdCompanies = sequelize.define('FdCompanies', {
+    id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      primaryKey: true,
+      autoIncrement: true
     },
-    {
-        sequelize: ritewayDB,
-        modelName: 'fd_companies',
-        schema: 'stage',
-        timestamps: false,
-        underscored: true
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    company_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: {
+          tableName: 'companies',
+          schema: 'public',
+        },
+        key: 'id'
+      }
     }
-);
+  }, {
+    tableName: 'fd_companies',
+    schema: 'stage',
+    timestamps: false,
+    underscored: true
+  });
 
-module.exports = FdCompanies;
-//order status
-//pick up, in transit, delivered, damage
+  FdCompanies.associate = (Models, RWModels) => {
+    const { MigratedCompany } = Models;
+    const { Company } = RWModels;
+
+    Company.hasMany(FdCompanies, {
+      foreignKey: 'company_id',
+      constraints: true
+    });
+
+    FdCompanies.belongsTo(Company, {
+      foreignKey: 'company_id',
+      constraints: true
+    });
+
+    FdCompanies.hasOne(MigratedCompany, {
+      foreignKey: 'fd_company_id',
+      constraints: true
+    });
+  };
+
+  return FdCompanies;
+};
