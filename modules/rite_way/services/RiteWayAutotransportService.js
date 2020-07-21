@@ -675,8 +675,8 @@ class RiteWayAutotranportService {
         if (this._parseStatus(FDEntity.status) == ORDER_STATUS.DELIVERED) {
             result.invoiceData = {
                 status: result.tariff > result.totalPaid ? 'pending' : 'paid',
-                isPaid: !(result.tariff > result.totalPaid),
-                paided_at: result.tariff > result.totalPaid ? null : lastPaymentDate,
+                is_paid: !(result.tariff > result.totalPaid),
+                paid_at: result.tariff > result.totalPaid ? null : lastPaymentDate,
                 createdAt: FDEntity.delivered || FDEntity.actual_pickup_date || FDEntity.avail_pickup_date || FDEntity.created,
                 updatedAt: FDEntity.delivered || FDEntity.actual_pickup_date || FDEntity.avail_pickup_date || FDEntity.created,
                 amount: result.tariff,
