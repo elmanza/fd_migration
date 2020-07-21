@@ -5,9 +5,9 @@ FDTasks = new FreightDragonMigrationTasks();
 RWTasks = new RWSynchronizatorTasks();
 
 module.exports = {
-    migrate(){
+    /* migrate(){
         return FDTasks.migrateAll();
-    },
+    }, */
     migrateTodayEntities(){
         return FDTasks.migrateTodayEntities();
     },
