@@ -225,7 +225,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 let note = quoteData.notes[i];
                 let newNote = await RiteWay.Note.create({
                     ...note,
-                    quoteId: quoteData.id
+                    quote_id: quoteData.id
                 });
                 Logger.info(`Note created  of ${quoteData.fd_number}, with ID ${newNote.id}`);
             }
@@ -672,7 +672,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 required: true
             },
             where: {
-                quoteId: quote.id
+                quote_id: quote.id
             }
         });
 
