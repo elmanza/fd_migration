@@ -23,8 +23,8 @@ class RWSynchronizatorTasks {
                 workerType: 'thread'
             }),
             refreshEntities: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
-                minWorkers: 1,
-                maxWorkers: 1,
+                minWorkers: 5,
+                maxWorkers: 20,
                 workerType: 'thread'
             }),
         };
