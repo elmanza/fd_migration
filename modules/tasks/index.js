@@ -16,8 +16,8 @@ module.exports = {
     },
     quoteToOrder(){
         return RWTasks.quoteToOrder();
-    },*/
+    },
     refreshEntities(){
         return RWTasks.refreshEntities();
-    } 
+    } */
 }
