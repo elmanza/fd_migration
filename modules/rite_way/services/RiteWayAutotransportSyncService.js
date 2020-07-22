@@ -331,6 +331,16 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     }
 
     async updateNotes(notes, quote, optQuery) {
+        
+        let notesAmount = await RiteWay.Note.count({
+            where: {
+                quote_id: quote.id
+            },
+            ...optQuery
+        });
+
+        if (notesAmount == notes.length) return true;
+
         for (let i = 0; i < notes.length; i++) {
             let note = notes[i];
             note.quote_id = quote.id;
@@ -359,20 +369,12 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             });
         }
 
-        let notesAmount = await RiteWay.Note.count({
-            where: {
-                quote_id: quote.id
-            },
-            ...optQuery
-        });
-        if (notesAmount > notes.length) {
-            try {
-                this.sendNotes(quote, optQuery);
-                Logger.error(`Notes of ${quote.fd_number} was sended to FD`);
-            }
-            catch (error) {
-                Logger.error(`It was not possible sent notes of ${quote.fd_number} to FD`);
-            }
+        try {
+            this.sendNotes(quote, optQuery);
+            Logger.error(`Notes of ${quote.fd_number} was sended to FD`);
+        }
+        catch (error) {
+            Logger.error(`It was not possible sent notes of ${quote.fd_number} to FD`);
         }
     }
 
