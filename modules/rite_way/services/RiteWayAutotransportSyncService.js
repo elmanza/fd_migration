@@ -367,7 +367,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
         if (notesAmount > notes.length) {
             try {
-                this.sendNotes(quote, optQuery);
+                //this.sendNotes(quote, optQuery);
                 Logger.error(`Notes of ${quote.fd_number} was sended to FD`);
             }
             catch (error) {
