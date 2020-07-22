@@ -15,7 +15,7 @@ const { FDConf, RWAConf } = require('../../../config');
 const FreightDragonService = require('../../freight_dragon/services/FreightDragonService');
 const HTTPService = require('../../../utils/HTTPService');
 const RiteWayAutotranportService = require('./RiteWayAutotransportService');
-const { ORDER_STATUS } = require('../../../utils/constants');
+const { ORDER_STATUS, QUOTE_STATUS } = require('../../../utils/constants');
 
 class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     constructor() {
@@ -407,8 +407,9 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
             let fdTariff = Number(FDEntity.tariff);
             let updateFD = quoteTariff != fdTariff;
+            let isPaid = false;
 
-            if (updateFD) {
+            if (updateFD && quoteData.status_id != QUOTE_STATUS.ORDERED) {
                 let response = await this.FDService.update(quote.fd_number, quote);
                 response = await this.FDService.get(quote.fd_number);
 
@@ -433,6 +434,9 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
             await this.updateRWOrder(quoteData.order, quote, { transaction, paranoid: false });
+            if(quoteData.order){
+                if(quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
+            }
 
             await this.updateVehicles(quoteData.vehicles, quote, { transaction });
             Logger.info(`Vechiles of Quote ${quote.fd_number} Updated`);
@@ -441,7 +445,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             let status = quoteData.order ? quoteData.order.status_id : quoteData.status_id;
 
-            let watch = (status == ORDER_STATUS.CANCELLED ? false : true);
+            let watch = status != ORDER_STATUS.CANCELLED;
+            watch = watch && !(status == ORDER_STATUS.DELIVERED && isPaid);
 
             let stageQuoteData = {
                 riteWayId: quote.id,

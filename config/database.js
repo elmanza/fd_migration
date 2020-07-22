@@ -13,8 +13,8 @@ function getSequelizeConnection(params) {
             pool: {
                 max: params.pool.max,
                 min: params.pool.min,
-                acquire: 300000,
-                idle: 300000
+                acquire: 30000,
+                idle: 15000
             },
             logging: false
         }

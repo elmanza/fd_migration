@@ -20,7 +20,7 @@ async function migrate(companyId, today = false) {
 
     let conditions = [
         Sequelize.where(
-            Sequelize.col('company_id'),
+            Sequelize.col('FdCompanies.company_id'),
             '=',
             companyId
         )
@@ -53,12 +53,18 @@ async function migrate(companyId, today = false) {
                 require: false
             },
             {
-                model: RiteWay.Company
+                model: RiteWay.Company,
+                include: {
+                    model: RiteWay.CustomerDetail,
+                    required: true,
+                    as: 'customerDetail'
+                }
             }
         ],
         where: {
             [sqOp.and]: conditions
-        }
+        },
+        logging: true
     });
 
     for (const fdCompany of fdCompanies) {
@@ -118,7 +124,7 @@ async function migrate(companyId, today = false) {
 
             await migration.update({
                 status: `Migration of ${fdCompany.name}. Total Entities: ${res.Data.length}. OK ${ok},  FAIL ${fail}`,
-                finishedAt:  moment().format('YYYY-MM-DD hh:mm:ss'),
+                finishedAt: moment().format('YYYY-MM-DD hh:mm:ss'),
                 migrated: true
             });
         }

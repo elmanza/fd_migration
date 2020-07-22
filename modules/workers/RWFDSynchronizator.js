@@ -208,8 +208,6 @@ async function refreshEntities(page, limit) {
             return quote.fd_number;
         }).join('|');
 
-        let subProcesses = [];
-
         let response = await FDService.getBatch(fdOrdersIds);
 
         if (response.Success) {
@@ -217,24 +215,10 @@ async function refreshEntities(page, limit) {
 
             for (FDEntity of FDEntities) {
                 const quote = indexedQuotes[FDEntity.FDOrderID];
-
-                const subProc = RwSyncService.updateRWEntity(FDEntity, quote);
-
-                subProc.then(result => {
-                    if(result){
-                        Logger.info(`All changes was updated of  ${quote.fd_number}`);
-                    }
-                })
-                    .catch(error => {
-                        Logger.error(error);
-                    });
-
-                subProcesses.push(subProc);
+                const result = await RwSyncService.updateRWEntity(FDEntity, quote);
+                if (result) Logger.info(`All changes was updated of  ${quote.fd_number}`);
             }
         }
-
-        await Promise.all(subProcesses);
-
         return true;
     }
     catch (error) {

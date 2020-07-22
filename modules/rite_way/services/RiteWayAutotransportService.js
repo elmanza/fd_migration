@@ -489,7 +489,7 @@ class RiteWayAutotranportService {
                 color: vehicle.color,
                 inop: vehicle.inop,
                 tariff: Number(vehicle.tariff),
-                carrierPay: Number(vehicle.carrier_pay),
+                carrier_pay: Number(vehicle.carrier_pay),
                 deposit: Number(vehicle.deposit),
             }
 
