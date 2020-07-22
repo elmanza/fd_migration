@@ -24,7 +24,7 @@ class RWSynchronizatorTasks {
             }),
             refreshEntities: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
                 minWorkers: 5,
-                maxWorkers: 20,
+                maxWorkers: 10,
                 workerType: 'thread'
             }),
         };
