@@ -404,7 +404,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
             let fdTariff = Number(FDEntity.tariff);
             let updateFD = quoteTariff != fdTariff;
-
+            
             if (updateFD) {
                 let response = await this.FDService.get(quote.fd_number);
 
@@ -426,7 +426,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 }
             );
             await quote.reload();
-            Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id}, Company: ${quote.Company.id}`);
+            Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
             await this.updateRWOrder(quoteData.order, quote);
 
