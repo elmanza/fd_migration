@@ -14,9 +14,9 @@ module.exports = {
     createQuote(){
         return RWTasks.createQuote();
     },
-    /* quoteToOrder(){
+    quoteToOrder(){
         return RWTasks.quoteToOrder();
-    }, */
+    },
     refreshEntities(){
         return RWTasks.refreshEntities();
     } 

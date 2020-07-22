@@ -32,6 +32,11 @@ module.exports = function (sequelize, DataTypes) {
             type: DataTypes.STRING,
             allowNull: false
         }, //error, waiting, offered, pick up, in transit, delivered
+        ordered: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
         watch: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

@@ -249,7 +249,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 fdAccountId: '',
                 fdResponse: 'Imported',
                 status: status,
-                watch: false
+                watch: false,
+                ordered: quoteData.status_id == QUOTE_STATUS.ORDERED
             };
             await StageQuote.create(stageQuoteData, { transaction });
             await transaction.commit();
@@ -331,7 +332,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     }
 
     async updateNotes(notes, quote, optQuery) {
-        
+
         let notesAmount = await RiteWay.Note.count({
             where: {
                 quote_id: quote.id
@@ -510,7 +511,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 fdAccountId: '',
                 fdResponse: 'Updated',
                 status: status,
-                watch: watch
+                watch: watch,
+                ordered: quoteData.status_id == QUOTE_STATUS.ORDERED
             };
 
             await quote.stage_quote.update(stageQuoteData, { transaction });

@@ -165,6 +165,11 @@ async function quoteToOrder() {
                     '=',
                     true
                 ),
+                Sequelize.where(
+                    Sequelize.col('stage_quote.ordered'),
+                    '=',
+                    false
+                ),
             ]
         }
     });
