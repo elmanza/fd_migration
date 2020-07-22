@@ -678,7 +678,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
         if (notes.length > 0) {
             let rData = {
-                FDOrderID: stageQuote.fdOrderId,
+                FDOrderID: quote.fd_number,
                 Notes: (new Buffer(JSON.stringify(notes.map(note => {
                     let data = {
                         sender: note.user.username,
