@@ -66,7 +66,7 @@ class RiteWayAutotranportService {
             {
                 model: RiteWay.User,
                 as: 'userCreate',
-                required: true,
+                required: false,
                 attributes: ['id', 'name', 'last_name', 'username', 'last_name'],
                 include: {
                     model: RiteWay.Company,
