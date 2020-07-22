@@ -285,7 +285,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
         if (notes.length > 0) {
             let rData = {
-                FDOrderID: quote.fdOrderId,
+                FDOrderID: quote.fd_number,
                 Notes: (new Buffer(JSON.stringify(notes.map(note => {
                     let data = {
                         sender: note.User.username,
@@ -296,6 +296,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     return data;
                 })))).toString('base64'),
             };
+            console.log(rData);
             let res = await this.FDService.sendNotes(rData);
         }
 
@@ -364,10 +365,9 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             },
             ...optQuery
         });
-
         if (notesAmount > notes.length) {
             try {
-                //this.sendNotes(quote, optQuery);
+                this.sendNotes(quote, optQuery);
                 Logger.error(`Notes of ${quote.fd_number} was sended to FD`);
             }
             catch (error) {
@@ -473,7 +473,6 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
 
             //Updated Quote
-            console.log('asdasd');
             await quote.update(quoteData, { transaction, paranoid: false });
 
             await riteWayDBConn.query(

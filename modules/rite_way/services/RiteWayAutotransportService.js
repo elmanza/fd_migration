@@ -148,9 +148,6 @@ class RiteWayAutotranportService {
                         attributes: ['name'],
                     }
                 ]
-            }, 
-            {
-                model: RiteWay.Note,
             },
             {
                 model: StageQuote,
