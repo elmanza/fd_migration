@@ -161,6 +161,13 @@ class FreightDragonService {
         });
     }
 
+    getListByEmail(iniDate, endDate, email){
+        return this.entityResource.getList({
+            Created:`${iniDate}|${endDate}`,
+            Email: email
+        });
+    }
+
     sendNotes(data) {
         return this.entityResource.sendNotes(data);
     }
