@@ -16,7 +16,7 @@ function getSequelizeConnection(params){
                 acquire: 300000,
                 idle: 300000
             },
-            logging: true
+            logging: false
         }
     );
 

@@ -178,8 +178,67 @@ async function quoteToOrder() {
     return true;
 }
 
-async function refreshEntities(page) {
-    
+async function refreshEntities(page, limit) {
+    try {
+        console.log('refreshEntities///////////////////////////////////////////////////', page, limit)
+
+        let stagesQ = await Stage.StageQuote.findAll({
+            where: {
+                'watch': true,
+                'fdOrderId': {
+                    [sqOp.not]: null
+                }
+            },
+            offset: page * limit,
+            limit: limit
+        });
+
+        let quotes = await RiteWay.Quote.findAll({
+            include: RwSyncService.quoteIncludeData(),
+            where: {
+                id: stagesQ.map(sq => sq.riteWayId)
+            },
+            paranoid: false
+        });
+
+        let indexedQuotes = {};
+
+        let fdOrdersIds = quotes.map((quote, idx) => {
+            indexedQuotes[quote.fd_number] = quote;
+            return quote.fd_number;
+        }).join('|');
+
+        let subProcesses = [];
+
+        let response = await FDService.getBatch(fdOrdersIds);
+
+        if (response.Success) {
+            let FDEntities = response.Data;
+
+            for (FDEntity of FDEntities) {
+                const quote = indexedQuotes[FDEntity.FDOrderID];
+
+                const subProc = RwSyncService.updateRWEntity(FDEntity, quote);
+
+                subProc.then(result => {
+                    Logger.info(`All changes was updated of  ${FDEntity.FDOrderID}`);
+                })
+                    .catch(error => {
+                        Logger.error(error);
+                    });
+
+                subProcesses.push(subProc);
+            }
+        }
+
+        await Promise.all(subProcesses);
+
+        return true;
+    }
+    catch (error) {
+        Logger.error(error);
+        return false;
+    }
 }
 
 async function sendNotes() {
@@ -192,5 +251,6 @@ async function downloadInvoices() {
 
 workerpool.worker({
     createQuote,
-    quoteToOrder
+    quoteToOrder,
+    refreshEntities
 });

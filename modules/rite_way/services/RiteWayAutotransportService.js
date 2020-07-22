@@ -148,6 +148,9 @@ class RiteWayAutotranportService {
                         attributes: ['name'],
                     }
                 ]
+            }, 
+            {
+                model: RiteWay.Note,
             },
             {
                 model: StageQuote,
@@ -155,7 +158,7 @@ class RiteWayAutotranportService {
                 required: necesaryStage,
                 where: necesaryStage ? {
                     watch: true
-                }: null
+                } : null
             }
         ];
     }

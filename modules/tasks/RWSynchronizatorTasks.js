@@ -17,11 +17,22 @@ class RWSynchronizatorTasks {
                 maxWorkers: 1,
                 workerType: 'thread'
             }),
+            quoteToOrder: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
+                minWorkers: 1,
+                maxWorkers: 1,
+                workerType: 'thread'
+            }),
+            refreshEntities: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
+                minWorkers: 2,
+                maxWorkers: 10,
+                workerType: 'thread'
+            }),
         };
 
         this.finished = {
             createQuote: true,
-            quoteToOrder: true
+            quoteToOrder: true,
+            refreshEntities: true
         }
     }
 
@@ -45,10 +56,37 @@ class RWSynchronizatorTasks {
         Logger.info(`quoteToOrder is executed`);
         let threads = [];
 
-        threads.push(this.pools.createQuote.exec('quoteToOrder', []));
+        threads.push(this.pools.quoteToOrder.exec('quoteToOrder', []));
 
         let results = await Promise.all(threads);
         this.finished.quoteToOrder = true;
+    }
+
+    async refreshEntities() {
+        if (!this.finished.refreshEntities) return;
+        this.finished.refreshEntities = false;
+        Logger.info(`refreshEntities is executed`);
+
+
+        let amountQuotes = await Stage.StageQuote.findAll({
+            where: {
+                'watch': true,
+                'fdOrderId': {
+                    [sqOp.not]: null
+                }
+            }
+        });
+        
+        let threads = [];
+
+        let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
+
+        for (let page = 0; page < 1; page++) {
+            threads.push(this.pools.refreshEntities.exec('refreshEntities', [page, SyncParameters.batch_size]));
+        }
+        
+        let results = await Promise.all(threads);
+        this.finished.refreshEntities = true;
     }
 }
 

@@ -31,7 +31,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         if (typeof carrierData.id == 'undefined') {
             carrier = await RiteWay.Company.create(carrierData, optQuery);
             carrierData.id = carrier.id;
-            
+
             await riteWayDBConn.query(
                 'UPDATE companies SET created_at = :created_at, updated_at = :updated_at, deleted_at = :deleted_at WHERE id = :id',
                 {
@@ -48,20 +48,20 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             carrier = await RiteWay.Company.findByPk(carrierData.id);
         }
 
-        if(carrier){
+        if (carrier) {
             await order.update({
                 carrier_id: carrier.id
             }, optQuery);
 
             let [carrierDetail, isNewCarrierDetail] = await RiteWay.CarrierDetail.findOrCreate({
                 defaults: carrierData.carrierDetail,
-                where:{
-                    company_id:  carrier.id
+                where: {
+                    company_id: carrier.id
                 },
                 ...optQuery
             });
 
-            if(isNewCarrierDetail){
+            if (isNewCarrierDetail) {
                 await carrierDetail.update(carrierData.carrierDetail, optQuery);
             }
 
@@ -266,8 +266,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
     //UPDATE DATA=========================================
     async updateVehicles(vehicles, quote, optQuery) {
-        for (let i = 0; i < quote.vehicles.length; i++) {
-            let rwVehicle = quote.vehicles[i];
+        for (let i = 0; i < quote.vehiclesInfo.length; i++) {
+            let rwVehicle = quote.vehiclesInfo[i];
             let updated = false;
             for (let j = 0; j < vehicles.length; j++) {
 
@@ -322,111 +322,143 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         }
     }
 
-    async updateRWEntity(FDEntity, quote) {
-        const transaction = await riteWayDBConn.transaction();
-        let fdStatus = this._parseStatusToFDStatus(FDEntity.status);
-        try {
-            //Update Quote
-            let quoteData = await this.parseFDEntityToQuoteData(FDEntity);
-            fdStatus = quote.order ? quote.order.status == 'issues' ? 'issues' : fdStatus : fdStatus;
-            let totalPaid = 0;
-            let filterKeys = (keys, obj) => {
-                return keys.reduce((result, key) => {
-                    result[key] = obj[key];
-                    return result;
-                }, {});
+    async updateRWOrder(orderData, quote) {
+        let order;
+
+        if (quote.orderInfo) {
+            order = quote.orderInfo;
+            await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, { transaction });
+            Logger.info(`Order of Quote ${quote.fd_number} Updated with ID ${quote.orderInfo.id}, Company: ${quote.Company.id}`);
+        }
+        else if (orderData) {
+            orderData.quote_id = quote.id;
+            await this.importOrderData(orderData, quote, { transaction });
+            Logger.info(`Order of Quote ${quote.fd_number} Created, Company: ${quote.Company.id}`);
+
+            order = await RiteWay.Order.findOne({
+                where: {
+                    quote_id: quote.id
+                },
+                ...optQuery
+            })
+        }
+
+        if (order) {
+
+            await RiteWay.Payment.destroy({
+                where: {
+                    order_id: riteWayQuote.order.id
+                }
+            });
+
+            if (orderData.payments) {
+                for (let i = 0; i < orderData.payments.length; i++) {
+                    let paymentData = orderData.payments[i];
+
+                    let payment = await RiteWay.Payment.create({
+                        ...paymentData,
+                        order_id: orderData.id
+                    }, optQuery);
+
+                    await riteWayDBConn.query(
+                        'UPDATE payments SET created_at = :created_at, updated_at = :updated_at WHERE id = :id',
+                        {
+                            ...optQuery,
+                            replacements: { ...paymentData, id: payment.id },
+                            type: Sequelize.QueryTypes.UPDATE,
+                            raw: true
+                        }
+                    );
+                    Logger.info(`Payment of ${quote.fd_number} created ${payment.id}`);
+                }
             }
 
-            quoteData = filterKeys(['tariff', 'state', 'fd_id', 'fd_number', 'offered_at', 'all_tariffed', 'deletedAt', 'reason', 'vehicles', 'notes'], quoteData);
+            if (orderData.invoice) {
+                let invoiceData = {
+                    ...orderData.invoice,
+                    order_id: order.id
+                };
 
-            quoteData.tariff = quoteData.all_tariffed ? quoteData.tariff : 0;
+                let [invoice, invoiceCreated] = await RiteWay.Invoice.findOrCreate({
+                    where: {
+                        order_id: order.id
+                    },
+                    defaults: invoiceData,
+                    ...optQuery
+                });
 
-            if (quote.offered_at == null) delete quoteData.offered_at;
-
-            await this.updateVehicles(quoteData.vehicles, quote, { transaction });
-            await this.updateNotes(quoteData.notes, quote, { transaction });
-            await quote.update(quoteData, { transaction });
-
-            let orderData = await this.parseFDEntityToOrderData(FDEntity, quote.Company);
-            orderData.quote_id = quote.id;
-            if (quoteData.state == 'accepted') {
-                if (quote.order) {
-                    //Update order
-                    totalPaid = orderData.totalPaid;
-                    //Carrier
-                    if (orderData.carrier && typeof orderData.carrier.id == 'undefined') {
-                        const carrier = await RiteWay.Carrier.create(orderData.carrier, { transaction });
-                        orderData.carrier.id = carrier.id;
-                    }
-                    //Driver
-                    if (quote.order.driver) {
-                        await quote.order.driver.update(orderData.driver, { transaction });
-                    }
-                    else if (orderData.driver != null && typeof orderData.carrier.id != 'undefined') {
-                        await RiteWay.Driver.create({
-                            ...orderData.driver,
-                            order_id: quote.order.id,
-                            carrier_id: orderData.carrier.id
-                        }, { transaction });
-                    }
-                    //Payments
-                    await RiteWay.Payment.destroy({
-                        where: {
-                            order_id: quote.order.id
-                        },
-                        transaction
-                    });
-
-                    for (let i = 0; i < orderData.payments.length; i++) {
-                        let payment = orderData.payments[i];
-                        payment.order_id = quote.order.id;
-                        await RiteWay.Payment.create(payment, { transaction });
-                    }
-                    //Invoice
-                    if (orderData.invoice) {
-                        orderData.invoice.order_id = quote.order.id;
-                        let [invoice, invoiceCreated] = await RiteWay.Invoice.findOrCreate({
-                            where: {
-                                order_id: quote.order.id
-                            },
-                            defaults: orderData.invoice
-                        });
-
-                        if (!invoiceCreated) {
-                            await invoice.update(orderData.invoice, { transaction });
-                        }
-
-                        if (invoice.url_invoice == null || invoice.url_invoice.trim() == '') {
-                            await this.syncInvoice(FDEntity, quote);
-                        }
-                    }
-                    //Order
-                    await quote.order.update(orderData, { transaction });
-
+                if (invoiceCreated) {
+                    Logger.info(`Invoice of ${quote.fd_number} created ${invoice.id}`);
                 }
                 else {
-                    await this.importOrderData(orderData, quote, { transaction });
+                    Logger.info(`Invoice of ${quote.fd_number} updated ${invoice.id}`);
+                }
+            }
+        }
+    }
+
+    async updateRWEntity(FDEntity, quote) {
+        const transaction = await riteWayDBConn.transaction();
+        try {
+            let quoteData = await this.parseFDEntity(FDEntity, quote.Company);
+            let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
+            let fdTariff = Number(FDEntity.tariff);
+            let updateFD = quoteTariff != fdTariff;
+
+            if (updateFD) {
+                let response = await this.FDService.get(quote.fd_number);
+
+                if (response.Success) {
+                    FDEntity = response.Data;
                 }
             }
 
-            await quote.stage_quote.update({
-                status: fdStatus,
-                fdResponse: "fd_get_order_success",
-                watch: quoteData.tariff > totalPaid && fdStatus != 'cancelled'
-            }, { transaction });
+            //Updated Quote
+            await quote.update(quoteData, { transaction });
 
-            transaction.commit();
+            await riteWayDBConn.query(
+                'UPDATE quotes SET created_at = :created_at, updated_at = :updated_at, deleted_at = :deleted_at WHERE id = :id',
+                {
+                    replacements: { ...quoteData, id: quote.id },
+                    type: Sequelize.QueryTypes.UPDATE,
+                    transaction,
+                    raw: true
+                }
+            );
+            await quote.reload();
+            Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id}, Company: ${quote.Company.id}`);
+
+            await this.updateRWOrder(quoteData.order, quote);
+
+            await this.updateVehicles(quoteData.vehicles, quote, { transaction });
+            Logger.info(`Vechiles of Quote ${quote.fd_number} Updated`);
+           /*  await this.updateNotes(quoteData.notes, quote, { transaction });
+            Logger.info(`Notes of Quote ${quote.fd_number} Updated`); */
+
+            let status = quoteData.order ? quoteData.order.status_id : quoteData.status_id;
+
+            let watch = (status == ORDER_STATUS.CANCELLED ? false : true);
+
+            let stageQuoteData = {
+                riteWayId: quote.id,
+                fdOrderId: FDEntity.FDOrderID,
+                fdAccountId: '',
+                fdResponse: 'Updated',
+                status: status,
+                watch: watch
+            };
+
+            await quote.stage_quote.update(stageQuoteData, { transaction });
+            await transaction.commit();
+
+            return true;
         }
         catch (error) {
             await transaction.rollback();
             Logger.error(`All changes was rollback of  ${FDEntity.FDOrderID}`);
             Logger.error(error);
-            await quote.stage_quote.update({
-                status: fdStatus,
-                fdResponse: `fd_get_order_error: ${error.message}`,
-                watch: true
-            });
         }
+        return false;
     }
 
     //SEND FILES=========================================
