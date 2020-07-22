@@ -46,7 +46,7 @@ class RiteWayAutotranportService {
         }
     }
 
-    quoteIncludeData() {
+    quoteIncludeData(necesaryStage = true) {
         return [
             {
                 model: RiteWay.Company,
@@ -152,10 +152,10 @@ class RiteWayAutotranportService {
             {
                 model: StageQuote,
                 as: 'stage_quote',
-                required: true,
-                where: {
+                required: necesaryStage,
+                where: necesaryStage ? {
                     watch: true
-                }
+                }: null
             }
         ];
     }
@@ -507,7 +507,7 @@ class RiteWayAutotranportService {
             driver: null
         };
         let defaultDispatcher = await this.findUser(SyncConf.defaultDispatcher);
-        
+
         if (FDEntity.carrier) {
             result.carrier = await this.findCarrier(FDEntity.carrier.insurance_iccmcnumber, FDEntity.carrier.email);
 
@@ -532,7 +532,7 @@ class RiteWayAutotranportService {
                     company_type_id: COMPANY_TYPES.CARRIER
                 }
             }
-            
+
             result.carrier.carrierDetail = {
                 insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim(),
                 insurance_expire: FDEntity.carrier.insurance_expirationdate ? FDEntity.carrier.insurance_expirationdate.trim() : null,
@@ -691,11 +691,11 @@ class RiteWayAutotranportService {
     async parseFDEntityToQuoteData(FDEntity, associateCompany = null) {
         let quoteData = {};
 
-        let oriZipcode = FDEntity.origin.zip ? FDEntity.origin.zip.replace(/\D/g, ""): '';
+        let oriZipcode = FDEntity.origin.zip ? FDEntity.origin.zip.replace(/\D/g, "") : '';
         let originCity = await this.getCity(FDEntity.origin.state, FDEntity.origin.city, oriZipcode);
         let originZipcode = await this.getZipcode(FDEntity.origin.state, oriZipcode);
 
-        let destZipcode = FDEntity.destination.zip ? FDEntity.destination.zip.replace(/\D/g, ""): '';
+        let destZipcode = FDEntity.destination.zip ? FDEntity.destination.zip.replace(/\D/g, "") : '';
         let destinationCity = await this.getCity(FDEntity.destination.state, FDEntity.destination.city, destZipcode);
         let destinationZipcode = await this.getZipcode(FDEntity.destination.state, destZipcode);
 

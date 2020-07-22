@@ -20,7 +20,7 @@ async function createQuote() {
     let sendRequestCreateFDQuote = async (quote) => {
         try {
             let stageQuote = null;
-            let res = await FDService.createQuote(riteWayQuote);
+            let res = await FDService.createQuote(quote);
 
             if (res.Success) {
                 let stageQuoteData = {
@@ -59,7 +59,7 @@ async function createQuote() {
 
 
     let quotes = await RiteWay.Quote.findAll({
-        include: RwSyncService.quoteIncludeData(),
+        include: RwSyncService.quoteIncludeData(false),
         where: {
             [sqOp.and]: [
                 Sequelize.where(
