@@ -146,6 +146,11 @@ async function quoteToOrder() {
                     null
                 ),
                 Sequelize.where(
+                    Sequelize.col('orderInfo.status_id'),
+                    '=',
+                    ORDER_STATUS.ACTIVE
+                ),
+                Sequelize.where(
                     Sequelize.col('Quote.status_id'),
                     '=',
                     QUOTE_STATUS.ORDERED
