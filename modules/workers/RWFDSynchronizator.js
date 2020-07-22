@@ -179,7 +179,7 @@ async function quoteToOrder() {
 }
 
 async function refreshEntities(page) {
-
+    
 }
 
 async function sendNotes() {
