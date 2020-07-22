@@ -295,22 +295,22 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     async updateNotes(notes, quote, optQuery) {
         for (let i = 0; i < notes.length; i++) {
             let note = notes[i];
-            note.quoteId = quote.id;
+            note.quote_id = quote.id;
             await RiteWay.Note.findOrCreate({
                 where: {
                     [sqOp.and]: [
                         Sequelize.where(
-                            Sequelize.col('notes.quote_id'),
+                            Sequelize.col('Note.quote_id'),
                             '=',
-                            note.quoteId
+                            note.quote_id
                         ),
                         Sequelize.where(
-                            Sequelize.col('notes.user_id'),
+                            Sequelize.col('Note.user_id'),
                             '=',
-                            note.userId
+                            note.user_id
                         ),
                         Sequelize.where(
-                            Sequelize.col('notes.created_at'),
+                            Sequelize.col('Note.created_at'),
                             '=',
                             note.createdAt
                         )
@@ -322,17 +322,16 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         }
     }
 
-    async updateRWOrder(orderData, quote) {
+    async updateRWOrder(orderData, quote, optQuery) {
         let order;
-
         if (quote.orderInfo) {
             order = quote.orderInfo;
-            await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, { transaction });
+            await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, optQuery);
             Logger.info(`Order of Quote ${quote.fd_number} Updated with ID ${quote.orderInfo.id}, Company: ${quote.Company.id}`);
         }
         else if (orderData) {
             orderData.quote_id = quote.id;
-            await this.importOrderData(orderData, quote, { transaction });
+            await this.importOrderData(orderData, quote, optQuery);
             Logger.info(`Order of Quote ${quote.fd_number} Created, Company: ${quote.Company.id}`);
 
             order = await RiteWay.Order.findOne({
@@ -344,11 +343,15 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         }
 
         if (order) {
+            if (orderData.carrier) {
+                await this.importCarrierDriver(orderData.carrier, orderData.driver, order, quote, optQuery);
+            }
 
             await RiteWay.Payment.destroy({
                 where: {
-                    order_id: riteWayQuote.order.id
-                }
+                    order_id: order.id
+                },
+                ...optQuery
             });
 
             if (orderData.payments) {
@@ -357,7 +360,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
                     let payment = await RiteWay.Payment.create({
                         ...paymentData,
-                        order_id: orderData.id
+                        order_id: order.id
                     }, optQuery);
 
                     await riteWayDBConn.query(
@@ -404,9 +407,10 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
             let fdTariff = Number(FDEntity.tariff);
             let updateFD = quoteTariff != fdTariff;
-            
+
             if (updateFD) {
-                let response = await this.FDService.get(quote.fd_number);
+                let response = await this.FDService.update(quote.fd_number, quote);
+                response = await this.FDService.get(quote.fd_number);
 
                 if (response.Success) {
                     FDEntity = response.Data;
@@ -414,7 +418,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
 
             //Updated Quote
-            await quote.update(quoteData, { transaction });
+            await quote.update(quoteData, { transaction, paranoid: false });
 
             await riteWayDBConn.query(
                 'UPDATE quotes SET created_at = :created_at, updated_at = :updated_at, deleted_at = :deleted_at WHERE id = :id',
@@ -425,15 +429,15 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     raw: true
                 }
             );
-            await quote.reload();
+            await quote.reload({ transaction, paranoid: false });
             Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
-            await this.updateRWOrder(quoteData.order, quote);
+            await this.updateRWOrder(quoteData.order, quote, { transaction, paranoid: false });
 
             await this.updateVehicles(quoteData.vehicles, quote, { transaction });
             Logger.info(`Vechiles of Quote ${quote.fd_number} Updated`);
-           /*  await this.updateNotes(quoteData.notes, quote, { transaction });
-            Logger.info(`Notes of Quote ${quote.fd_number} Updated`); */
+            await this.updateNotes(quoteData.notes, quote, { transaction });
+            Logger.info(`Notes of Quote ${quote.fd_number} Updated`);
 
             let status = quoteData.order ? quoteData.order.status_id : quoteData.status_id;
 

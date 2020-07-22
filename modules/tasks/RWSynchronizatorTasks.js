@@ -23,8 +23,8 @@ class RWSynchronizatorTasks {
                 workerType: 'thread'
             }),
             refreshEntities: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
-                minWorkers: 2,
-                maxWorkers: 10,
+                minWorkers: 1,
+                maxWorkers: 3,
                 workerType: 'thread'
             }),
         };
@@ -68,7 +68,7 @@ class RWSynchronizatorTasks {
         Logger.info(`refreshEntities is executed`);
 
 
-        let amountQuotes = await Stage.StageQuote.findAll({
+        let amountQuotes = await Stage.StageQuote.count({
             where: {
                 'watch': true,
                 'fdOrderId': {
@@ -76,12 +76,16 @@ class RWSynchronizatorTasks {
                 }
             }
         });
+        if(amountQuotes == 0) {
+            this.finished.refreshEntities = true;
+            return;
+        }
         
         let threads = [];
 
         let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
 
-        for (let page = 0; page < 1; page++) {
+        for (let page = 0; page < totalPage; page++) {
             threads.push(this.pools.refreshEntities.exec('refreshEntities', [page, SyncParameters.batch_size]));
         }
         

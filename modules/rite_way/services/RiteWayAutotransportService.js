@@ -462,7 +462,7 @@ class RiteWayAutotranportService {
 
             if (authorUser) {
                 let noteData = {
-                    userId: authorUser.id,
+                    user_id: authorUser.id,
                     createdAt: fdNote.created,
                     updatedAt: fdNote.created,
                     showOnCustomerPortal: fdNote > 0,
@@ -801,7 +801,7 @@ class RiteWayAutotranportService {
         let quoteData = await this.parseFDEntityToQuoteData(FDEntity, associateCompany);
 
         if (quoteData.status_id == QUOTE_STATUS.ORDERED) {
-            quoteData.order = await this.parseFDEntityToOrderData(FDEntity);
+            quoteData.order = await this.parseFDEntityToOrderData(FDEntity, associateCompany);
         }
 
         return quoteData;

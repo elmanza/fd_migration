@@ -221,7 +221,9 @@ async function refreshEntities(page, limit) {
                 const subProc = RwSyncService.updateRWEntity(FDEntity, quote);
 
                 subProc.then(result => {
-                    Logger.info(`All changes was updated of  ${FDEntity.FDOrderID}`);
+                    if(result){
+                        Logger.info(`All changes was updated of  ${quote.fd_number}`);
+                    }
                 })
                     .catch(error => {
                         Logger.error(error);
