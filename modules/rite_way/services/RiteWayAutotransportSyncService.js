@@ -265,6 +265,43 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     }
 
     //UPDATE DATA=========================================
+
+    async sendNotes(quote, optQuery) {
+        let notes = await RiteWay.Note.findAll({
+            attributes: [
+                'text',
+                'showOnCustomerPortal',
+                [Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH:mm:ss')"), 'createdAt']
+            ],
+            include: {
+                model: RiteWay.User,
+                required: true
+            },
+            where: {
+                quote_id: quote.id
+            },
+            ...optQuery
+        });
+
+        if (notes.length > 0) {
+            let rData = {
+                FDOrderID: quote.fdOrderId,
+                Notes: (new Buffer(JSON.stringify(notes.map(note => {
+                    let data = {
+                        sender: note.User.username,
+                        sender_customer_portal: note.showOnCustomerPortal,
+                        created: note.createdAt,
+                        text: note.text
+                    };
+                    return data;
+                })))).toString('base64'),
+            };
+            let res = await this.FDService.sendNotes(rData);
+        }
+
+        return true;
+    }
+
     async updateVehicles(vehicles, quote, optQuery) {
         for (let i = 0; i < quote.vehiclesInfo.length; i++) {
             let rwVehicle = quote.vehiclesInfo[i];
@@ -319,6 +356,23 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 defaults: note,
                 ...optQuery
             });
+        }
+
+        let notesAmount = await RiteWay.Note.count({
+            where: {
+                quote_id: quote.id
+            },
+            ...optQuery
+        });
+
+        if (notesAmount > notes.length) {
+            try {
+                this.sendNotes(quote, optQuery);
+                Logger.error(`Notes of ${quote.fd_number} was sended to FD`);
+            }
+            catch (error) {
+                Logger.error(`It was not possible sent notes of ${quote.fd_number} to FD`);
+            }
         }
     }
 
@@ -419,6 +473,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
 
             //Updated Quote
+            console.log('asdasd');
             await quote.update(quoteData, { transaction, paranoid: false });
 
             await riteWayDBConn.query(
@@ -434,8 +489,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
             await this.updateRWOrder(quoteData.order, quote, { transaction, paranoid: false });
-            if(quoteData.order){
-                if(quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
+            if (quoteData.order) {
+                if (quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
             }
 
             await this.updateVehicles(quoteData.vehicles, quote, { transaction });
