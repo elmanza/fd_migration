@@ -468,10 +468,9 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             if (updateFD && quoteData.status_id != QUOTE_STATUS.ORDERED) {
                 let response = await this.FDService.update(quote.fd_number, quote);
-                response = await this.FDService.get(quote.fd_number);
-
                 if (response.Success) {
-                    FDEntity = response.Data;
+                    response = await this.FDService.get(quote.fd_number);
+                    if (response.Success) FDEntity = response.Data;
                 }
             }
 

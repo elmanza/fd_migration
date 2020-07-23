@@ -17,7 +17,13 @@ module.exports = {
     quoteToOrder(){
         return RWTasks.quoteToOrder();
     },
-    refreshEntities(){
-        return RWTasks.refreshEntities();
-    } 
+    refreshQuotes(){
+        return RWTasks.refreshQuotes();
+    },
+    refreshOrders(){
+        return RWTasks.refreshOrders();
+    },
+    refreshDeliveredOrders(){
+        return RWTasks.refreshDeliveredOrders();
+    }
 }

@@ -28,7 +28,7 @@ async function createQuote() {
                     fdOrderId: res.EntityID,
                     fdAccountId: res.AccountID,
                     fdResponse: JSON.stringify(res),
-                    status: "waiting"
+                    status: QUOTE_STATUS.WAITING
                 };
 
                 let quoteData = {
@@ -183,7 +183,193 @@ async function quoteToOrder() {
     return true;
 }
 
-async function refreshEntities(page, limit) {
+async function refreshQuotes(page, limit) {
+    try {
+        console.log('refreshQuotes|||||||||||||||||||||', page, limit)
+
+        let stagesQ = await Stage.StageQuote.findAll({
+            include: {
+                model: RiteWay.Quote,
+                required: true,
+                where: {
+                    status_id: [QUOTE_STATUS.WAITING, QUOTE_STATUS.OFFERED]
+                }
+            },
+            where: {
+                'watch': true,
+                'fdOrderId': {
+                    [sqOp.not]: null
+                }
+            },
+            offset: page * limit,
+            limit: limit
+        });
+
+        let quotes = await RiteWay.Quote.findAll({
+            include: RwSyncService.quoteIncludeData(),
+            where: {
+                id: stagesQ.map(sq => sq.riteWayId)
+            },
+            paranoid: false
+        });
+
+        if (quotes.length == 0) return true;
+
+        let indexedQuotes = {};
+
+        let fdOrdersIds = quotes.map((quote, idx) => {
+            indexedQuotes[quote.fd_number] = quote;
+            return quote.fd_number;
+        }).join('|');
+
+        let response = await FDService.getBatch(fdOrdersIds);
+
+        if (response.Success) {
+            let FDEntities = response.Data;
+
+            for (FDEntity of FDEntities) {
+                const quote = indexedQuotes[FDEntity.FDOrderID];
+                const result = await RwSyncService.updateRWEntity(FDEntity, quote);
+                if (result) Logger.info(`All changes was updated of  ${quote.fd_number}`);
+            }
+        }
+        return true;
+    }
+    catch (error) {
+        Logger.error(error);
+        return false;
+    }
+}
+
+async function refreshOrders(page, limit) {
+    try {
+        console.log('refreshOrders|||||||||||||||||||||', page, limit)
+
+        let stagesQ = await Stage.StageQuote.findAll({
+            include: {
+                model: RiteWay.Quote,
+                required: true,
+                include: {
+                    model: RiteWay.Order,
+                    as: 'orderInfo',
+                    required: true,
+                    where: {
+                        status_id: {
+                            [sqOp.notIn]: [ORDER_STATUS.DELIVERED]
+                        }
+                    }
+                }
+            },
+            where: {
+                'watch': true,
+                'fdOrderId': {
+                    [sqOp.not]: null
+                }
+            },
+            offset: page * limit,
+            limit: limit
+        });
+
+        let quotes = await RiteWay.Quote.findAll({
+            include: RwSyncService.quoteIncludeData(),
+            where: {
+                id: stagesQ.map(sq => sq.riteWayId)
+            },
+            paranoid: false
+        });
+
+        if (quotes.length == 0) return true;
+
+        let indexedQuotes = {};
+
+        let fdOrdersIds = quotes.map((quote, idx) => {
+            indexedQuotes[quote.fd_number] = quote;
+            return quote.fd_number;
+        }).join('|');
+
+        let response = await FDService.getBatch(fdOrdersIds);
+
+        if (response.Success) {
+            let FDEntities = response.Data;
+
+            for (FDEntity of FDEntities) {
+                const quote = indexedQuotes[FDEntity.FDOrderID];
+                const result = await RwSyncService.updateRWEntity(FDEntity, quote);
+                if (result) Logger.info(`All changes was updated of  ${quote.fd_number}`);
+            }
+        }
+        return true;
+    }
+    catch (error) {
+        Logger.error(error);
+        return false;
+    }
+}
+
+async function refreshDeliveredOrders(page, limit) {
+    try {
+        console.log('refreshOrders|||||||||||||||||||||', page, limit)
+
+        let stagesQ = await Stage.StageQuote.findAll({
+            include: {
+                model: RiteWay.Quote,
+                required: true,
+                include: {
+                    model: RiteWay.Order,
+                    as: 'orderInfo',
+                    required: true,
+                    where: {
+                        status_id: ORDER_STATUS.DELIVERED
+                    }
+                }
+            },
+            where: {
+                'watch': true,
+                'fdOrderId': {
+                    [sqOp.not]: null
+                }
+            },
+            offset: page * limit,
+            limit: limit
+        });
+
+        let quotes = await RiteWay.Quote.findAll({
+            include: RwSyncService.quoteIncludeData(),
+            where: {
+                id: stagesQ.map(sq => sq.riteWayId)
+            },
+            paranoid: false
+        });
+
+        if (quotes.length == 0) return true;
+
+        let indexedQuotes = {};
+
+        let fdOrdersIds = quotes.map((quote, idx) => {
+            indexedQuotes[quote.fd_number] = quote;
+            return quote.fd_number;
+        }).join('|');
+
+        let response = await FDService.getBatch(fdOrdersIds);
+
+        if (response.Success) {
+            let FDEntities = response.Data;
+
+            for (FDEntity of FDEntities) {
+                const quote = indexedQuotes[FDEntity.FDOrderID];
+                const result = await RwSyncService.updateRWEntity(FDEntity, quote);
+                if (result) Logger.info(`All changes was updated of  ${quote.fd_number}`);
+            }
+        }
+        return true;
+    }
+    catch (error) {
+        Logger.error(error);
+        return false;
+    }
+}
+
+/* async function refreshEntities(page, limit, quoteStatus, orderStatus) {
     try {
         console.log('refreshEntities///////////////////////////////////////////////////', page, limit)
 
@@ -230,7 +416,8 @@ async function refreshEntities(page, limit) {
         Logger.error(error);
         return false;
     }
-}
+} */
+
 
 async function sendNotes() {
 
@@ -243,5 +430,7 @@ async function downloadInvoices() {
 workerpool.worker({
     createQuote,
     quoteToOrder,
-    refreshEntities
+    refreshQuotes,
+    refreshOrders,
+    refreshDeliveredOrders
 });
