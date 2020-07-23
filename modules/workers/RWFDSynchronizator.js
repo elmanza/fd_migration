@@ -110,9 +110,10 @@ async function quoteToOrder() {
 
             if (res.Success) {
                 await quote.stage_quote.update({
-                    status: 'accepted',
+                    status: QUOTE_STATUS.ACTIVE,
                     fdOrderId: res.EntityID,
-                    fdResponse: JSON.stringify(res)
+                    fdResponse: 'Ordered',
+                    ordered: true
                 });
                 Logger.info(`sendRequestQuoteToOrder success Order created ${res.EntityID}`);
             }
