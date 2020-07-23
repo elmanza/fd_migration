@@ -467,7 +467,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let optQuery = { transaction, paranoid: false };
 
             await quote.reload({
-                include: RwSyncService.quoteIncludeData(),
+                include: this.quoteIncludeData(),
                 ...optQuery
             });
 
