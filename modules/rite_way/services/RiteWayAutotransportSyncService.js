@@ -297,7 +297,6 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     return data;
                 })))).toString('base64'),
             };
-            console.log(rData);
             let res = await this.FDService.sendNotes(rData);
         }
 
@@ -465,12 +464,12 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let fdTariff = Number(FDEntity.tariff);
             let updateFD = quoteTariff != fdTariff;
             let isPaid = false;
-
+            
             if (updateFD && quoteData.status_id != QUOTE_STATUS.ORDERED) {
                 let response = await this.FDService.update(quote.fd_number, quote);
                 if (response.Success) {
                     response = await this.FDService.get(quote.fd_number);
-                    if (response.Success) FDEntity = response.Data;
+                    if (response.Success) quoteData.vehicles = await this.parseFDEntityToVehicles(response.Data);
                 }
             }
 
