@@ -28,7 +28,7 @@ class FreightDragonService {
             [ORDER_STATUS.DAMAGE]: FD_STATUS.DELIVERED,
             [ORDER_STATUS.CANCELLED]: FD_STATUS.CANCELLED,
         }
-        
+
         return validStatus[RWStatus] || 1;
     }
 
@@ -143,7 +143,8 @@ class FreightDragonService {
 
     update(FDOrderID, riteWayQuote) {
         let fdEntityD = this.parseRWData(riteWayQuote);
-        return this.entityResource.update({ FDOrderID, ...fdEntityD });
+        return this.entityResource.get({ FDOrderID });
+        //return this.entityResource.update({ FDOrderID, ...fdEntityD });
     }
 
     get(FDOrderID, recreateInvoice = false) {
@@ -161,9 +162,9 @@ class FreightDragonService {
         });
     }
 
-    getListByEmail(iniDate, endDate, email){
+    getListByEmail(iniDate, endDate, email) {
         return this.entityResource.getList({
-            Created:`${iniDate}|${endDate}`,
+            Created: `${iniDate}|${endDate}`,
             Email: email
         });
     }

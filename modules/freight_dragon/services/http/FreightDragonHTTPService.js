@@ -26,7 +26,6 @@ class FreightDragonHTTPServices extends HTTPService{
             //formData: data,
             json: true
         }
-        console.log(options);
         return requestProm(options);
     }
 
@@ -37,7 +36,6 @@ class FreightDragonHTTPServices extends HTTPService{
             formData: this.getDataWCredentials(data),
             json:true
         }
-        console.log(options);
         return requestProm(options);
     }
 }

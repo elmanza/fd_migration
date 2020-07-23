@@ -1,5 +1,3 @@
-const workerpool = require('workerpool');
-
 const Sequelize = require('sequelize');
 const sqOp = Sequelize.Op;
 
@@ -8,27 +6,10 @@ const SyncParameters = require('../../config/sync_conf');
 const { RiteWay, Stage } = require('../../models');
 const Logger = require('../../utils/logger');
 
+const FDMigrationWorker = require('../workers/FreightDragonMigration');
+
 class FreightDragonMigrationTasks {
     constructor() {
-
-        this.pools = {
-            migrateAll: workerpool.pool(__dirname + '/../workers/FreightDragonMigration.js', {
-                minWorkers: 1,
-                maxWorkers: 1,
-                workerType: 'thread'
-            }),
-            migrateTodayEntities: workerpool.pool(__dirname + '/../workers/FreightDragonMigration.js', {
-                minWorkers: 1,
-                maxWorkers: 2,
-                workerType: 'thread'
-            }),
-            operatorsMigration: workerpool.pool(__dirname + '/../workers/FreightDragonMigration.js', {
-                minWorkers: 1,
-                maxWorkers: 1,
-                workerType: 'thread'
-            })
-        };
-
         this.finished = {
             migrateAll: true,
             migrateTodayEntities: true,
@@ -69,7 +50,7 @@ class FreightDragonMigrationTasks {
         let threads = [];
 
         for (const company of companies) {
-            threads.push(this.pools.migrateAll.exec('migrate', [company.id, false]));
+            threads.push(FDMigrationWorker.migrate(company.id, false));
         }
         let results = await Promise.all(threads);
         this.finished.migrateAll = true;
@@ -107,7 +88,7 @@ class FreightDragonMigrationTasks {
         let threads = [];
 
         for (const company of companies) {
-            threads.push(this.pools.migrateTodayEntities.exec('migrateTodayEntities', [company.id, true]));
+            threads.push( threads.push(FDMigrationWorker.migrateTodayEntities(company.id)));
         }
         let results = await Promise.all(threads);
         this.finished.migrateTodayEntities = true;

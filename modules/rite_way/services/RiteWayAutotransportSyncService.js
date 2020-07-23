@@ -219,6 +219,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             if (quoteData.order) {
                 quoteData.order.quote_id = quoteData.id;
                 await this.importOrderData(quoteData.order, quote, { transaction });
+                if (quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
             }
 
             for (let i = 0; i < quoteData.notes.length; i++) {
@@ -226,7 +227,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 let newNote = await RiteWay.Note.create({
                     ...note,
                     quote_id: quoteData.id
-                });
+                }, { transaction });
                 Logger.info(`Note created  of ${quoteData.fd_number}, with ID ${newNote.id}`);
             }
 
@@ -241,7 +242,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             let status = quoteData.order ? quoteData.order.status_id : quoteData.status_id;
 
-            let watch = (status == ORDER_STATUS.CANCELLED ? false : true);
+            let watch = status != ORDER_STATUS.CANCELLED;
+            watch = watch && !(status == ORDER_STATUS.DELIVERED && isPaid);
 
             let stageQuoteData = {
                 riteWayId: quote.id,
@@ -459,12 +461,14 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     async updateRWEntity(FDEntity, quote) {
         const transaction = await riteWayDBConn.transaction();
         try {
+            Logger.info(`UPDATING ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
+            
             let quoteData = await this.parseFDEntity(FDEntity, quote.Company);
             let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
             let fdTariff = Number(FDEntity.tariff);
             let updateFD = quoteTariff != fdTariff;
             let isPaid = false;
-            
+
             if (updateFD && quoteData.status_id != QUOTE_STATUS.ORDERED) {
                 let response = await this.FDService.update(quote.fd_number, quote);
                 if (response.Success) {
@@ -488,8 +492,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             await quote.reload({ transaction, paranoid: false });
             Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
-            await this.updateRWOrder(quoteData.order, quote, { transaction, paranoid: false });
             if (quoteData.order) {
+                await this.updateRWOrder(quoteData.order, quote, { transaction, paranoid: false });
                 if (quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
             }
 
@@ -514,6 +518,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             };
 
             await quote.stage_quote.update(stageQuoteData, { transaction });
+            Logger.info(`${FDEntity.FDOrderID} updated whatch: ${watch}`);
             await transaction.commit();
 
             return true;
@@ -679,7 +684,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 FDOrderID: quote.fd_number,
                 Notes: (new Buffer(JSON.stringify(notes.map(note => {
                     let data = {
-                        sender: note.user.username,
+                        sender: note.User.username,
                         sender_customer_portal: note.showOnCustomerPortal,
                         created: note.createdAt,
                         text: note.text

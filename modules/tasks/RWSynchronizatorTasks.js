@@ -1,5 +1,3 @@
-const workerpool = require('workerpool');
-
 const Sequelize = require('sequelize');
 const sqOp = Sequelize.Op;
 
@@ -9,36 +7,10 @@ const { RiteWay, Stage } = require('../../models');
 const { QUOTE_STATUS, ORDER_STATUS, FD_STATUS } = require('../../utils/constants');
 const Logger = require('../../utils/logger');
 
+const RWFDSynchronizatorWorker = require('../workers/RWFDSynchronizator');
+
 class RWSynchronizatorTasks {
     constructor() {
-
-        this.pools = {
-            createQuote: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
-                minWorkers: 1,
-                maxWorkers: 1,
-                workerType: 'thread'
-            }),
-            quoteToOrder: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
-                minWorkers: 1,
-                maxWorkers: 1,
-                workerType: 'thread'
-            }),
-            refreshQuotes: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
-                minWorkers: 1,
-                maxWorkers: 1,
-                workerType: 'thread'
-            }),
-            refreshOrders: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
-                minWorkers: 3,
-                maxWorkers: 10,
-                workerType: 'thread'
-            }),
-            refreshDeliveredOrders: workerpool.pool(__dirname + '/../workers/RWFDSynchronizator.js', {
-                minWorkers: 5,
-                maxWorkers: 10,
-                workerType: 'thread'
-            }),
-        };
 
         this.finished = {
             createQuote: true,
@@ -56,7 +28,7 @@ class RWSynchronizatorTasks {
         Logger.info(`createQuote is executed`);
         let threads = [];
 
-        threads.push(this.pools.createQuote.exec('createQuote', []));
+        threads.push(RWFDSynchronizatorWorker.createQuote());
 
         let results = await Promise.all(threads);
         this.finished.createQuote = true;
@@ -69,7 +41,7 @@ class RWSynchronizatorTasks {
         Logger.info(`quoteToOrder is executed`);
         let threads = [];
 
-        threads.push(this.pools.quoteToOrder.exec('quoteToOrder', []));
+        threads.push(RWFDSynchronizatorWorker.quoteToOrder());
 
         let results = await Promise.all(threads);
         this.finished.quoteToOrder = true;
@@ -106,7 +78,7 @@ class RWSynchronizatorTasks {
         let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
 
         for (let page = 0; page < totalPage; page++) {
-            threads.push(this.pools.refreshQuotes.exec('refreshQuotes', [page, SyncParameters.batch_size]));
+            threads.push(RWFDSynchronizatorWorker.refreshQuotes(page, SyncParameters.batch_size));
         }
         
         let results = await Promise.all(threads);
@@ -151,7 +123,7 @@ class RWSynchronizatorTasks {
         let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
 
         for (let page = 0; page < totalPage; page++) {
-            threads.push(this.pools.refreshOrders.exec('refreshOrders', [page, SyncParameters.batch_size]));
+            threads.push(RWFDSynchronizatorWorker.refreshOrders(page, SyncParameters.batch_size));
         }
         
         let results = await Promise.all(threads);
@@ -196,7 +168,7 @@ class RWSynchronizatorTasks {
         let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
 
         for (let page = 0; page < totalPage; page++) {
-            threads.push(this.pools.refreshDeliveredOrders.exec('refreshDeliveredOrders', [page, SyncParameters.batch_size]));
+            threads.push(RWFDSynchronizatorWorker.refreshDeliveredOrders(page, SyncParameters.batch_size));
         }
         
         let results = await Promise.all(threads);

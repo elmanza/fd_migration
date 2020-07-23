@@ -21,7 +21,6 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.5",
     "ritewayautotransport_database": "git+https://hgallardo-leantech:ftnqiMNKxife4if@bitbucket.org/ritewayautotransport/ritewayautotransport_database.git",
-    "sequelize": "^5.21.3",
-    "workerpool": "^6.0.0"
+    "sequelize": "^5.21.3"
   }
 }

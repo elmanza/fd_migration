@@ -1,4 +1,4 @@
-const workerpool = require('workerpool');
+
 
 const moment = require('moment');
 const Sequelize = require('sequelize');
@@ -369,56 +369,6 @@ async function refreshDeliveredOrders(page, limit) {
     }
 }
 
-/* async function refreshEntities(page, limit, quoteStatus, orderStatus) {
-    try {
-        console.log('refreshEntities///////////////////////////////////////////////////', page, limit)
-
-        let stagesQ = await Stage.StageQuote.findAll({
-            where: {
-                'watch': true,
-                'fdOrderId': {
-                    [sqOp.not]: null
-                }
-            },
-            offset: page * limit,
-            limit: limit
-        });
-
-        let quotes = await RiteWay.Quote.findAll({
-            include: RwSyncService.quoteIncludeData(),
-            where: {
-                id: stagesQ.map(sq => sq.riteWayId)
-            },
-            paranoid: false
-        });
-
-        let indexedQuotes = {};
-
-        let fdOrdersIds = quotes.map((quote, idx) => {
-            indexedQuotes[quote.fd_number] = quote;
-            return quote.fd_number;
-        }).join('|');
-
-        let response = await FDService.getBatch(fdOrdersIds);
-
-        if (response.Success) {
-            let FDEntities = response.Data;
-
-            for (FDEntity of FDEntities) {
-                const quote = indexedQuotes[FDEntity.FDOrderID];
-                const result = await RwSyncService.updateRWEntity(FDEntity, quote);
-                if (result) Logger.info(`All changes was updated of  ${quote.fd_number}`);
-            }
-        }
-        return true;
-    }
-    catch (error) {
-        Logger.error(error);
-        return false;
-    }
-} */
-
-
 async function sendNotes() {
 
 }
@@ -427,10 +377,10 @@ async function downloadInvoices() {
 
 }
 
-workerpool.worker({
+module.exports = {
     createQuote,
     quoteToOrder,
     refreshQuotes,
     refreshOrders,
     refreshDeliveredOrders
-});
+}

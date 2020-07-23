@@ -1,4 +1,4 @@
-const workerpool = require('workerpool');
+
 
 const moment = require('moment');
 const Sequelize = require('sequelize');
@@ -158,8 +158,8 @@ async function migrateOperators() {
 }
 
 
-workerpool.worker({
+module.exports = {
     migrate,
     migrateTodayEntities,
     migrateOperators
-});
+}
