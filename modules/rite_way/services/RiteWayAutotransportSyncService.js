@@ -462,7 +462,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         const transaction = await riteWayDBConn.transaction();
         try {
             Logger.info(`UPDATING ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
-            
+
             let quoteData = await this.parseFDEntity(FDEntity, quote.Company);
             let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
             let fdTariff = Number(FDEntity.tariff);
@@ -511,7 +511,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 riteWayId: quote.id,
                 fdOrderId: FDEntity.FDOrderID,
                 fdAccountId: '',
-                fdResponse: 'Updated',
+                fdResponse: `Updated: ${moment().format('YYYY-MM-DD HH:mm:ss')}`,
                 status: status,
                 watch: watch,
                 ordered: quoteData.status_id == QUOTE_STATUS.ORDERED
@@ -525,6 +525,11 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         }
         catch (error) {
             await transaction.rollback();
+            await quote.stage_quote.update({
+                fdResponse: `ERROR: ${error.message}`,
+                status: quote.status_id,
+                watch: true
+            });
             Logger.error(`All changes was rollback of  ${FDEntity.FDOrderID}`);
             Logger.error(error);
         }
