@@ -101,7 +101,7 @@ class RWSynchronizatorTasks {
                     required: true,
                     where: {
                         status_id: {
-                            [sqOp.notIn]: [ORDER_STATUS.DELIVERED]
+                            [sqOp.ne]: ORDER_STATUS.DELIVERED
                         }
                     }
                 }
@@ -145,9 +145,7 @@ class RWSynchronizatorTasks {
                     as: 'orderInfo',
                     required: true,
                     where: {
-                        status_id: {
-                            [sqOp.notIn]: [ORDER_STATUS.DELIVERED]
-                        }
+                        status_id: ORDER_STATUS.DELIVERED
                     }
                 }
             },

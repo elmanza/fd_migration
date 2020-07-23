@@ -470,7 +470,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let isPaid = false;
             let optQuery = { transaction, paranoid: false };
 
-            if (updateFD && quoteData.status_id != QUOTE_STATUS.ORDERED) {
+            if (updateFD && quote.status_id != QUOTE_STATUS.ORDERED) {
                 let response = await this.FDService.update(quote.fd_number, quote);
                 if (response.Success) {
                     response = await this.FDService.get(quote.fd_number);
