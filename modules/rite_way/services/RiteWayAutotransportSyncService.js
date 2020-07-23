@@ -466,10 +466,12 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let quoteData = await this.parseFDEntity(FDEntity, quote.Company);
             let optQuery = { transaction, paranoid: false };
 
-            await quote.reload({
-                include: this.quoteIncludeData(),
-                ...optQuery
-            });
+            if (quote.status_id == QUOTE_STATUS.WAITING || quote.status_id == QUOTE_STATUS.OFFERED) {
+                await quote.reload({
+                    include: this.quoteIncludeData(),
+                    ...optQuery
+                });
+            }
 
             let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
             let fdTariff = Number(FDEntity.tariff);
