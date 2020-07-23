@@ -464,11 +464,17 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             Logger.info(`UPDATING ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
             let quoteData = await this.parseFDEntity(FDEntity, quote.Company);
+            let optQuery = { transaction, paranoid: false };
+
+            await quote.reload({
+                include: RwSyncService.quoteIncludeData(),
+                ...optQuery
+            });
+
             let quoteTariff = await quote.vehiclesInfo.map(vehicle => vehicle.tariff).reduce((accumulator, tariff) => accumulator + (tariff ? Number(tariff) : 0));
             let fdTariff = Number(FDEntity.tariff);
             let updateFD = quoteTariff != fdTariff;
             let isPaid = false;
-            let optQuery = { transaction, paranoid: false };
 
             if (updateFD && quote.status_id != QUOTE_STATUS.ORDERED) {
                 let response = await this.FDService.update(quote.fd_number, quote);
