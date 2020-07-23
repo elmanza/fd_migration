@@ -103,7 +103,8 @@ class RiteWayAutotranportService {
                             }
                         ]
                     }
-                ]
+                ],
+                paranoid: false
             },
             {
                 model: RiteWay.GisCity,

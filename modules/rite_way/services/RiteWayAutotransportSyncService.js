@@ -468,6 +468,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let fdTariff = Number(FDEntity.tariff);
             let updateFD = quoteTariff != fdTariff;
             let isPaid = false;
+            let optQuery = { transaction, paranoid: false };
 
             if (updateFD && quoteData.status_id != QUOTE_STATUS.ORDERED) {
                 let response = await this.FDService.update(quote.fd_number, quote);
@@ -478,7 +479,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
 
             //Updated Quote
-            await quote.update(quoteData, { transaction, paranoid: false });
+            await quote.update(quoteData, optQuery);
 
             await riteWayDBConn.query(
                 'UPDATE quotes SET created_at = :created_at, updated_at = :updated_at, deleted_at = :deleted_at WHERE id = :id',
@@ -489,17 +490,17 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     raw: true
                 }
             );
-            await quote.reload({ transaction, paranoid: false });
+            await quote.reload(optQuery);
             Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
             if (quoteData.order) {
-                await this.updateRWOrder(quoteData.order, quote, { transaction, paranoid: false });
+                await this.updateRWOrder(quoteData.order, quote, optQuery);
                 if (quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
             }
 
-            await this.updateVehicles(quoteData.vehicles, quote, { transaction });
+            await this.updateVehicles(quoteData.vehicles, quote, optQuery);
             Logger.info(`Vechiles of Quote ${quote.fd_number} Updated`);
-            await this.updateNotes(quoteData.notes, quote, { transaction });
+            await this.updateNotes(quoteData.notes, quote, optQuery);
             Logger.info(`Notes of Quote ${quote.fd_number} Updated`);
 
             let status = quoteData.order ? quoteData.order.status_id : quoteData.status_id;
@@ -517,7 +518,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 ordered: quoteData.status_id == QUOTE_STATUS.ORDERED
             };
 
-            await quote.stage_quote.update(stageQuoteData, { transaction });
+            await quote.stage_quote.update(stageQuoteData, optQuery);
             Logger.info(`${FDEntity.FDOrderID} updated whatch: ${watch}`);
             await transaction.commit();
 
@@ -529,7 +530,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 fdResponse: `ERROR: ${error.message}`,
                 status: quote.status_id,
                 watch: true
-            });
+            }, { paranoid: false });
             Logger.error(`All changes was rollback of  ${FDEntity.FDOrderID}`);
             Logger.error(error);
         }
