@@ -53,11 +53,17 @@ const ROLES = {
     DRIVER: 15
 }
 
+const INVOICE_TYPES = {
+    CUSTOMER: 1,
+    CARRIER: 2
+}
+
 module.exports = {
     QUOTE_STATUS,
     ORDER_STATUS,
     FD_STATUS,
     ADDRESS_TYPE,
     COMPANY_TYPES,
-    ROLES
+    ROLES,
+    INVOICE_TYPES
 };

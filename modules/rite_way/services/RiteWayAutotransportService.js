@@ -6,9 +6,10 @@ const sqOp = Sequelize.Op;
 const { RiteWay, Stage } = require("../../../models");
 const { StageQuote, OperatorUser } = Stage;
 
-const { QUOTE_STATUS, ORDER_STATUS, FD_STATUS, ADDRESS_TYPE, COMPANY_TYPES, ROLES } = require('../../../utils/constants');
+const { QUOTE_STATUS, ORDER_STATUS, FD_STATUS, ADDRESS_TYPE, COMPANY_TYPES, ROLES, INVOICE_TYPES } = require('../../../utils/constants');
 const { SyncConf } = require('../../../config');
 const Crypter = require('../../../utils/crypter');
+const S3 = require('../../../utils/S3');
 const Logger = require('../../../utils/logger');
 
 const OrderResource = require('./http/resources/OrderResource');
@@ -682,7 +683,8 @@ class RiteWayAutotranportService {
                 updatedAt: FDEntity.delivered || FDEntity.actual_pickup_date || FDEntity.avail_pickup_date || FDEntity.created,
                 amount: result.tariff,
                 archived: false,
-                invoice_url: ''
+                invoice_url: '',
+                invoice_type_id: INVOICE_TYPES.CUSTOMER
             };
         }
 
@@ -816,6 +818,10 @@ class RiteWayAutotranportService {
 
     uploadInvoice(invoiceId, fileData) {
         return this.invoiceResource.uploadInvoiceFile(invoiceId, fileData);
+    }
+
+    uploadToS3(filePath, s3Path) {
+        return S3.uploadAWS(filePath, s3Path);
     }
 }
 

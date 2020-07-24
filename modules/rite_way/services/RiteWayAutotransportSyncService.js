@@ -15,13 +15,12 @@ const { FDConf, RWAConf } = require('../../../config');
 const FreightDragonService = require('../../freight_dragon/services/FreightDragonService');
 const HTTPService = require('../../../utils/HTTPService');
 const RiteWayAutotranportService = require('./RiteWayAutotransportService');
-const { ORDER_STATUS, QUOTE_STATUS } = require('../../../utils/constants');
+const { ORDER_STATUS, QUOTE_STATUS, INVOICE_TYPES } = require('../../../utils/constants');
 
 class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     constructor() {
         super();
         this.FDService = new FreightDragonService();
-        this.RWService = new RiteWayAutotranportService();
         this.httpService = new HTTPService();
     }
 
@@ -546,7 +545,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     }
 
     //SEND FILES=========================================
-    async syncFiles(res, riteWayQuote) {
+    /* async syncFiles(res, riteWayQuote) {
         let FDEntity = res.Data;
         let fdFiles = (res.Success ? res.Data.files : []);
         let hashFiles = {};
@@ -618,7 +617,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                         await this.FDService.sendFiles(FDEntity.FDOrderID, file);
                     }
                     else {
-                        await this.RWService.uploadDocument(riteWayQuote.orderInfo.id, file);
+                        await this..uploadDocument(riteWayQuote.orderInfo.id, file);
                     }
                 }
                 catch (error) {
@@ -631,82 +630,44 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         //Upload BOL
         if (bolFileFromFD.length > 0) {
             try {
-                await this.RWService.uploadBOL(riteWayQuote.orderInfo.id, bolFileFromFD[0]);
+                await this..uploadBOL(riteWayQuote.orderInfo.id, bolFileFromFD[0]);
             }
             catch (error) {
                 Logger.error('Error when the system try sync BOL file, filename: ' + bolFileFromFD[0].name + ' of ' + bolFileFromFD[0].existIn);
             }
         }
-    }
+    } */
 
-    async syncInvoice(FDEntity, riteWayQuote) {
-        let res = await this.FDService.get(FDEntity.FDOrderID, true);
+    async syncInvoice(quote) {
+        try {
+            let res = await this.FDService.get(quote.fd_number, true);
 
-        let invoice = await RiteWay.Invoice.findOne({
-            where: {
-                order_id: riteWayQuote.orderInfo.id
+            if (!res.Success) {
+                return false;
             }
-        });
 
-        if (invoice == null || !res.Success) {
-            return;
-        }
+            let fdInvoiceURL = (res.Data.invoice_file ? FDConf.host + res.Data.invoice_file : null);
+            let folder = `tmp/quote_${quote.id}/invoice`;
+            if (fdInvoiceURL) {
+                let fileName = path.basename(fdInvoiceURL);
+                let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);
+                if (filePath) {
+                    let companyFolder = 'company_' + quote.Company.id;
+                    let invoiceFolder = 'order_' + quote.orderInfo.id + '/invoice';
+                    let s3Path = `${companyFolder}/${invoiceFolder}/${fileName}`;
 
-        let fdInvoiceURL = (res.Data.invoice_file ? FDConf.host + res.Data.invoice_file : null);
-        let folder = `tmp/quote_${riteWayQuote.id}/invoice`;
-        if (fdInvoiceURL) {
-            let fileName = path.basename(fdInvoiceURL);
-            let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);
-            if (filePath) {
-                let fileData = {
-                    name: fileName,
-                    path: filePath
-                };
-
-                try {
-                    await this.RWService.uploadInvoice(invoice.id, fileData);
+                    await this.uploadToS3(filePath, s3Path);
+                    await quote.orderInfo.invoiceInfo.update({
+                        invoice_url: `uploads/${s3Path}`,
+                        invoice_type_id: INVOICE_TYPES.CUSTOMER
+                    });
+                    Logger.info(`Invoice file of ${quote.fd_number} synchronized`);
                 }
-                catch (error) {
-                    Logger.error("Error when the system upload invoice file on Rite Way System, File " + fileName);
-                    Logger.error(error);
-                }
-
             }
         }
-    }
-
-
-    //Add Notes---------------------------------------------------------
-    async sendNotes(quote) {
-        let notes = await RiteWay.Note.findAll({
-            attributes: [
-                'text',
-                'showOnCustomerPortal',
-                [Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH:mm:ss')"), 'createdAt']
-            ],
-            include: {
-                model: RiteWay.User,
-                required: true
-            },
-            where: {
-                quote_id: quote.id
-            }
-        });
-
-        if (notes.length > 0) {
-            let rData = {
-                FDOrderID: quote.fd_number,
-                Notes: (new Buffer(JSON.stringify(notes.map(note => {
-                    let data = {
-                        sender: note.User.username,
-                        sender_customer_portal: note.showOnCustomerPortal,
-                        created: note.createdAt,
-                        text: note.text
-                    };
-                    return data;
-                })))).toString('base64'),
-            };
-            let res = await this.FDService.sendNotes(rData);
+        catch (error) {
+            Logger.error(`Error when the system upload invoice file of ${quote.fd_number} on Rite Way System`);
+            Logger.error(error);
         }
     }
 }

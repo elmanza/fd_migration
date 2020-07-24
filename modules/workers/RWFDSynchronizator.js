@@ -375,12 +375,40 @@ async function refreshDeliveredOrders(page, limit) {
     }
 }
 
-async function sendNotes() {
+async function syncInvoices(limit) {
 
-}
+    let quotes = await RiteWay.Quote.findAll({
+        include: [
+            {
+                model: RiteWay.Company,
+                required: true
+            },
+            {
+                model: RiteWay.Order,
+                required: true,
+                as: 'orderInfo',
+                include: {
+                    model: RiteWay.Invoice,
+                    required: true,
+                    as: 'invoiceInfo',
+                    where: {
+                        invoice_url: ''
+                    }
+                },
+                paranoid: false
+            }
+        ],
+        limit,
+        paranoid: false
+    });
 
-async function downloadInvoices() {
+    let promises = [];
+    for (const quote of quotes) {
+        promises.push(RwSyncService.syncInvoice(quote));
+    }
 
+    let results = await Promise.all(promises);
+    return true;
 }
 
 module.exports = {
@@ -388,5 +416,6 @@ module.exports = {
     quoteToOrder,
     refreshQuotes,
     refreshOrders,
-    refreshDeliveredOrders
+    refreshDeliveredOrders,
+    syncInvoices
 }

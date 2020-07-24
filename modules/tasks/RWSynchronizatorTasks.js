@@ -11,13 +11,13 @@ const RWFDSynchronizatorWorker = require('../workers/RWFDSynchronizator');
 
 class RWSynchronizatorTasks {
     constructor() {
-
         this.finished = {
             createQuote: true,
             quoteToOrder: true,
             refreshQuotes: true,
             refreshOrders: true,
-            refreshDeliveredOrders: true
+            refreshDeliveredOrders: true,
+            syncInvoices: true
         }
     }
 
@@ -68,11 +68,11 @@ class RWSynchronizatorTasks {
                 }
             }
         });
-        if(amountQuotes == 0) {
+        if (amountQuotes == 0) {
             this.finished.refreshQuotes = true;
             return;
         }
-        
+
         let threads = [];
 
         let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
@@ -80,7 +80,7 @@ class RWSynchronizatorTasks {
         for (let page = 0; page < totalPage; page++) {
             threads.push(RWFDSynchronizatorWorker.refreshQuotes(page, SyncParameters.batch_size));
         }
-        
+
         let results = await Promise.all(threads);
         this.finished.refreshQuotes = true;
     }
@@ -113,11 +113,11 @@ class RWSynchronizatorTasks {
                 }
             }
         });
-        if(amountQuotes == 0) {
+        if (amountQuotes == 0) {
             this.finished.refreshOrders = true;
             return;
         }
-        
+
         let threads = [];
 
         let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
@@ -125,7 +125,7 @@ class RWSynchronizatorTasks {
         for (let page = 0; page < totalPage; page++) {
             threads.push(RWFDSynchronizatorWorker.refreshOrders(page, SyncParameters.batch_size));
         }
-        
+
         let results = await Promise.all(threads);
         this.finished.refreshOrders = true;
     }
@@ -156,11 +156,11 @@ class RWSynchronizatorTasks {
                 }
             }
         });
-        if(amountQuotes == 0) {
+        if (amountQuotes == 0) {
             this.finished.refreshDeliveredOrders = true;
             return;
         }
-        
+
         let threads = [];
 
         let totalPage = Math.ceil(amountQuotes / SyncParameters.batch_size);
@@ -168,9 +168,22 @@ class RWSynchronizatorTasks {
         for (let page = 0; page < totalPage; page++) {
             threads.push(RWFDSynchronizatorWorker.refreshDeliveredOrders(page, SyncParameters.batch_size));
         }
-        
+
         let results = await Promise.all(threads);
         this.finished.refreshDeliveredOrders = true;
+    }
+
+    async syncInvoices() {
+        if (!this.finished.syncInvoices) return;
+        this.finished.syncInvoices = false;
+
+        Logger.info(`syncInvoices is executed`);
+        let threads = [];
+
+        threads.push(RWFDSynchronizatorWorker.syncInvoices(SyncParameters.batch_size));
+
+        let results = await Promise.all(threads);
+        this.finished.syncInvoices = true;
     }
 }
 
