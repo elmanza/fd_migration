@@ -115,6 +115,11 @@ async function quoteToOrder() {
                     fdResponse: 'Ordered',
                     ordered: true
                 });
+
+                await quote.update({
+                    fd_number: res.EntityID
+                });
+
                 Logger.info(`sendRequestQuoteToOrder success Order created ${res.EntityID}`);
             }
             else {
