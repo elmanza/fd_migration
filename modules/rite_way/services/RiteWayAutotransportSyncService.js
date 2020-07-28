@@ -71,7 +71,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             const driver = await this.getUser(
                 {
                     ...driverData,
-                    company_id: carrierData.id
+                    company_id: carrier.id
                 },
                 driverData.username,
                 optQuery);
@@ -180,6 +180,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         const transaction = await riteWayDBConn.transaction();
         try {
             let quoteData = await this.parseFDEntity(FDEntity, associateCompany);
+            let isPaid = false;
 
             if (typeof quoteData.company.id == 'undefined') {
                 quoteData.company = await RiteWay.Company.create(quoteData.company, { transaction });
