@@ -17,6 +17,13 @@ const HTTPService = require('../../../utils/HTTPService');
 const RiteWayAutotranportService = require('./RiteWayAutotransportService');
 const { ORDER_STATUS, QUOTE_STATUS, INVOICE_TYPES } = require('../../../utils/constants');
 
+//SOCKETS
+const {
+    broadcastEvent,
+    buildBroadCastParams,
+} = require('../../../events/eventManager');
+const EVENT_TYPES = require('../../../events/event_types');
+
 class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     constructor() {
         super();
@@ -385,6 +392,15 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         if (quote.orderInfo) {
             order = quote.orderInfo;
             await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, optQuery);
+            
+            if (quote.orderInfo.status_id != orderData.status_id) {
+                let eventType = EVENT_TYPES.orderStatusChange(quote);
+                let user = quote.Company.customerDetail.operatorUser;
+
+                const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+                await broadcastEvent(params);
+            }
+            
             Logger.info(`Order of Quote ${quote.fd_number} Updated with ID ${quote.orderInfo.id}, Company: ${quote.Company.id}`);
         }
         else if (orderData) {
@@ -487,6 +503,14 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
 
             //Updated Quote
+            if (quote.status_id != quoteData.status_id) {
+                let eventType = EVENT_TYPES.quoteStatusChange(quote);
+                let user = quote.Company.customerDetail.operatorUser;
+
+                const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+                await broadcastEvent(params);
+            }
+
             await quote.update(quoteData, optQuery);
 
             await riteWayDBConn.query(
