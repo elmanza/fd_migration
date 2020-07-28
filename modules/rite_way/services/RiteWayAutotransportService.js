@@ -60,7 +60,7 @@ class RiteWayAutotranportService {
                         model: RiteWay.User,
                         required: true,
                         as: 'operatorUser',
-                        attributes: ['id', 'name', 'last_name', 'username', 'last_name'],
+                        attributes: ['id', 'name', 'last_name', 'username', 'last_name', 'company_id'],
                     }
                 }]
             },
@@ -68,7 +68,7 @@ class RiteWayAutotranportService {
                 model: RiteWay.User,
                 as: 'userCreate',
                 required: false,
-                attributes: ['id', 'name', 'last_name', 'username', 'last_name'],
+                attributes: ['id', 'name', 'last_name', 'username', 'last_name', 'company_id'],
                 include: {
                     model: RiteWay.Company,
                     required: true

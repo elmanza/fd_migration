@@ -169,11 +169,11 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         if (quote) {
             await StageQuote.findOrCreate({
                 where: {
-                    fdOrderId: FDEntity.FDOrderID
+                    fdOrderId: quote.fd_number
                 },
                 defaults: {
                     riteWayId: quote.id,
-                    fdOrderId: FDEntity.FDOrderID,
+                    fdOrderId: quote.fd_number,
                     fdAccountId: '',
                     fdResponse: 'Imported',
                     status: '',
