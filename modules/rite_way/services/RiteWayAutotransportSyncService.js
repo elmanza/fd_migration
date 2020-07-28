@@ -392,15 +392,21 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         if (quote.orderInfo) {
             order = quote.orderInfo;
             await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, optQuery);
-            
-            if (quote.orderInfo.status_id != orderData.status_id) {
-                let eventType = EVENT_TYPES.orderStatusChange(quote);
-                let user = quote.Company.customerDetail.operatorUser;
 
-                const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
-                await broadcastEvent(params);
+            if (quote.orderInfo.status_id != orderData.status_id) {
+                try {
+                    let eventType = EVENT_TYPES.orderStatusChange(quote);
+                    let user = quote.Company.customerDetail.operatorUser;
+
+                    const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+                    await broadcastEvent(params);
+                }
+                catch (eventError) {
+                    Logger.error(eventError);
+                }
+
             }
-            
+
             Logger.info(`Order of Quote ${quote.fd_number} Updated with ID ${quote.orderInfo.id}, Company: ${quote.Company.id}`);
         }
         else if (orderData) {
@@ -504,11 +510,16 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             //Updated Quote
             if (quote.status_id != quoteData.status_id) {
-                let eventType = EVENT_TYPES.quoteStatusChange(quote);
-                let user = quote.Company.customerDetail.operatorUser;
+                try {
+                    let eventType = EVENT_TYPES.quoteStatusChange(quote);
+                    let user = quote.Company.customerDetail.operatorUser;
 
-                const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
-                await broadcastEvent(params);
+                    const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+                    await broadcastEvent(params);
+                }
+                catch (eventError) {
+                    Logger.error(eventError);
+                }
             }
 
             await quote.update(quoteData, optQuery);
