@@ -97,19 +97,19 @@ const markNotificationsAsRead = async (roomName) => {
     })
 }
 
-const sendNotification = async (type, object, userId) => {
+const sendNotification = async (type, object, userId, user) => {
     if(type.notification.send == false) return;
 
     if("new" in object) object = object.new;
    
-    const from = await User.findByPk(userId)
+    const from = await User.findByPk(userId);
     const company = type.name == "newCompany" ? object : await getToCompany(type, object);
 
     var description = buildNotificationDescription(type.notification.text, company, from)
     var recipients = await getRecipients(type.name, company, userId);    
 
     recipients.forEach((to)=>{
-        emitNotification(type.name, userId, to.toId, to.roleId, to.companyId, description) 
+        emitNotification(type.name, userId, to.toId, to.roleId, to.companyId, description, user) 
     })        
 }
 
@@ -124,7 +124,7 @@ const getToCompany = async (type, object) => {
     return await Company.findByPk(object.company_id)
 }
 
-const emitNotification = (typeName, fromId, toId, roleId, companyId, description, icon ="alert") => { 
+const emitNotification = (typeName, fromId, toId, roleId, companyId, description, icon ="alert", user) => { 
     notificationsEmitter.emit("notification", typeName, {
         from_id: fromId,
         to_id: toId,
@@ -132,7 +132,7 @@ const emitNotification = (typeName, fromId, toId, roleId, companyId, description
         company_id: companyId,
         description: description,
         icon: icon,
-    });
+    }, user);
 }
 
 const buildNotificationDescription = (text, company, user) => {

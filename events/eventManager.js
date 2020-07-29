@@ -12,7 +12,7 @@ const emailEvents = {
 }
 
 const broadcastEvent = async(params) => {
-  await sendNotification(params.type, params.data, params.user.id);
+  await sendNotification(params.type, params.data, params.user.id, params.user);
   await sendUpdateComponent(params.type, params.data, params.socketInformation, params.user);
 
   //if (params.type == "newQuote" || params.type == 'newOrder') sendFcmNotification(params.type, params.data, params.user.id)

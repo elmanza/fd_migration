@@ -14,6 +14,7 @@ const Logger = require('../../../utils/logger');
 const { FDConf, RWAConf } = require('../../../config');
 const FreightDragonService = require('../../freight_dragon/services/FreightDragonService');
 const HTTPService = require('../../../utils/HTTPService');
+const JWTService = require('../../../utils/JWTService');
 const RiteWayAutotranportService = require('./RiteWayAutotransportService');
 const { ORDER_STATUS, QUOTE_STATUS, INVOICE_TYPES } = require('../../../utils/constants');
 
@@ -29,6 +30,12 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         super();
         this.FDService = new FreightDragonService();
         this.httpService = new HTTPService();
+    }
+
+    addToken(user) {
+        user.token = JWTService.generate({
+            id: user.id
+        });
     }
 
     //IMPORT DATA=========================================

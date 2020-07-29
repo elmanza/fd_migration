@@ -1,5 +1,5 @@
 const { RiteWay } = require('./models');
-const RiteWayAutotransportSyncService = require('./modules/rite_way/services/RiteWayAutotransportService');
+const RiteWayAutotransportSyncService = require('./modules/rite_way/services/RiteWayAutotransportSyncService');
 const {
     broadcastEvent,
     buildBroadCastParams,
@@ -10,9 +10,11 @@ const RwSyncService = new RiteWayAutotransportSyncService();
 
 (async function testSockets() {
     let quote = await RiteWay.Quote.findOne({ include: RwSyncService.quoteIncludeData() });
-    let user = await RiteWay.User.findOne();
+    
+    RwSyncService.addToken(quote.Company.customerDetail.operatorUser);
+    
     let eventType = EVENT_TYPES.orderStatusChange(quote);
-    const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+    const params = buildBroadCastParams(eventType, quote, quote.Company.customerDetail.operatorUser, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
     await broadcastEvent(params);
-    console.log(params)
+    console.log(params);
 })();

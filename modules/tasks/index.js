@@ -26,7 +26,7 @@ module.exports = {
     refreshDeliveredOrders(){
         return RWTasks.refreshDeliveredOrders();
     }, */
-    syncInvoices(){
+    /* syncInvoices(){
         return RWTasks.syncInvoices();
-    }
+    } */
 }
