@@ -102,14 +102,14 @@ const sendNotification = async (type, object, userId, user) => {
 
     if("new" in object) object = object.new;
    
-    const from = await User.findByPk(userId);
+    const from = user
     const company = type.name == "newCompany" ? object : await getToCompany(type, object);
 
     var description = buildNotificationDescription(type.notification.text, company, from)
     var recipients = await getRecipients(type.name, company, userId);    
 
     recipients.forEach((to)=>{
-        emitNotification(type.name, userId, to.toId, to.roleId, to.companyId, description, user) 
+        emitNotification(type.name, userId, to.toId, to.roleId, to.companyId, description, 'alert', user) 
     })        
 }
 
@@ -169,7 +169,7 @@ const getUserByName = async (username) => {
     }
 }
 
-const getOperator = async (company, userId) => {
+const getOperator = async (company, userId) => { 
     if(company.company_type_id == COMPANY_TYPES.RITE_WAY){
         return {
             toId: userId,
@@ -202,7 +202,7 @@ const getAdmin = async (company, userId) => {
         }
     }
 
-    
+
     const administrator = await User.findOne({where: {company_id: company.id, rol_id: ROLES.CUSTOMER_ADMIN}});
 
     if(!administrator) return false;

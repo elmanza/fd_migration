@@ -7,7 +7,7 @@ const {
   CustomerDetail,
   Quote,
 } = require('../../../models').RiteWay;
-const { COMPANY_TYPES, ROLES} = require('../../../utils/constants');
+const { COMPANY_TYPES, ROLES } = require('../../../utils/constants');
 
 const sendToUser = {
   newOperator: 'newOperator',

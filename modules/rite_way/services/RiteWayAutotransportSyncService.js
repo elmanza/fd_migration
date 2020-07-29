@@ -402,16 +402,18 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             if (quote.orderInfo.status_id != orderData.status_id) {
                 try {
-                    let eventType = EVENT_TYPES.orderStatusChange(quote);
-                    let user = quote.Company.customerDetail.operatorUser;
+                    let operatorUser = quote.Company.customerDetail.operatorUser;
 
-                    const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+                    this.addToken(operatorUser);
+
+                    let eventType = EVENT_TYPES.orderStatusChange(quote);
+
+                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Order' }, "", { quote_id: quote.id, view: 'order' });
                     await broadcastEvent(params);
                 }
                 catch (eventError) {
                     Logger.error(eventError);
                 }
-
             }
 
             Logger.info(`Order of Quote ${quote.fd_number} Updated with ID ${quote.orderInfo.id}, Company: ${quote.Company.id}`);
@@ -518,10 +520,13 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             //Updated Quote
             if (quote.status_id != quoteData.status_id) {
                 try {
-                    let eventType = EVENT_TYPES.quoteStatusChange(quote);
-                    let user = quote.Company.customerDetail.operatorUser;
+                    let operatorUser = quote.Company.customerDetail.operatorUser;
 
-                    const params = buildBroadCastParams(eventType, quote, user, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+                    this.addToken(operatorUser);
+
+                    let eventType = EVENT_TYPES.quoteStatusChange(quote);
+
+                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
                     await broadcastEvent(params);
                 }
                 catch (eventError) {
