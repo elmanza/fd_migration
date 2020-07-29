@@ -171,7 +171,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         let quote = await RiteWay.Quote.findOne({
             where: {
                 fd_id: FDEntity.id
-            }
+            },
+            paranoid: false
         });
         if (quote) {
             await StageQuote.findOrCreate({

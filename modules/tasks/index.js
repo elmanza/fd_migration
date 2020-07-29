@@ -7,7 +7,7 @@ RWTasks = new RWSynchronizatorTasks();
 module.exports = {
     migrate(){
         return FDTasks.migrateAll();
-    },
+    },/* 
     migrateTodayEntities(){
         return FDTasks.migrateTodayEntities();
     },
@@ -28,5 +28,5 @@ module.exports = {
     },
     syncInvoices(){
         return RWTasks.syncInvoices();
-    }
+    } */
 }
