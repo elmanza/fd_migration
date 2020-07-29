@@ -107,7 +107,7 @@ const sendNotification = async (type, object, userId, user) => {
 
     var description = buildNotificationDescription(type.notification.text, company, from)
     var recipients = await getRecipients(type.name, company, userId);    
-
+    console.log('Recipients ', recipients);
     recipients.forEach((to)=>{
         emitNotification(type.name, userId, to.toId, to.roleId, to.companyId, description, 'alert', user) 
     })        

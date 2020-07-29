@@ -266,7 +266,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 fdAccountId: '',
                 fdResponse: 'Imported',
                 status: status,
-                watch: false,
+                watch,
                 ordered: quoteData.status_id == QUOTE_STATUS.ORDERED
             };
             await StageQuote.create(stageQuoteData, { transaction });
@@ -404,12 +404,23 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             if (quote.orderInfo.status_id != orderData.status_id) {
                 try {
                     let operatorUser = quote.Company.customerDetail.operatorUser;
+                    let eventBody = {
+                        fd_number: quote.fd_number,
+                        order_id: quote.orderInfo.id,
+                        newStatus: orderData.status_id,
+                        previousStatus: quote.orderInfo.status_id,
+                        company_id: quote.company_id
+                    };
+
+                    if (orderData.invoice) {
+                        eventBody.is_paid = orderData.invoice.is_paid;
+                    }
 
                     this.addToken(operatorUser);
 
                     let eventType = EVENT_TYPES.orderStatusChange(quote);
 
-                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Order' }, "", { quote_id: quote.id, view: 'order' });
+                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Order' }, "", eventBody);
                     await broadcastEvent(params);
                 }
                 catch (eventError) {
@@ -522,12 +533,19 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             if (quote.status_id != quoteData.status_id) {
                 try {
                     let operatorUser = quote.Company.customerDetail.operatorUser;
+                    let eventBody = {
+                        fd_number: quote.fd_number,
+                        quote_id: quote.id,
+                        newStatus: quoteData.status_id,
+                        previousStatus: quote.status_id,
+                        company_id: quote.company_id
+                    };
 
                     this.addToken(operatorUser);
 
                     let eventType = EVENT_TYPES.quoteStatusChange(quote);
 
-                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Quote' }, "", { quote_id: quote.id, view: 'quote' });
+                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Quote' }, "", eventBody);
                     await broadcastEvent(params);
                 }
                 catch (eventError) {
