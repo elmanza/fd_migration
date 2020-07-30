@@ -46,6 +46,7 @@ const COMPANY_TYPES = {
 }
 
 const ROLES = {
+    SUPER_ADMIN: 1,
     OPERATOR: 2,
     CUSTOMER: 4,
     CARRIER: 5,

@@ -140,13 +140,11 @@ const buildNotificationDescription = (text, company, user) => {
 }
 
 const getRecipients = async (typeName, object, userId) => {
-    const recipients = []
+    let recipients = [];
 
-    const jeff = await getUserByName(superAdmins.jeff);
-    const raimundo = await getUserByName(superAdmins.raimundo); 
-    if(jeff) recipients.push(jeff);
-    if(raimundo) recipients.push(raimundo);
-
+    let superAdminsR = await getSuperAdmins();
+    recipients = [ ...superAdminsR ];
+    
     if(typeName != "newCompany") {
         const operator = await getOperator(object, userId);
         const admin = await getAdmin(object, userId)  
@@ -212,6 +210,27 @@ const getAdmin = async (company, userId) => {
         roleId: ROLES.CUSTOMER_ADMIN,
         companyId: company.id
     }
+}
+
+const getSuperAdmins = async () => {
+
+    const superAdmins = await User.findAll({
+        where: { 
+            rol_id: ROLES.SUPER_ADMIN
+        }
+    });
+
+    const superAdminRecipients = [];
+
+    for(superAdmin of superAdmins){
+        superAdminRecipients.push({
+            toId: superAdmin.id,
+            roleId: superAdmin.rol_id,
+            companyId: superAdmin.company_id
+        });
+    }
+
+    return superAdminRecipients;
 }
 
 module.exports = {

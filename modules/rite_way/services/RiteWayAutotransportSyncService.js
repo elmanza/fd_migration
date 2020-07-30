@@ -11,7 +11,7 @@ const path = require('path');
 const Crypter = require('../../../utils/crypter');
 const Logger = require('../../../utils/logger');
 
-const { FDConf, RWAConf } = require('../../../config');
+const { FDConf, RWAConf, SyncConf } = require('../../../config');
 const FreightDragonService = require('../../freight_dragon/services/FreightDragonService');
 const HTTPService = require('../../../utils/HTTPService');
 const JWTService = require('../../../utils/JWTService');
@@ -30,12 +30,27 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         super();
         this.FDService = new FreightDragonService();
         this.httpService = new HTTPService();
+        this.statusToSymbol = {};
+
+        this.initializeStatusToSymbol();
     }
 
     addToken(user) {
         user.token = JWTService.generate({
             id: user.id
         });
+    }
+
+    initializeStatusToSymbol() {
+        for (const status in QUOTE_STATUS) {
+            let statusId = QUOTE_STATUS[status];
+            this.statusToSymbol[statusId] = status.toLowerCase();
+        }
+
+        for (const status in ORDER_STATUS) {
+            let statusId = ORDER_STATUS[status];
+            this.statusToSymbol[statusId] = status.toLowerCase();
+        }
     }
 
     //IMPORT DATA=========================================
@@ -283,13 +298,50 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     }
 
     //UPDATE DATA=========================================
+    async sendEventSockect(typeEvent = 'quote', statuses, quote, is_paid = false) {
+
+        let eventType = null;
+        let typeAction = null;
+        let operatorUser = quote.Company.customerDetail.operatorUser;
+        let eventBody = {};
+
+        this.addToken(operatorUser);
+
+        if (typeEvent == 'quote') {
+            eventType = EVENT_TYPES.quoteStatusChange(quote);
+            typeAction = { action: 'updated', element: 'Quote' };
+            eventBody = {
+                fd_number: quote.fd_number,
+                quote_id: quote.id,
+                newStatus: this.statusToSymbol[statuses.newStatusId],
+                previousStatus: this.statusToSymbol[statuses.previousStatusId],
+                company_id: quote.company_id
+            };
+        }
+        else {
+            eventType = EVENT_TYPES.orderStatusChange(quote);
+            typeAction = { action: 'updated', element: 'Order' };
+            eventBody = {
+                fd_number: quote.fd_number,
+                order_id: quote.orderInfo.id,
+                newStatus: orderData.status_id,
+                previousStatus: quote.orderInfo.status_id,
+                company_id: quote.company_id,
+                is_paid
+            };
+        }
+
+        const params = buildBroadCastParams(eventType, quote, operatorUser, typeAction, "", eventBody);
+        await broadcastEvent(params);
+        Logger.info(`Send event ${quote.fd_number} `);
+    }
 
     async sendNotes(quote, optQuery) {
         let notes = await RiteWay.Note.findAll({
             attributes: [
                 'text',
                 'showOnCustomerPortal',
-                [Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH:mm:ss')"), 'createdAt']
+                [Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH24:MI:SS')"), 'createdAt']
             ],
             include: {
                 model: RiteWay.User,
@@ -302,6 +354,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         });
 
         if (notes.length > 0) {
+            Logger.error(`${notes.length} Notes of ${quote.fd_number} will send to FD`);
             let rData = {
                 FDOrderID: quote.fd_number,
                 Notes: (new Buffer(JSON.stringify(notes.map(note => {
@@ -349,15 +402,6 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
     async updateNotes(notes, quote, optQuery) {
 
-        let notesAmount = await RiteWay.Note.count({
-            where: {
-                quote_id: quote.id
-            },
-            ...optQuery
-        });
-
-        if (notesAmount == notes.length) return true;
-
         for (let i = 0; i < notes.length; i++) {
             let note = notes[i];
             note.quote_id = quote.id;
@@ -381,14 +425,28 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                         )
                     ]
                 },
-                defaults: note,
-                ...optQuery
+                defaults: {
+                    ...note,
+                    createdAt: `${note.createdAt} UTC`
+                },
+                ...optQuery,
+                logging: true
             });
         }
 
+        let notesAmount = await RiteWay.Note.count({
+            where: {
+                quote_id: quote.id
+            },
+            ...optQuery
+        });
+
+
         try {
-            this.sendNotes(quote, optQuery);
-            Logger.error(`Notes of ${quote.fd_number} was sended to FD`);
+            if (notesAmount != notes.length) {
+
+                this.sendNotes(quote, optQuery);
+            }
         }
         catch (error) {
             Logger.error(`It was not possible sent notes of ${quote.fd_number} to FD`);
@@ -400,34 +458,6 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         if (quote.orderInfo) {
             order = quote.orderInfo;
             await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, optQuery);
-
-            if (quote.orderInfo.status_id != orderData.status_id) {
-                try {
-                    let operatorUser = quote.Company.customerDetail.operatorUser;
-                    let eventBody = {
-                        fd_number: quote.fd_number,
-                        order_id: quote.orderInfo.id,
-                        newStatus: orderData.status_id,
-                        previousStatus: quote.orderInfo.status_id,
-                        company_id: quote.company_id
-                    };
-
-                    if (orderData.invoice) {
-                        eventBody.is_paid = orderData.invoice.is_paid;
-                    }
-
-                    this.addToken(operatorUser);
-
-                    let eventType = EVENT_TYPES.orderStatusChange(quote);
-
-                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Order' }, "", eventBody);
-                    await broadcastEvent(params);
-                }
-                catch (eventError) {
-                    Logger.error(eventError);
-                }
-            }
-
             Logger.info(`Order of Quote ${quote.fd_number} Updated with ID ${quote.orderInfo.id}, Company: ${quote.Company.id}`);
         }
         else if (orderData) {
@@ -495,6 +525,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     Logger.info(`Invoice of ${quote.fd_number} created ${invoice.id}`);
                 }
                 else {
+                    await invoice.update(invoiceData, optQuery);
                     Logger.info(`Invoice of ${quote.fd_number} updated ${invoice.id}`);
                 }
             }
@@ -530,28 +561,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
 
             //Updated Quote
-            if (quote.status_id != quoteData.status_id) {
-                try {
-                    let operatorUser = quote.Company.customerDetail.operatorUser;
-                    let eventBody = {
-                        fd_number: quote.fd_number,
-                        quote_id: quote.id,
-                        newStatus: quoteData.status_id,
-                        previousStatus: quote.status_id,
-                        company_id: quote.company_id
-                    };
-
-                    this.addToken(operatorUser);
-
-                    let eventType = EVENT_TYPES.quoteStatusChange(quote);
-
-                    const params = buildBroadCastParams(eventType, quote, operatorUser, { action: 'updated', element: 'Quote' }, "", eventBody);
-                    await broadcastEvent(params);
-                }
-                catch (eventError) {
-                    Logger.error(eventError);
-                }
-            }
+            let quoteStatuses = { newStatusId: quoteData.status_id, previousStatusId: quote.status_id };
+            let orderStatuses = undefined;
 
             await quote.update(quoteData, optQuery);
 
@@ -568,6 +579,9 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             Logger.info(`Quote Updated ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
             if (quoteData.order) {
+                if (quote.orderInfo) {
+                    orderStatuses = { newStatusId: quoteData.order.status_id, previousStatusId: quote.orderInfo.status_id };
+                }
                 await this.updateRWOrder(quoteData.order, quote, optQuery);
                 if (quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
             }
@@ -594,6 +608,18 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             await quote.stage_quote.update(stageQuoteData, optQuery);
             Logger.info(`${FDEntity.FDOrderID} updated whatch: ${watch}`);
+
+
+            //SEND EVENT
+            if (quoteStatuses.newStatusId != quoteStatuses.previousStatusId) {
+                await this.sendEventSockect('quote', quoteStatuses, quote);
+            }
+            if (orderStatuses) {
+                if (orderStatuses.newStatusId != orderStatuses.previousStatusId || (orderStatuses.newStatusId == ORDER_STATUS.DELIVERED && isPaid)) { 
+                    await this.sendEventSockect('order', quoteStatuses, quote, isPaid); 
+                }
+            }
+
             await transaction.commit();
 
             return true;

@@ -59,7 +59,8 @@ class RWSynchronizatorTasks {
                 required: true,
                 where: {
                     status_id: [QUOTE_STATUS.WAITING, QUOTE_STATUS.OFFERED]
-                }
+                },
+                paranoid: false
             },
             where: {
                 'watch': true,
@@ -104,7 +105,8 @@ class RWSynchronizatorTasks {
                             [sqOp.ne]: ORDER_STATUS.DELIVERED
                         }
                     }
-                }
+                },
+                paranoid: false
             },
             where: {
                 'watch': true,
@@ -146,8 +148,10 @@ class RWSynchronizatorTasks {
                     required: true,
                     where: {
                         status_id: ORDER_STATUS.DELIVERED
-                    }
-                }
+                    },
+                    paranoid: false
+                },
+                paranoid: false
             },
             where: {
                 'watch': true,

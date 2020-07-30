@@ -199,7 +199,8 @@ async function refreshQuotes(page, limit) {
                 required: true,
                 where: {
                     status_id: [QUOTE_STATUS.WAITING, QUOTE_STATUS.OFFERED]
-                }
+                },
+                paranoid: false
             },
             where: {
                 'watch': true,
@@ -263,8 +264,10 @@ async function refreshOrders(page, limit) {
                         status_id: {
                             [sqOp.notIn]: [ORDER_STATUS.DELIVERED]
                         }
-                    }
-                }
+                    },
+                    paranoid: false
+                },
+                paranoid: false
             },
             where: {
                 'watch': true,
@@ -326,8 +329,10 @@ async function refreshDeliveredOrders(page, limit) {
                     required: true,
                     where: {
                         status_id: ORDER_STATUS.DELIVERED
-                    }
-                }
+                    },
+                    paranoid: false
+                },
+                paranoid: false
             },
             where: {
                 'watch': true,

@@ -9,7 +9,7 @@ const EVENT_TYPES = require('./events/event_types');
 const RwSyncService = new RiteWayAutotransportSyncService();
 
 (async function testSockets() {
-    let quote = await RiteWay.Quote.findOne({ include: RwSyncService.quoteIncludeData(), where: { id: 4593 }, paranoid: false, logging: true });
+    let quote = await RiteWay.Quote.findOne({ include: RwSyncService.quoteIncludeData(false), where: { id: 4593 }, paranoid: false, logging: true });
 
     RwSyncService.addToken(quote.Company.customerDetail.operatorUser);
     console.log('>>>>>>>>>>>>>>>>> USER', quote.Company.customerDetail.operatorUser.id, quote.Company.customerDetail.operatorUser.company_id);
@@ -19,8 +19,8 @@ const RwSyncService = new RiteWayAutotransportSyncService();
         {
             fd_number: quote.fd_number,
             quote_id: quote.id,
-            newStatus: quote.status_id,
-            previousStatus: quote.status_id,
+            newStatus: RwSyncService.statusToSymbol[quote.status_id],
+            previousStatus: RwSyncService.statusToSymbol[quote.status_id],
             company_id: quote.company_id
         }
     );
