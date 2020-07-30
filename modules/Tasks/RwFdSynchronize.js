@@ -946,7 +946,7 @@ class RwFdSynchronize {
                 attributes: [
                     'text',
                     'showOnCustomerPortal',
-                    [Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH:mm:ss')"), 'createdAt']
+                    [Sequelize.literal("to_char(created_at::timestamp, 'YYYY-MM-DD HH24:MI:SS')"), 'createdAt']
                 ],
                 include: {
                     model: riteWay.User,
