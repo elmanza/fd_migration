@@ -8,7 +8,7 @@ module.exports = {
     migrate(){
         return FDTasks.migrateAll();
     },
-    migrateTodayEntities(){
+    /* migrateTodayEntities(){
         return FDTasks.migrateTodayEntities();
     },
     createQuote(){
@@ -26,7 +26,7 @@ module.exports = {
     refreshDeliveredOrders(){
         return RWTasks.refreshDeliveredOrders();
     },
-    /* syncInvoices(){
+    syncInvoices(){
         return RWTasks.syncInvoices();
     } */
 }

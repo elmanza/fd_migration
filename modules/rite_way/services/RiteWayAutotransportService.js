@@ -537,7 +537,6 @@ class RiteWayAutotranportService {
 
             result.carrier.carrierDetail = {
                 insurance_iccmcnumber: FDEntity.carrier.insurance_iccmcnumber.trim(),
-                insurance_expire: FDEntity.carrier.insurance_expirationdate ? FDEntity.carrier.insurance_expirationdate.trim() : null,
                 dispatcher_id: defaultDispatcher.id,
             };
 
@@ -560,7 +559,10 @@ class RiteWayAutotranportService {
                         photo: '',
                         phone: phone,
                         company_id: result.carrier.id || null,
-                        rol_id: ROLES.DRIVER
+                        rol_id: ROLES.DRIVER,
+                        driverDetail: {
+                            insurance_expire: FDEntity.carrier.insurance_expirationdate ? FDEntity.carrier.insurance_expirationdate.trim() : null,
+                        }
                     };
                 }
             }

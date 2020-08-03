@@ -105,6 +105,21 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 driverData.username,
                 optQuery);
 
+            const [driverDetail, isNewDriverDetail] = await RiteWay.DriverDetail.findOrCreate({
+                defaults: {
+                    ...driverData.driverDetail,
+                    driver_id: driver.id
+                },
+                where: {
+                    driver_id: driver.id
+                },
+                ...optQuery
+            });
+
+            if (!isNewDriverDetail) {
+                await driverDetail.update(driverData.driverDetail, optQuery);
+            }
+
             await order.update({
                 driver_id: driver.id
             }, optQuery);
@@ -615,8 +630,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 await this.sendEventSockect('quote', quoteStatuses, quote);
             }
             if (orderStatuses) {
-                if (orderStatuses.newStatusId != orderStatuses.previousStatusId || (orderStatuses.newStatusId == ORDER_STATUS.DELIVERED && isPaid)) { 
-                    await this.sendEventSockect('order', quoteStatuses, quote, isPaid); 
+                if (orderStatuses.newStatusId != orderStatuses.previousStatusId || (orderStatuses.newStatusId == ORDER_STATUS.DELIVERED && isPaid)) {
+                    await this.sendEventSockect('order', quoteStatuses, quote, isPaid);
                 }
             }
 

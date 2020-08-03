@@ -14,6 +14,7 @@ async function syncTables() {
     await RiteWay.User.sync();
     await RiteWay.CarrierDetail.sync();
     await RiteWay.CustomerDetail.sync();
+    await RiteWay.DriverDetail.sync();
 
     
     await RiteWay.PaymentOption.sync();
