@@ -314,41 +314,47 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
     //UPDATE DATA=========================================
     async sendEventSockect(typeEvent = 'quote', statuses, quote, is_paid = false) {
+        try {
+            let eventType = null;
+            let typeAction = null;
+            let operatorUser = quote.Company.customerDetail.operatorUser;
+            let eventBody = {};
 
-        let eventType = null;
-        let typeAction = null;
-        let operatorUser = quote.Company.customerDetail.operatorUser;
-        let eventBody = {};
+            this.addToken(operatorUser);
 
-        this.addToken(operatorUser);
+            if (typeEvent == 'quote') {
+                eventType = EVENT_TYPES.quoteStatusChange(quote);
+                typeAction = { action: 'updated', element: 'Quote' };
+                eventBody = {
+                    fd_number: quote.fd_number,
+                    quote_id: quote.id,
+                    newStatus: this.statusToSymbol[statuses.newStatusId],
+                    previousStatus: this.statusToSymbol[statuses.previousStatusId],
+                    company_id: quote.company_id
+                };
+            }
+            else {
+                eventType = EVENT_TYPES.orderStatusChange(quote);
+                typeAction = { action: 'updated', element: 'Order' };
+                eventBody = {
+                    fd_number: quote.fd_number,
+                    order_id: quote.orderInfo.id,
+                    newStatus: orderData.status_id,
+                    previousStatus: quote.orderInfo.status_id,
+                    company_id: quote.company_id,
+                    is_paid
+                };
+            }
 
-        if (typeEvent == 'quote') {
-            eventType = EVENT_TYPES.quoteStatusChange(quote);
-            typeAction = { action: 'updated', element: 'Quote' };
-            eventBody = {
-                fd_number: quote.fd_number,
-                quote_id: quote.id,
-                newStatus: this.statusToSymbol[statuses.newStatusId],
-                previousStatus: this.statusToSymbol[statuses.previousStatusId],
-                company_id: quote.company_id
-            };
+            const params = buildBroadCastParams(eventType, quote, operatorUser, typeAction, "", eventBody);
+            await broadcastEvent(params);
+            Logger.info(`Send event ${quote.fd_number} `);
         }
-        else {
-            eventType = EVENT_TYPES.orderStatusChange(quote);
-            typeAction = { action: 'updated', element: 'Order' };
-            eventBody = {
-                fd_number: quote.fd_number,
-                order_id: quote.orderInfo.id,
-                newStatus: orderData.status_id,
-                previousStatus: quote.orderInfo.status_id,
-                company_id: quote.company_id,
-                is_paid
-            };
+        catch (error) {
+            Logger.error(`Error event ${error.message} `);
+            Logger.error(error);
         }
 
-        const params = buildBroadCastParams(eventType, quote, operatorUser, typeAction, "", eventBody);
-        await broadcastEvent(params);
-        Logger.info(`Send event ${quote.fd_number} `);
     }
 
     async sendNotes(quote, optQuery) {
