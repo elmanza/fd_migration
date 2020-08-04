@@ -10,13 +10,13 @@ module.exports = {
     },
     migrateTodayEntities(){
         return FDTasks.migrateTodayEntities();
-    },
+    }, */
     createQuote(){
         return RWTasks.createQuote();
     },
     quoteToOrder(){
         return RWTasks.quoteToOrder();
-    }, */
+    },
     refreshQuotes(){
         return RWTasks.refreshQuotes();
     },/* 
