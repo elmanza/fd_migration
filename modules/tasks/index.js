@@ -11,7 +11,7 @@ module.exports = {
     /* migrateTodayEntities(){
         return FDTasks.migrateTodayEntities();
     }, */
-    createQuote(){
+    /* createQuote(){
         return RWTasks.createQuote();
     },
     quoteToOrder(){
@@ -19,7 +19,7 @@ module.exports = {
     },
     refreshQuotes(){
         return RWTasks.refreshQuotes();
-    },/* 
+    }, *//* 
     refreshOrders(){
         return RWTasks.refreshOrders();
     },
