@@ -8,10 +8,10 @@ module.exports = {
     migrate(){
         return FDTasks.migrateAll();
     },
-    /* migrateTodayEntities(){
+    migrateTodayEntities(){
         return FDTasks.migrateTodayEntities();
-    }, */
-    /* createQuote(){
+    },
+    createQuote(){
         return RWTasks.createQuote();
     },
     quoteToOrder(){
@@ -19,14 +19,14 @@ module.exports = {
     },
     refreshQuotes(){
         return RWTasks.refreshQuotes();
-    }, *//* 
+    },
     refreshOrders(){
         return RWTasks.refreshOrders();
     },
     refreshDeliveredOrders(){
         return RWTasks.refreshDeliveredOrders();
-    }, */
-    /* syncInvoices(){
+    },
+    syncInvoices(){
         return RWTasks.syncInvoices();
-    } */
+    }
 }
