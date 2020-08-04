@@ -553,7 +553,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     }
 
     async updateRWEntity(FDEntity, quote) {
-        const transaction = await riteWayDBConn.transaction();
+        const transaction = undefined;
         try {
             Logger.info(`UPDATING ${quote.fd_number} with ID ${quote.id} (${quote.status_id}), Company: ${quote.Company.id}`);
 
@@ -645,7 +645,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             return true;
         }
         catch (error) {
-            await transaction.rollback();
+            if(transaction) await transaction.rollback();
             await quote.stage_quote.update({
                 fdResponse: `ERROR: ${error.message}`,
                 status: quote.status_id,
