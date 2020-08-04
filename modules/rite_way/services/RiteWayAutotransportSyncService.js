@@ -640,7 +640,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 }
             }
 
-            await transaction.commit();
+            if(transaction) await transaction.commit();
 
             return true;
         }
