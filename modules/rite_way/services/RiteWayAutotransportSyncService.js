@@ -142,6 +142,10 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             location_id: destinationLocation.id
         }, optQuery);
 
+        if (Array.isArray(orderData.status_id)) {
+            orderData.status_id = orderData.status_id[0];
+        }
+
         let order = await RiteWay.Order.create({
             ...orderData,
             user_accept_id: quote.user_create_id,
@@ -477,6 +481,13 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         let order;
         if (quote.orderInfo) {
             order = quote.orderInfo;
+
+            if (Array.isArray(orderData.status_id)) {
+                if (!orderData.status_id.includes(quote.orderInfo.status_id)) {
+                    orderData.status_id = orderData.status_id[0];
+                }
+            }
+
             await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, optQuery);
             Logger.info(`Order of Quote ${quote.fd_number} Updated with ID ${quote.orderInfo.id}, Company: ${quote.Company.id}`);
         }
@@ -640,12 +651,12 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 }
             }
 
-            if(transaction) await transaction.commit();
+            if (transaction) await transaction.commit();
 
             return true;
         }
         catch (error) {
-            if(transaction) await transaction.rollback();
+            if (transaction) await transaction.rollback();
             await quote.stage_quote.update({
                 fdResponse: `ERROR: ${error.message}`,
                 status: quote.status_id,
