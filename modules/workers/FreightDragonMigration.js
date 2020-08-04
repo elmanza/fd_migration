@@ -63,8 +63,7 @@ async function migrate(companyId, today = false) {
         ],
         where: {
             [sqOp.and]: conditions
-        },
-        logging: true
+        }
     });
 
     for (const fdCompany of fdCompanies) {

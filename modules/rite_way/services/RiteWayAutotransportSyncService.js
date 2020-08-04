@@ -450,8 +450,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     ...note,
                     createdAt: `${note.createdAt} UTC`
                 },
-                ...optQuery,
-                logging: true
+                ...optQuery
             });
         }
 
