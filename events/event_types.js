@@ -31,6 +31,28 @@ module.exports = {
             }
         }
     },
+    updateQuote() {
+        return {
+            name: 'updateQuote',
+            updateComponent: {
+                eventName: `quote`
+            },
+            email: {
+                send: false
+            }
+        }
+    },
+    updateOrder() {
+        return {
+            name: 'updateOrder',
+            updateComponent: {
+                eventName: `order`
+            },
+            email: {
+                send: false
+            }
+        }
+    },
     newQuote(quote) {
         return {
             name: 'newQuote',
@@ -40,7 +62,7 @@ module.exports = {
             notification: {
                 send: true,
                 text: `Quote ${quote.fd_number} has been created`,
-                sendTo: ["jeff","raimundo","creator","operator"]
+                sendTo: ["jeff", "raimundo", "creator", "operator"]
             },
             email: {
                 send: true
