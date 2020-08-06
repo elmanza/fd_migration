@@ -11,12 +11,12 @@ module.exports = {
     migrateTodayEntities(){
         return FDTasks.migrateTodayEntities();
     },
-    createQuote(){
+    /* createQuote(){
         return RWTasks.createQuote();
     },
     quoteToOrder(){
         return RWTasks.quoteToOrder();
-    },
+    }, */
     refreshQuotes(){
         return RWTasks.refreshQuotes();
     },
@@ -26,7 +26,7 @@ module.exports = {
     refreshDeliveredOrders(){
         return RWTasks.refreshDeliveredOrders();
     },
-    syncInvoices(){
+    /* syncInvoices(){
         return RWTasks.syncInvoices();
-    }
+    } */
 }
