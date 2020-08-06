@@ -1,36 +1,40 @@
 /* jshint indent: 2 */
 
 module.exports = function (sequelize, DataTypes) {
-    const Log = sequelize.define('Log', {
+    const CityNotFound = sequelize.define('CityNotFound', {
       id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         primaryKey: true,
         autoIncrement: true
       },
-      level: {
+      name: {
         type: DataTypes.STRING,
         allowNull: false
       },
-      message: {
+      state: {
         type: DataTypes.STRING,
         allowNull: false
       },
-      createdAt: {
+      zipcode: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      created_at: {
         type: 'timestamp',
-        allowNull: false
+        allowNull: true,
       },
     }, {
-      tableName: 'logs',
+      tableName: 'cities_not_found',
       schema: 'stage',
       timestamps: false,
       underscored: true
     });
   
-    Log.associate = (Models) => {
+    CityNotFound.associate = (Models) => {
         
     };
   
-    return Log;
+    return CityNotFound;
   };
   

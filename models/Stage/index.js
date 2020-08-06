@@ -1,65 +1,33 @@
-const FdCompanies = require('./fd_companies');
-const MigratedCompany = require('./migrated_company');
-const Quote = require('./quote');
-const OperatorUser = require('./operator_user');
-const Log = require('./log');
+'use strict';
 
-const {Company, User, Quote:RWQuote}  = require("../../models/RiteWay/_riteWay");
+const fs = require('fs');
+const path = require('path');
+const Sequelize = require('sequelize');
+const basename = path.basename(__filename);
+const db = {};
 
-FdCompanies.belongsTo(Company, {
-    foreignKey: 'company_id',
-    constraints: true
-});
+function initializeModels(sequelize, RWModels) {
+    fs
+        .readdirSync(__dirname)
+        .filter(file => {
+            return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js');
+        })
+        .forEach(file => {
+            const model = sequelize['import'](path.join(__dirname, file));
+            db[model.name] = model;
+        });
 
-Company.hasOne(FdCompanies, {
-    foreignKey: {
-        name: 'company_id',
-        allowNull: false
-    },
-    as: 'fd_companies',
-    constraints: false,
-});
+    Object.keys(db).forEach(modelName => {
+        if (db[modelName].associate) {
+            db[modelName].associate(db, RWModels);
+        }
+    });
 
-MigratedCompany.belongsTo(FdCompanies, {
-    foreignKey: 'fd_company_id',
-    constraints: true
-});
+    db.sequelize = sequelize;
+    db.Sequelize = Sequelize;
 
-FdCompanies.hasOne(MigratedCompany, {
-    foreignKey: 'fd_company_id',
-    constraints: true
-});
-
-OperatorUser.belongsTo(User, {
-    foreignKey: 'rite_way_id',
-    constraints: true
-});
-
-//====================
-RWQuote.hasOne(Quote, {
-    foreignKey: 'rite_way_id',
-    as: 'stage_quote',
-    constraints: true
-});
-
-Quote.belongsTo(RWQuote, {
-    foreignKey: {
-        name: 'rite_way_id',
-        allowNull: false
-    },
-    constraints: false,
-});
-
-OperatorUser.sync();
-FdCompanies.sync();
-MigratedCompany.sync();
-Quote.sync();
-Log.sync();
-
-module.exports = {
-    Quote,
-    FdCompanies,
-    MigratedCompany,
-    OperatorUser, 
-    Log
+    return db;
 }
+module.exports = {
+    initializeModels
+};

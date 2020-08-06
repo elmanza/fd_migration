@@ -13,8 +13,8 @@ function getSequelizeConnection(params) {
             pool: {
                 max: params.pool.max,
                 min: params.pool.min,
-                acquire: 300000,
-                idle: 300000
+                acquire: 30000,
+                idle: 10000
             },
             logging: false
         }
@@ -30,8 +30,8 @@ riteWayDBConn = getSequelizeConnection({
     dbName: process.env.DB_NAME,
     dbDialect: process.env.DB_DIALECT,
     pool: {
-        max: parseInt(process.env.DB_POOL_MAX),
-        min: parseInt(process.env.DB_POOL_MIN)
+        max: Number(process.env.DB_MAX_CONNECTIONS || 10),
+        min: Number(process.env.DB_MIN_CONNECTIONS || 2)
     }
 });
 
