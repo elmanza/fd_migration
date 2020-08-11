@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 //SOCKETS
-const { RWAConf } = require('./config');
+const { RWAConf, SyncConf } = require('./config');
 const io = require('socket.io-client');
 const NotificationsClient = require('./events/clients/notificationsClient');
 const UpdateComponentClient = require('./events/clients/updateComponentClient');
@@ -32,10 +32,18 @@ const tasks = require('./modules/tasks');
 
 const cronTasks = {};
 
-Object.keys(tasks).forEach(task => {
-    cronTasks[task] = cron.schedule(process.env.SCHEDULE, tasks[task]);
-});
+cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrate);
+cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateTodayEntities);
 
+cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.createQuote);
+cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.quoteToOrder);
+
+cron.schedule(SyncConf.SCHEDULE.REFRESH_QUOTES, tasks.refreshQuotes);
+cron.schedule(SyncConf.SCHEDULE.REFRESH_ORDERS, tasks.refreshOrders);
+cron.schedule(SyncConf.SCHEDULE.REFRESH_DELIVERED_ORDERS, tasks.refreshDeliveredOrders);
+
+
+cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.syncInvoices);
 
 //TEST SOCKETS
 //require('./test_sockets');
