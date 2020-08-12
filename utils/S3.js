@@ -8,7 +8,7 @@ const uploadAWS = async (localPath, pathDestination) => {
         ACL: 'public-read',
         Bucket: 'riteway-customerportal-static',
         Body: fs.createReadStream(localPath),
-        Key: `uploads2/${pathDestination}`
+        Key: `uploads/${pathDestination}`
     };
     try {
         const upload = promisify(s3.upload.bind(s3));

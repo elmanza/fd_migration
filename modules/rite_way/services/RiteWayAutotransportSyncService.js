@@ -204,7 +204,10 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     async importFDEntity(FDEntity, associateCompany = null) {
         let quote = await RiteWay.Quote.findOne({
             where: {
-                fd_id: FDEntity.id
+                [sqOp.or]: [
+                    { fd_id: FDEntity.id },
+                    { fd_number: FDEntity.FDOrderID }
+                ]
             },
             paranoid: false
         });
@@ -782,7 +785,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
                     await this.uploadToS3(filePath, s3Path);
                     await quote.orderInfo.invoiceInfo.update({
-                        invoice_url: `uploads/${s3Path}`,
+                        invoice_url: `${s3Path}`,
                         invoice_type_id: INVOICE_TYPES.CUSTOMER
                     });
                     Logger.info(`Invoice file of ${quote.fd_number} synchronized`);
