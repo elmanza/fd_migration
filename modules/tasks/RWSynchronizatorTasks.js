@@ -104,7 +104,8 @@ class RWSynchronizatorTasks {
                         status_id: {
                             [sqOp.ne]: ORDER_STATUS.DELIVERED
                         }
-                    }
+                    },
+                    paranoid: false
                 },
                 paranoid: false
             },
