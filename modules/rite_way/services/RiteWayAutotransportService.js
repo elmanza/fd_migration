@@ -399,7 +399,7 @@ class RiteWayAutotranportService {
             });
         }
         else {
-            let city = await this.getCity(FDEntity.shipper.state, FDEntity.shipper.city, FDEntity.shipper.zip_code.replace(/\D/g, ""));
+            let city = await this.getCity(FDEntity.shipper.state, FDEntity.shipper.city, FDEntity.shipper.zip.replace(/\D/g, ""));
             let zipcode = await this.getZipcode(FDEntity.shipper.state, FDEntity.shipper.zip.replace(/\D/g, ""));
 
             let operator = await this.findUser(FDEntity.assignedTo.email.trim());

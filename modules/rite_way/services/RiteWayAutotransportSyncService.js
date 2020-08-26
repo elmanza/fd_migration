@@ -419,6 +419,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     updated = true;
                     await rwVehicle.update(vehicle, optQuery);
                     vehicles.splice(j, 1);
+                    break;
                 }
             }
 
