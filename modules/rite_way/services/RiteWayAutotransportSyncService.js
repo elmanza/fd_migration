@@ -599,7 +599,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let quoteStatuses = { newStatusId: quoteData.status_id, previousStatusId: quote.status_id };
             let orderStatuses = undefined;
 
-            quoteData.deleted_at = quote.deleted_at || quoteData.deleted_at;
+            if(quote.deletedAt) delete quoteData.deleted_at;
 
             await quote.update(quoteData, optQuery);
 
