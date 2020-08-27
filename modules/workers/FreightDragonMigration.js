@@ -75,15 +75,15 @@ async function migrate(companyId, today = false) {
             migration = await migration.update({
                 status: '',
                 startedAt: moment().format('YYYY-MM-DD hh:mm:ss'),
-                finishedAt: null,
-                migrated: false
+                finishedAt: null
             });
         }
         else {
             migration = await Stage.MigratedCompany.create({
                 fd_company_id: fdCompany.id,
                 status: '',
-                startedAt: moment().format('YYYY-MM-DD hh:mm:ss')
+                startedAt: moment().format('YYYY-MM-DD hh:mm:ss'),
+                migrated: false
             });
         }
 
