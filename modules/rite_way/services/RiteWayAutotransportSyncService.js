@@ -212,13 +212,18 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             paranoid: false
         });
         if (quote) {
+            await quote.update({
+                fd_id: FDEntity.id,
+                fd_number: FDEntity.FDOrderID
+            });
+
             await StageQuote.findOrCreate({
                 where: {
                     fdOrderId: quote.fd_number
                 },
                 defaults: {
                     riteWayId: quote.id,
-                    fdOrderId: quote.fd_number,
+                    fdOrderId: FDEntity.FDOrderID,
                     fdAccountId: '',
                     fdResponse: 'Imported',
                     status: '',
@@ -599,7 +604,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let quoteStatuses = { newStatusId: quoteData.status_id, previousStatusId: quote.status_id };
             let orderStatuses = undefined;
 
-            if(quote.deletedAt) delete quoteData.deleted_at;
+            if (quote.deletedAt) delete quoteData.deleted_at;
 
             await quote.update(quoteData, optQuery);
 

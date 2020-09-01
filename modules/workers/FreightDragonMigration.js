@@ -27,7 +27,7 @@ async function migrate(companyId, today = false) {
     ];
 
     if (today) {
-        from = moment().subtract(5, 'days').format('YYYY-MM-DD');
+        from = moment().subtract(15, 'days').format('YYYY-MM-DD');
         conditions.push(
             Sequelize.where(
                 Sequelize.col('MigratedCompany.migrated'),
