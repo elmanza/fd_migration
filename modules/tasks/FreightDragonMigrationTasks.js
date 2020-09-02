@@ -69,7 +69,7 @@ class FreightDragonMigrationTasks {
                     required: true,
                     include: {
                         model: Stage.MigratedCompany,
-                        required: false
+                        required: true
                     }
                 },
             ],

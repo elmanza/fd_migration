@@ -296,6 +296,8 @@ class RiteWayAutotranportService {
     async findCarrier(insuranceICCNumber, email = undefined) {
         let conditions = [];
 
+        if(!insuranceICCNumber) return null;
+
         if (email) {
             conditions.push(Sequelize.where(
                 Sequelize.col('email'),
