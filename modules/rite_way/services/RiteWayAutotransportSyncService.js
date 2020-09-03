@@ -495,6 +495,9 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 if (!orderData.status_id.includes(quote.orderInfo.status_id)) {
                     orderData.status_id = orderData.status_id[0];
                 }
+                else {
+                    orderData.status_id = quote.orderInfo.status_id;
+                }
             }
 
             await quote.orderInfo.update({ ...orderData, quote_id: quote.id }, optQuery);
