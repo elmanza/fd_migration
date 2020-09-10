@@ -414,7 +414,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
                 let vehicle = vehicles[j];
 
-                if ((rwVehicle.vin == vehicle.vin && rwVehicle.vin != null && rwVehicle.vin == '') ||
+                if ((rwVehicle.vin == vehicle.vin && rwVehicle.vin != null && rwVehicle.vin != '') ||
                     (
                         rwVehicle.year == vehicle.year
                         && rwVehicle.type_id == vehicle.type_id
@@ -428,9 +428,9 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 }
             }
 
-            if (!updated) {
+            /* if (!updated) {
                 await rwVehicle.destroy(optQuery);
-            }
+            } */
         }
     }
 
