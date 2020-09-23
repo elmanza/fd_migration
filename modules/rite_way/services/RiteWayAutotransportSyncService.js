@@ -432,8 +432,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 await rwVehicle.destroy(optQuery);
             } */
         }
-        
-        for(let vehicle of vehicles){
+
+        for (let vehicle of vehicles) {
             RiteWay.Vehicle.create({
                 ...vehicle,
                 quote_id: quote.id
@@ -611,6 +611,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
 
             //Updated Quote
+            if (quote.status_id > quoteData.status_id) quoteData.status_id = quote.status_id;
             let quoteStatuses = { newStatusId: quoteData.status_id, previousStatusId: quote.status_id };
             let orderStatuses = undefined;
 
