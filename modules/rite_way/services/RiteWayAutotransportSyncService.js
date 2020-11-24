@@ -351,8 +351,8 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 eventBody = {
                     fd_number: quote.fd_number,
                     order_id: quote.orderInfo.id,
-                    newStatus: orderData.status_id,
-                    previousStatus: quote.orderInfo.status_id,
+                    newStatus: this.statusToSymbol[statuses.newStatusId],
+                    previousStatus: this.statusToSymbol[statuses.previousStatusId],
                     company_id: quote.company_id,
                     is_paid
                 };
