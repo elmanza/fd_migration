@@ -786,7 +786,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
     async syncInvoice(quote) {
         try {
-            let res = await this.FDService.get(quote.fd_number, true);
+            let res = await this.FDService.get(quote.fd_number, true) || {};
 
             if (!res.Success) {
                 return false;
