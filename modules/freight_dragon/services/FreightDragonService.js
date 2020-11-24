@@ -4,6 +4,7 @@ const { MemberResource, EntityResource } = require('./http/resources');
 const { FDConf, RWAConf, Storage } = require('../../../config');
 
 const { QUOTE_STATUS, ORDER_STATUS, FD_STATUS } = require('../../../utils/constants');
+const Logger = require('../../../utils/logger');
 
 class FreightDragonService {
     constructor() {
@@ -147,6 +148,7 @@ class FreightDragonService {
     }
 
     get(FDOrderID, recreateInvoice = false) {
+        if (recreateInvoice) Logger.info({ FDOrderID, recreateInvoice });
         return this.entityResource.get({ FDOrderID, recreateInvoice });
     }
 
