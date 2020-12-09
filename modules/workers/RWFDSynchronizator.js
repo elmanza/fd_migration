@@ -72,11 +72,28 @@ async function createQuote() {
                     'IS',
                     null
                 ),
-                Sequelize.where(
-                    Sequelize.col('Quote.status_id'),
-                    '=',
-                    QUOTE_STATUS.WAITING
-                ),
+                {
+                    [sqOp.or]: [
+                        Sequelize.where(
+                            Sequelize.col('Quote.status_id'),
+                            '=',
+                            QUOTE_STATUS.WAITING
+                        ),
+                        {
+                            [sqOp.and]: [
+                                Sequelize.where(
+                                    Sequelize.col('Company.customerDetail.auto_quoter'),
+                                    '=',
+                                    true
+                                ), Sequelize.where(
+                                    Sequelize.col('Quote.status_id'),
+                                    '=',
+                                    QUOTE_STATUS.OFFERED
+                                )
+                            ]
+                        }
+                    ]
+                },
                 Sequelize.where(
                     Sequelize.col('fd_number'),
                     'IS',
@@ -95,7 +112,7 @@ async function createQuote() {
     for (const quote of quotes) {
         promises.push(sendRequestCreateFDQuote(quote));
     }
-
+    
     let results = await Promise.all(promises);
     return true;
 }
