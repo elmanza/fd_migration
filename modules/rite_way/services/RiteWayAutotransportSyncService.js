@@ -1,4 +1,5 @@
 const moment = require('moment');
+const fs = require('fs');
 
 const Sequelize = require('sequelize');
 const sqOp = Sequelize.Op;
@@ -807,6 +808,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                         invoice_url: `${s3Path}`,
                         invoice_type_id: INVOICE_TYPES.CUSTOMER
                     });
+                    fs.unlinkSync(filePath);
                     Logger.info(`Invoice file of ${quote.fd_number} synchronized`);
                 }
             }
