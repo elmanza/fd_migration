@@ -1,13 +1,16 @@
 
 const requestProm = require('request-promise');
-const { FDConf } = require('../../../../config');
+const { FDConf, SyncConf } = require('../../../../config');
 const HTTPService = require('../../../../utils/HTTPService');
+const MailManager = require('../../../../utils/mailManager');
 
 class FreightDragonHTTPServices extends HTTPService{
     constructor(){
         super();
         this.host = FDConf.apiUrl;
-        this.credentials = FDConf.credentials
+        this.credentials = FDConf.credentials;
+        this.InvalidCredentialsMsg = 'Invalid Access Credentials';
+        this.mailManager = new MailManager();
     }
 
     getDataWCredentials(data){
@@ -18,7 +21,7 @@ class FreightDragonHTTPServices extends HTTPService{
         return this.host + url;
     }
 
-    sendGetRequest(resourceUrl, data = {}){
+    async sendGetRequest(resourceUrl, data = {}){
         let options = {
             method: "GET",
             uri: this.getUrl(resourceUrl),
@@ -26,7 +29,13 @@ class FreightDragonHTTPServices extends HTTPService{
             //formData: data,
             json: true
         }
-        return requestProm(options);
+        const response = await requestProm(options);
+        
+        if(!response.Success && response.Message == this.InvalidCredentialsMsg){
+            this.mailManager.sendMail(SyncConf.supportEmails, 'FD API Credentials', 'FD API Credentials was deactivated');
+        }
+
+        return response;
     }
 
     sendPostRequest(resourceUrl, data = {}){

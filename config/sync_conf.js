@@ -3,6 +3,7 @@ module.exports = {
     batch_size: process.env.BATCH_SIZE || 50,
     defaultOperator: process.env.DEFAULT_OPERATOR || 'jeff@ritewayautotransport.com',
     defaultDispatcher: process.env.DEFAULT_DISTPACHER || 'jeff@ritewayautotransport.com',
+    supportEmails: process.env.SUPPORT_EMAILS && process.env.SUPPORT_EMAILS.split(';').map(e => e.trim()) || [],
     SCHEDULE: {
         GENERAL: process.env.GENERAL_SCHEDULE,
         MIGRATION: process.env.MIGRATION_SCHEDULE,

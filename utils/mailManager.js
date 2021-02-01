@@ -22,7 +22,7 @@ class MailManager {
                 },
                 Subject: {
                     Charset: 'UTF-8',
-                    Data: subject
+                    Data: `FD Sync: ${subject}`
                 }
             }
         };
