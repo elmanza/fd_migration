@@ -1,8 +1,8 @@
 const FreightDragonMigrationTasks = require('./FreightDragonMigrationTasks');
 const RWSynchronizatorTasks = require('./RWSynchronizatorTasks');
 
-FDTasks = new FreightDragonMigrationTasks();
-RWTasks = new RWSynchronizatorTasks();
+const FDTasks = new FreightDragonMigrationTasks();
+const RWTasks = new RWSynchronizatorTasks();
 
 module.exports = {
     migrate(){
