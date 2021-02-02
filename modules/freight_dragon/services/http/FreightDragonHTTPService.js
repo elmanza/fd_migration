@@ -39,7 +39,7 @@ class FreightDragonHTTPServices extends HTTPService {
         return response;
     }
 
-    sendPostRequest(resourceUrl, data = {}) {
+    async sendPostRequest(resourceUrl, data = {}) {
         let options = {
             method: "POST",
             uri: this.getUrl(resourceUrl),
