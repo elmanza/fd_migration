@@ -8,6 +8,8 @@ const Debug = require('./debug');
 const SyncConf = require('./sync_conf');
 const s3 = require('./S3');
 
+global.FDCredentialsAreWorking = true;
+
 module.exports = {
     FDConf,
     RWAConf,

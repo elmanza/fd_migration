@@ -4,8 +4,8 @@ const { FDConf, SyncConf } = require('../../../../config');
 const HTTPService = require('../../../../utils/HTTPService');
 const MailManager = require('../../../../utils/mailManager');
 
-class FreightDragonHTTPServices extends HTTPService{
-    constructor(){
+class FreightDragonHTTPServices extends HTTPService {
+    constructor() {
         super();
         this.host = FDConf.apiUrl;
         this.credentials = FDConf.credentials;
@@ -13,15 +13,15 @@ class FreightDragonHTTPServices extends HTTPService{
         this.mailManager = new MailManager();
     }
 
-    getDataWCredentials(data){
-        return {...this.credentials, ...this.filterNulls(data)};
+    getDataWCredentials(data) {
+        return { ...this.credentials, ...this.filterNulls(data) };
     }
 
-    getUrl(url){
+    getUrl(url) {
         return this.host + url;
     }
 
-    async sendGetRequest(resourceUrl, data = {}){
+    async sendGetRequest(resourceUrl, data = {}) {
         let options = {
             method: "GET",
             uri: this.getUrl(resourceUrl),
@@ -30,22 +30,29 @@ class FreightDragonHTTPServices extends HTTPService{
             json: true
         }
         const response = await requestProm(options);
-        
-        if(!response.Success && response.Message == this.InvalidCredentialsMsg){
+
+        if (!response.Success && response.Message == this.InvalidCredentialsMsg && FDCredentialsAreWorking) {
+            FDCredentialsAreWorking = false;
             this.mailManager.sendMail(SyncConf.supportEmails, 'FD API Credentials', 'FD API Credentials was deactivated');
         }
 
         return response;
     }
 
-    sendPostRequest(resourceUrl, data = {}){
+    sendPostRequest(resourceUrl, data = {}) {
         let options = {
             method: "POST",
             uri: this.getUrl(resourceUrl),
             formData: this.getDataWCredentials(data),
-            json:true
+            json: true
         }
         console.log(options);
+        const response = await requestProm(options);
+
+        if (response.Success && !FDCredentialsAreWorking) {
+            FDCredentialsAreWorking = true;
+        }
+
         return requestProm(options);
     }
 }
