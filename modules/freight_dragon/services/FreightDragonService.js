@@ -98,7 +98,7 @@ class FreightDragonService {
                 let originData = {};
                 originData['OriginAddress1'] = origin.address;
                 originData['OriginContactName'] = origin.ContactInformation.name;
-                originData['OriginCompanyName'] = origin.name;
+                originData['OriginCompanyName'] = origin.name || origin.company_name;
                 originData['OriginPhone1'] = origin.ContactInformation.phone;
                 originData['OriginType'] = origin.addressTypeInfo.name;
 
@@ -107,7 +107,7 @@ class FreightDragonService {
                 let destinationData = {};
                 destinationData['DestinationAddress1'] = destination.address;
                 destinationData['DestinationContactName'] = destination.ContactInformation.name;
-                destinationData['DestinationCompanyName'] = destination.name;
+                destinationData['DestinationCompanyName'] = destination.name || destination.company_name;
                 destinationData['DestinationPhone1'] = destination.ContactInformation.phone;
                 destinationData['DestinationType'] = destination.addressTypeInfo.name;
 

@@ -586,6 +586,7 @@ class RiteWayAutotranportService {
         result.originLocation = {
             address: FDEntity.origin.address1,
             name: FDEntity.origin.company,
+            company_name: FDEntity.origin.company,
             address_type_id: locationType(FDEntity.origin.location_type),
             pickup_time_start: FDEntity.origin.hours,
             pickup_time_end: FDEntity.origin.hours,
@@ -599,6 +600,7 @@ class RiteWayAutotranportService {
         result.destinationLocation = {
             address: FDEntity.destination.address1,
             name: FDEntity.destination.company,
+            company_name: FDEntity.destination.company,
             address_type_id: locationType(FDEntity.destination.location_type),
             pickup_time_start: FDEntity.destination.hours,
             pickup_time_end: FDEntity.destination.hours,
