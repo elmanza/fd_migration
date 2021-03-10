@@ -708,7 +708,7 @@ class RiteWayAutotranportService {
 
         let { user, company } = await this.parseFDEntityToCustomerCompanyData(FDEntity);;
 
-        quoteData.distance = FDEntity.distance;
+        quoteData.distance = Math.round(FDEntity.distance);
         quoteData.quantity = FDEntity.vehicles.length;
         quoteData.estimated_ship_date = FDEntity.est_ship_date || FDEntity.avail_pickup_date;
         quoteData.ship_via = (FDEntity.ship_via - 1 > 0 ? FDEntity.ship_via - 1 : 0);
