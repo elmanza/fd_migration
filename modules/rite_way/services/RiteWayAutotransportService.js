@@ -132,6 +132,18 @@ class RiteWayAutotranportService {
                 ]
             },
             {
+                model: RiteWay.Zipcode,
+                required: true,
+                as: 'originZipcode',
+                attributes: [ 'id', 'code' ]
+            },
+            {
+                model: RiteWay.Zipcode,
+                required: true,
+                as: 'destinationZipcode',
+                attributes: [ 'id', 'code' ]
+            },
+            {
                 model: RiteWay.Vehicle,
                 as: 'vehiclesInfo',
                 required: true,
