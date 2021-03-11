@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "refresh-models": "npm update ritewayautotransport_database"
+    "refresh-models": "npm update ritewayautotransport_database",
+    "start": "node app.js"
   },
   "author": "Harold Alexander Gallardo M",
   "license": "ISC",
