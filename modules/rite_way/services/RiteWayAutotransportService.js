@@ -132,6 +132,18 @@ class RiteWayAutotranportService {
                 ]
             },
             {
+                model: RiteWay.Zipcode,
+                required: true,
+                as: 'originZipcode',
+                attributes: [ 'id', 'code' ]
+            },
+            {
+                model: RiteWay.Zipcode,
+                required: true,
+                as: 'destinationZipcode',
+                attributes: [ 'id', 'code' ]
+            },
+            {
                 model: RiteWay.Vehicle,
                 as: 'vehiclesInfo',
                 required: true,
@@ -585,6 +597,7 @@ class RiteWayAutotranportService {
 
         result.originLocation = {
             address: FDEntity.origin.address1,
+            name: FDEntity.origin.company,
             company_name: FDEntity.origin.company,
             address_type_id: locationType(FDEntity.origin.location_type),
             pickup_time_start: FDEntity.origin.hours,
@@ -598,6 +611,7 @@ class RiteWayAutotranportService {
 
         result.destinationLocation = {
             address: FDEntity.destination.address1,
+            name: FDEntity.destination.company,
             company_name: FDEntity.destination.company,
             address_type_id: locationType(FDEntity.destination.location_type),
             pickup_time_start: FDEntity.destination.hours,
@@ -708,7 +722,7 @@ class RiteWayAutotranportService {
 
         let { user, company } = await this.parseFDEntityToCustomerCompanyData(FDEntity);;
 
-        quoteData.distance = FDEntity.distance;
+        quoteData.distance = Math.round(FDEntity.distance);
         quoteData.quantity = FDEntity.vehicles.length;
         quoteData.estimated_ship_date = FDEntity.est_ship_date || FDEntity.avail_pickup_date;
         quoteData.ship_via = (FDEntity.ship_via - 1 > 0 ? FDEntity.ship_via - 1 : 0);

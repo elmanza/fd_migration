@@ -57,13 +57,13 @@ class FreightDragonService {
             OriginCity: riteWayQuote.originCityInfo.name, //| Origin City name
             OriginState: riteWayQuote.originCityInfo.stateInfo.abbreviation, // Origin State Name
             OriginCountry: "US",//| Origin Country Name
-            OriginZip: riteWayQuote.origin_zip || riteWayQuote.originCity.zip, //| Origin ZipCode
+            OriginZip: riteWayQuote.originZipcode.code || riteWayQuote.origin_zip || riteWayQuote.originCityInfo.zip, //| Origin ZipCode
 
             //Destination Posting information================================
             DestinationCity: riteWayQuote.destinationCityInfo.name, //| Destination City Name
             DestinationState: riteWayQuote.destinationCityInfo.stateInfo.abbreviation, //| Destination State Name
             DestinationCountry: "US", //| Destination Country Name
-            DestinationZip: riteWayQuote.destination_zip || riteWayQuote.destinationCity.zip, //Destination ZipCode
+            DestinationZip: riteWayQuote.destinationZipcode.code || riteWayQuote.destination_zip || riteWayQuote.destinationCityInfo.zip, //Destination ZipCode
 
             //Notifaction information
             send_email: 0, //| 0: Dont send Email 1: Send email
@@ -98,7 +98,7 @@ class FreightDragonService {
                 let originData = {};
                 originData['OriginAddress1'] = origin.address;
                 originData['OriginContactName'] = origin.ContactInformation.name;
-                originData['OriginCompanyName'] = origin.company_name;
+                originData['OriginCompanyName'] = origin.name || origin.company_name;
                 originData['OriginPhone1'] = origin.ContactInformation.phone;
                 originData['OriginType'] = origin.addressTypeInfo.name;
 
@@ -107,7 +107,7 @@ class FreightDragonService {
                 let destinationData = {};
                 destinationData['DestinationAddress1'] = destination.address;
                 destinationData['DestinationContactName'] = destination.ContactInformation.name;
-                destinationData['DestinationCompanyName'] = destination.company_name;
+                destinationData['DestinationCompanyName'] = destination.name || destination.company_name;
                 destinationData['DestinationPhone1'] = destination.ContactInformation.phone;
                 destinationData['DestinationType'] = destination.addressTypeInfo.name;
 
