@@ -94,21 +94,22 @@ class FreightDragonService {
             fdQuoteData['Status'] = this._parseStatus(riteWayQuote.orderInfo.status_id);
             if (riteWayQuote.orderInfo.orderDesInfo != null && riteWayQuote.orderInfo.orderOriInfo != null) {
                 //Origen
+                console.log("-----------------------------", riteWayQuote.orderInfo.orderOriInfo.ContactInformations[0]);
                 let origin = riteWayQuote.orderInfo.orderOriInfo;
                 let originData = {};
                 originData['OriginAddress1'] = origin.address;
-                originData['OriginContactName'] = origin.ContactInformation.name;
+                originData['OriginContactName'] = origin.ContactInformations[0].name;
                 originData['OriginCompanyName'] = origin.name || origin.company_name;
-                originData['OriginPhone1'] = origin.ContactInformation.phone;
+                originData['OriginPhone1'] = origin.ContactInformations[0].phone;
                 originData['OriginType'] = origin.addressTypeInfo.name;
 
                 //Origen
                 let destination = riteWayQuote.orderInfo.orderDesInfo;
                 let destinationData = {};
                 destinationData['DestinationAddress1'] = destination.address;
-                destinationData['DestinationContactName'] = destination.ContactInformation.name;
+                destinationData['DestinationContactName'] = destination.ContactInformations[0].name;
                 destinationData['DestinationCompanyName'] = destination.name || destination.company_name;
-                destinationData['DestinationPhone1'] = destination.ContactInformation.phone;
+                destinationData['DestinationPhone1'] = destination.ContactInformations[0].phone;
                 destinationData['DestinationType'] = destination.addressTypeInfo.name;
 
                 try {

@@ -11,10 +11,12 @@ class EntityResource extends Resource {
     }
 
     quoteToOrder(data){
+        console.log("DESDE quoteToOrder entity ---------------------------------", data);
         return this.sendPostRequest('quote_to_order/', data);
     }
 
     update(data){
+        console.log("DESDE UPDATE ---------------------------------", data);
         return this.sendPostRequest('update/', data);
     }
 

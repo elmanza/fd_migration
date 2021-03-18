@@ -199,6 +199,7 @@ async function quoteToOrder() {
 
     let promises = [];
     for (const quote of quotes) {
+        console.log("-----> ",quote.id);
         promises.push(sendRequestQuoteToOrder(quote));
     }
 
