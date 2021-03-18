@@ -6,6 +6,7 @@ class EntityResource extends Resource {
     }
 
     createQuote(data){        
+        console.log("---------------------------------", data);
         return this.sendPostRequest('create_quote/', data);
     }
 

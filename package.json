@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.617.0",
-    "bcrypt": "^3.0.4-napi",
+    "bcrypt": "^5.0.1",
     "dotenv": "^8.2.0",
     "jsonwebtoken": "^8.5.1",
     "mkdirp": "^1.0.4",
@@ -23,6 +23,7 @@
     "request-promise": "^4.2.5",
     "ritewayautotransport_database": "git+https://hgallardo-leantech:ftnqiMNKxife4if@bitbucket.org/ritewayautotransport/ritewayautotransport_database.git",
     "sequelize": "^5.21.3",
+    "sharp": "^0.27.2",
     "socket.io": "^2.3.0"
   }
 }
