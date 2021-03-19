@@ -130,6 +130,7 @@ class FreightDragonService {
         let fdEntityD = this.parseRWData(riteWayQuote);
         let res = await this.entityResource.createQuote(fdEntityD);
 
+        console.log("RESPUESTA DE FD :::::: ", res);
         if (!res.Success) {
             fdEntityD.save_shipper = 1;
             fdEntityD.update_shipper = 0;

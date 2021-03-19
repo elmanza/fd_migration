@@ -32,18 +32,18 @@ const tasks = require('./modules/tasks');
 
 const cronTasks = {};
 
-cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrate);
-cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateTodayEntities);
+// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrate);
+// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateTodayEntities);
 
 cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.createQuote);
-cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.quoteToOrder);
+// cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.quoteToOrder);
 
-cron.schedule(SyncConf.SCHEDULE.REFRESH_QUOTES, tasks.refreshQuotes);
-cron.schedule(SyncConf.SCHEDULE.REFRESH_ORDERS, tasks.refreshOrders);
-cron.schedule(SyncConf.SCHEDULE.REFRESH_DELIVERED_ORDERS, tasks.refreshDeliveredOrders);
+// cron.schedule(SyncConf.SCHEDULE.REFRESH_QUOTES, tasks.refreshQuotes);
+// cron.schedule(SyncConf.SCHEDULE.REFRESH_ORDERS, tasks.refreshOrders);
+// cron.schedule(SyncConf.SCHEDULE.REFRESH_DELIVERED_ORDERS, tasks.refreshDeliveredOrders);
 
 
-cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.syncInvoices);
+// cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.syncInvoices);
 
 //TEST SOCKETS
 //require('./test_sockets');
