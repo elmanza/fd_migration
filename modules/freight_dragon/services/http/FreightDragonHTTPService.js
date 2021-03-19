@@ -53,7 +53,7 @@ class FreightDragonHTTPServices extends HTTPService {
             FDCredentialsAreWorking = true;
         }
         console.log("DESDE sendPostRequest CONSOLE DE formData: ", options.formData);
-        return requestProm(options);
+        // return requestProm(options);
     }
 }
 
