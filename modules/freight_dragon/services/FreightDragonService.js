@@ -150,7 +150,7 @@ class FreightDragonService {
     }
 
     get(FDOrderID, recreateInvoice = false) {
-        if (recreateInvoice) Logger.info({ FDOrderID, recreateInvoice });
+        // if (recreateInvoice) Logger.info({ FDOrderID, recreateInvoice });
         return this.entityResource.get({ FDOrderID, recreateInvoice });
     }
 
@@ -187,6 +187,38 @@ class FreightDragonService {
     sendFile(FDOrderID, file) {
         return this.entityResource.uploadDocument(FDOrderID, file);
     }
+
+
+    getCustomeData(iniDate, endDate, companyName) {
+        return this.entityResource.getCustomeData({
+            Created: `${iniDate}|${endDate}`,
+            Email: companyName
+        });
+    }
+
+    syncMyOrders(iniDate, endDate, companyName) {
+        return this.entityResource.syncMyOrders({
+            Created: `${iniDate}|${endDate}`,
+            Email: companyName
+        });
+    }
+
+    syncDispatchSheet(FDOrderID) {
+        return this.entityResource.syncDispatchSheet({ FDOrderID});
+    }
+
+    updateOrdersData(FDOrderID) {
+        return this.entityResource.updateOrdersData({ FDOrderID});
+    }
+
+    getCarriers(iniDate, endDate) {
+        return this.entityResource.getCarriers({
+            Created: `${iniDate}|${endDate}`
+        });
+    }
+
+
+    
 
 }
 

@@ -3,6 +3,7 @@
 
 ### Linux ###
 *~
+logs_migration_by_for_feb_08_22
 
 # temporary files which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*

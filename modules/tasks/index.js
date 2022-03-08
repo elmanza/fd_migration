@@ -5,6 +5,12 @@ const FDTasks = new FreightDragonMigrationTasks();
 const RWTasks = new RWSynchronizatorTasks();
 
 module.exports = {
+    migrateCustomeData(){
+        return FDTasks.migrateCustomeData();
+    },
+    migrateCarriers(){
+        return FDTasks.migrateCarriers();
+    },    
     migrate(){
         return FDTasks.migrateAll();
     },
@@ -23,10 +29,22 @@ module.exports = {
     refreshOrders(){
         return RWTasks.refreshOrders();
     },
+    createOrderFD(){
+        return RWTasks.createOrderFD();
+    },
     refreshDeliveredOrders(){
         return RWTasks.refreshDeliveredOrders();
     },
     syncInvoices(){
         return RWTasks.syncInvoices();
-    }
+    },
+    syncMyOrders(){
+        return RWTasks.syncMyOrders();
+    },
+    syncDispatchSheet(){
+        return RWTasks.syncDispatchSheet();
+    },
+    updateOrdersData(){
+        return RWTasks.updateOrdersData();
+    }  
 }

@@ -6,7 +6,7 @@ const QUOTE_STATUS = {
 }
 
 const ORDER_STATUS = {
-    ACTIVE: 4,
+    ACTIVE: 23,
     POSTED: 5,
     NOTSIGNED: 6,
     SIGNED: 7,
@@ -48,7 +48,7 @@ const COMPANY_TYPES = {
 
 const ROLES = {
     SUPER_ADMIN: 1,
-    OPERATOR: 2,
+    OPERATOR: 8,
     CUSTOMER: 4,
     CARRIER: 5,
     CUSTOMER_ADMIN: 12,

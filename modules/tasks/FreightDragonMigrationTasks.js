@@ -48,8 +48,11 @@ class FreightDragonMigrationTasks {
         });
 
         let threads = [];
-
+ 
         for (const company of companies) {
+            // if(company.id == 118207){
+            //     threads.push(FDMigrationWorker.migrate(company.id, false));
+            // }            
             threads.push(FDMigrationWorker.migrate(company.id, false));
         }
         let results = await Promise.all(threads);
@@ -93,6 +96,27 @@ class FreightDragonMigrationTasks {
         let results = await Promise.all(threads);
         this.finished.migrateTodayEntities = true;
     }
+
+
+    async migrateCustomeData() {
+        try {
+            let results = await Promise.all([FDMigrationWorker.migrateCustomeData()]);
+        } catch (error) {
+            console.log("ERROR EN migrateCustomeData", error);
+        }
+    }
+
+
+    async migrateCarriers() {
+        try {
+            let results = await Promise.all([FDMigrationWorker.migrateCarriers()]);
+        } catch (error) {
+            console.log("ERROR EN migrateCustomeData", error);
+        }
+    }
+
+
+    
 }
 
 

@@ -10,6 +10,7 @@ function getSequelizeConnection(params) {
         {
             host: params.dbHost,
             dialect: params.dbDialect,
+            timezone: '-05:00', // config timezone
             pool: {
                 max: params.pool.max,
                 min: params.pool.min,

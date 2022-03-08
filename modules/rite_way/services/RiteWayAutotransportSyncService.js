@@ -34,6 +34,18 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         this.statusToSymbol = {};
 
         this.initializeStatusToSymbol();
+        this.response = {};
+                this.response.customer_balance_paid_by = {}
+                
+                this.response.customer_balance_paid_by.error = 0;
+                this.response.customer_balance_paid_by.error_arr= [];
+
+                this.response.customer_balance_paid_by.different++;
+                this.response.customer_balance_paid_by.different_arr;
+
+                this.response.customer_balance_paid_by.igual= 0;
+                this.response.customer_balance_paid_by.new=0;
+
     }
 
     addToken(user) {
@@ -56,8 +68,39 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
     //IMPORT DATA=========================================
     async importCarrierDriver(carrierData, driverData, order, quote, optQuery) {
-        let carrier;
-        if (typeof carrierData.id == 'undefined') {
+        // let carrier;
+        // console.log("CARRIER --> ", carrierData, " DRIVEDATA --> ", driverData);
+        let conditions = [];
+            conditions.push(Sequelize.where(
+                Sequelize.col('email'),
+                'ilike',
+                `${carrierData.email.trim()}`
+            ));
+        let carrier = await RiteWay.Company.findOne({
+            include: {
+                model: RiteWay.CarrierDetail,
+                required: false,
+                as: 'carrierDetail'
+            },
+            where: {
+                [sqOp.or]: [
+                    ...conditions
+                ]
+            },
+            subQuery: false
+        });
+
+
+
+
+
+
+
+
+
+
+
+        if (typeof carrierData.id == 'undefined' && carrier == null) {
             carrier = await RiteWay.Company.create(carrierData, optQuery);
             carrierData.id = carrier.id;
 
@@ -74,7 +117,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             Logger.info(`Carrier of ${quote.fd_number} created ${carrier.id}`);
         }
         else {
-            carrier = await RiteWay.Company.findByPk(carrierData.id);
+            // carrier = await RiteWay.Company.findByPk(carrierData.id);
         }
 
         if (carrier) {
@@ -96,7 +139,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             Logger.info(`CarrierDetail of carrier ${carrier.id} was updated`);
         }
-
+        
         if (driverData) {
             const driver = await this.getUser(
                 {
@@ -130,14 +173,15 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
     }
 
     async importOrderData(orderData, quote, optQuery) {
+        try{
         let originLocation = await RiteWay.Location.create(orderData.originLocation, optQuery);
         let destinationLocation = await RiteWay.Location.create(orderData.destinationLocation, optQuery);
-
+        console.log("......................importOrderData A");
         await RiteWay.ContactInformation.create({
             ...orderData.originLocation.contact_information,
             location_id: originLocation.id
         }, optQuery);
-
+        console.log("......................importOrderData B");
         await RiteWay.ContactInformation.create({
             ...orderData.destinationLocation.contact_information,
             location_id: destinationLocation.id
@@ -145,8 +189,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
         if (Array.isArray(orderData.status_id)) {
             orderData.status_id = orderData.status_id[0];
-        }
-
+        };
         let order = await RiteWay.Order.create({
             ...orderData,
             user_accept_id: quote.user_create_id,
@@ -167,11 +210,33 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
         Logger.info(`Order created of ${quote.fd_number} with ID ${quote.id}`);
 
+        // B2B and Dispatch Sheet documents
+        if(orderData.files.length > 0){
+            let FDOrderID = quote.fd_number;
+            let orderLoadFile = {
+                quote_id: orderData.quote_id,
+                fd_number: quote.fd_number,
+                order_id: orderData.id,
+                created_at: order.created_at,
+                company_id: quote.company_id
+            }
+            orderData.files.forEach(archivo => {
+                let name_original = archivo.name_original;
+                archivo.FDOrderID = FDOrderID;
+                if(name_original.startsWith('B2B Order Form')){
+                    this.loadFile(archivo, "b2b", orderLoadFile, optQuery);
+                }
+                if(name_original.startsWith('Dispatch sheet')){
+                    this.loadFile(archivo, "dispatchsheet", orderLoadFile, optQuery);
+                }
+            });
+        }
+
         if (orderData.carrier) {
             await this.importCarrierDriver(orderData.carrier, orderData.driver, order, quote, optQuery);
         }
 
-        if (orderData.payments) {
+        if (orderData.payments.length > 0) {
             for (let i = 0; i < orderData.payments.length; i++) {
                 let paymentData = orderData.payments[i];
 
@@ -193,14 +258,228 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
         }
 
+        if (orderData.paymentCards.length > 0) {
+            console.log(orderData.paymentCards, "asdasd", quote.company_id)
+            for (let i = 0; i < orderData.paymentCards.length; i++) {
+                let creditCard = orderData.paymentCards[i];
+                // console.log(creditCard);
+                await RiteWay.CompanyCreditCard.findOrCreate({
+                    where: {
+                      company_id: quote.company_id,
+                      card_number: creditCard.card_number
+                    },
+                    defaults: {
+                        ...creditCard,
+                        company_id: quote.company_id
+                    },                    
+                    ...optQuery
+                  });
+                Logger.info(`Credit Card added - company_id =  of ${quote.company_id}`);
+            }
+            // console.log(creditCard);
+            // Logger.info(`Credit Card NO ADDED - company_id =  of ${quote.company_id}`);
+        }
+
+        if (orderData.paymentsChecks.length > 0) {
+            console.log("Estoy en cheques", orderData.paymentsChecks);
+            for (let i = 0; i < orderData.paymentsChecks.length; i++) {
+                let paymentOrderChecks = await RiteWay.OrderChecks.create({
+                    batch_id: orderData.paymentsChecks[i].check_number,
+                    order_id: orderData.id
+                }, optQuery);
+
+                Logger.info(`OrderChecks of ${quote.fd_number} created ${paymentOrderChecks.id}`);
+            }
+        }
+
         if (orderData.invoice) {
+            orderData.invoice.invoice_url = orderData.invoice.invoice_url == "" ? "" : await this.syncInvoiceFlow(quote, orderData.id,  orderData.invoice);
             let invoice = await RiteWay.Invoice.create({
                 ...orderData.invoice,
                 order_id: orderData.id
             }, optQuery);
+            // await this.syncInvoiceFlow(quote, optQuery);
             Logger.info(`Invoice of ${quote.fd_number} created ${invoice.id}`);
         }
+
+        if (orderData.invoiceCarrierData) {
+            
+        // console.log("-------------------V invoiceCarrierData 22 ", orderData.invoiceCarrierData[0]);
+            let invoiceCarrier = await RiteWay.Invoice.create({
+                ...orderData.invoiceCarrierData[0],
+                order_id: orderData.id
+            }, optQuery);
+            Logger.info(`InvoiceCarrier of ${quote.fd_number} created ${invoiceCarrier.id}`);
+        }else{
+            // condicionales
+        }
+
+        
+        // await transaction.commit();
+      }catch(error){
+        await optQuery.transaction.rollback();
+            console.log(error);
+            Logger.error(`All changes was rollback of  ${FDEntity.FDOrderID}`);
+            Logger.error(error);
+            throw error;
+      }
     }
+    async importFDCarrier(FDCarrier){
+      let transaction = undefined;
+        try {
+          let conditions = [];
+
+          transaction = await riteWayDBConn.transaction();
+          let optQuery = { transaction, paranoid: false };
+          let today = moment().format('YYYY-MM-DD hh:mm:ss');
+           console.log("PUNTO 1");
+          if (FDCarrier.email) {
+              conditions.push(Sequelize.where(
+                  Sequelize.col('email'),
+                  'ilike',
+                  `${FDCarrier.email.trim()}`
+              ));
+          }
+          let carrier = await RiteWay.Company.findOne({
+              include: {
+                  model: RiteWay.CarrierDetail,
+                  required: false,
+                  as: 'carrierDetail'
+              },
+              where: {
+                  [sqOp.or]: [
+                      ...conditions
+                  ]
+              },
+              subQuery: false
+          });
+
+          // Insercciones
+          if(carrier){
+            console.log("PUNTO 2");
+            let new_carrier_detail = {
+              insurance_doc: `https://freightdragon.com//application/accounts/getdocs/id/${FDCarrier.insurance_doc_id}/type/1`,
+              //hours_of_operation: FDCarrier.hours_of_operation,
+              insurance_expire: FDCarrier.insurance_expirationdate,
+              dispatcher_id: 848,
+              insurance_iccmcnumber: FDCarrier.insurance_iccmcnumber,
+              company_id: carrier.id
+            }
+            let [carrierDetail, isNewCarrierDetail] = await RiteWay.CarrierDetail.findOrCreate({
+              defaults: new_carrier_detail,
+              where: {
+                    company_id: carrier.id
+                },
+                ...optQuery
+            });
+
+            if (!isNewCarrierDetail) {
+                await carrierDetail.update(new_carrier_detail, optQuery);
+            }
+
+            let city = await this.getCity(FDCarrier.state, FDCarrier.city, FDCarrier.zip_code.replace(/\D/g, ""));
+            if(FDCarrier.address1){
+              let newCarrierAddressDetails = {
+                carrier_detail_id:carrierDetail.id,
+                address: FDCarrier.address1, 
+                contact: FDCarrier.contact_name1, 
+                phone: FDCarrier.phone1, 
+                use_for_print_check:true,
+                zipcode_id: city.zipcode_id || null,
+                city_id: city.id || null,
+                state_id: city.state_id || null
+              }
+              let [carrierAddressDetails, isNewCarrierAddressDetails] = await RiteWay.CarrierAddressDetails.findOrCreate({
+                defaults: newCarrierAddressDetails,
+                where: {
+                  carrier_detail_id: carrierDetail.id
+                  },
+                  ...optQuery
+              });
+
+              if (!isNewCarrierAddressDetails) {
+                await carrierDetail.update(newCarrierAddressDetails, optQuery);
+              }
+              
+              Logger.info(`YA CREADO CarrierAddressDetails of carrier ${carrierAddressDetails.id} was updated`);
+            }
+
+          }else{
+            console.log("PUNTO 3");
+            let city = await this.getCity(FDCarrier.state, FDCarrier.city, FDCarrier.zip_code.replace(/\D/g, ""));
+            let newCarrier = {
+              name: FDCarrier.company_name.trim(),
+              photo: '',
+              email: FDCarrier.email.trim().toLowerCase(),
+              phone: FDCarrier.phone1 || '',
+              address:FDCarrier.address1 || '',
+              status:true,
+              company_type_id:1,
+              city_id: city.id,
+              zipcode_id: city.zipcode_id,
+              created_at: FDCarrier.create_date  || today,
+              updated_at: FDCarrier.create_date || today,
+              invoice_created_in: 'dispatch'
+            }
+              carrier = await RiteWay.Company.create(newCarrier, optQuery);
+              let new_carrier_detail = {
+                insurance_doc: `https://freightdragon.com//application/accounts/getdocs/id/${FDCarrier.insurance_doc_id}/type/1`,
+                //hours_of_operation: FDCarrier.hours_of_operation,
+                insurance_expire: FDCarrier.insurance_expirationdate,
+                dispatcher_id: 848,
+                insurance_iccmcnumber: FDCarrier.insurance_iccmcnumber,
+                company_id: carrier.id
+                
+              }
+              let [carrierDetail, isNewCarrierDetail] = await RiteWay.CarrierDetail.findOrCreate({
+                defaults: new_carrier_detail,
+                where: {
+                      company_id: carrier.id
+                  },
+                  ...optQuery
+              });
+              if (!isNewCarrierDetail) {
+                await carrierDetail.update(new_carrier_detail, optQuery);
+            }
+
+            if(FDCarrier.address1){
+              let newCarrierAddressDetails = {
+                carrier_detail_id:carrierDetail.id,
+                address: FDCarrier.address1, 
+                contact: FDCarrier.contact_name1, 
+                phone: FDCarrier.phone1, 
+                use_for_print_check:true,
+                zipcode_id: city.zipcode_id || null,
+                city_id: city.id || null,
+                state_id: city.state_id || null
+              }
+              let [carrierAddressDetails, isNewCarrierAddressDetails] = await RiteWay.CarrierAddressDetails.findOrCreate({
+                defaults: newCarrierAddressDetails,
+                where: {
+                  carrier_detail_id: carrierDetail.id
+                  },
+                  ...optQuery
+              });
+
+              if (!isNewCarrierAddressDetails) {
+                await carrierDetail.update(newCarrierAddressDetails, optQuery);
+              }
+              
+              Logger.info(`NO ESTABA CREADO CarrierAddressDetails of carrier ${carrierAddressDetails.id} was updated`);
+            }
+          }
+          console.log("PUNTO 4");
+          if (transaction) await transaction.commit();
+          return true;
+        } catch (error) {
+          if (transaction) await transaction.rollback();
+          Logger.info(`[Error] en creación del carrier`);
+          Logger.error(error);
+          throw error;
+          return false;
+        }
+    }
+
 
     async importFDEntity(FDEntity, associateCompany = null) {
         let quote = await RiteWay.Quote.findOne({
@@ -212,6 +491,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             },
             paranoid: false
         });
+        console.log("SEG BRO!");
         if (quote) {
             await quote.update({
                 fd_id: FDEntity.id,
@@ -236,15 +516,71 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         }
 
         const transaction = await riteWayDBConn.transaction();
-        try {
+      try {
             let quoteData = await this.parseFDEntity(FDEntity, associateCompany);
             let isPaid = false;
+            console.log("LLEGAMOS A UNO");
+            if (typeof quoteData.company.id == 'undefined' || quoteData.company.id == null) {
+                delete quoteData.company.id;
+                let operator_id = quoteData.company.operator_id;
+                let shipper_type = quoteData.company.shipper_type;
+                let shipper_hours = quoteData.company.shipper_hours;
+                if(quoteData.company.isNew && quoteData.company.name == "Residential"){
 
-            if (typeof quoteData.company.id == 'undefined') {
-                quoteData.company = await RiteWay.Company.create(quoteData.company, { transaction });
+                }
+                // let companyFoundResidential = await RiteWay.Company.findOne({
+                //     where: {
+                //         [sqOp.iLike]: [
+                //             { name: 'Residential' }
+                //         ],
+
+                //     },
+                //     include:{
+                //         model: RiteWay.CustomerDetail,
+                //         required: true,
+                //         as: 'customerDetail',
+                //         where:{
+                //             operator_id: operator_id
+                //         }
+                //     },
+                //     paranoid: false
+                // });
+                // if(!companyFoundResidential){
+                   
+                // }else{
+                //     quoteData.company = companyFoundResidential;
+                // }
+                let [companyData , isNewCompany] = await RiteWay.Company.findOrCreate({
+                    defaults: {
+                        ...quoteData.company
+                    },
+                    where: {
+                        name: {
+                            [sqOp.iLike]: `${quoteData.company.name}`
+                        }
+                    },
+                    transaction
+                });
+                quoteData.company = companyData;
+                // quoteData.company = await RiteWay.Company.create(quoteData.company, { transaction });
+                // console.log("lajshdlkasdn", quoteData.company);
+                await RiteWay.CustomerDetail.create(
+                {
+                    operator_id: operator_id,
+                    company_id: quoteData.company.id,
+                    shipper_type: shipper_type,
+                    hours: shipper_hours
+                },
+                { transaction }
+                );
+                
+                
             }
 
-            if (typeof quoteData.user.id == 'undefined') {
+            
+
+            if (quoteData.user.isNew) {
+              console.log("CREANDO EL USUARIO");
                 quoteData.user = await this.getUser(
                     {
                         ...quoteData.user,
@@ -252,14 +588,28 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     },
                     quoteData.user.username,
                     { transaction });
+            }            
+            quoteData.residential_user_id = quoteData.user.id;
+            if(quoteData.users.length > 0){
+                // quoteData.users.forEach(async element => {
+                //     delete element.company_id;
+                //     await this.getUser(
+                //         {
+                //             ...element,
+                //             company_id: quoteData.company.id
+                //         },
+                //         element.password,
+                //         { transaction });
+                // });
             }
 
             quoteData.company_id = quoteData.company.id;
             quoteData.user_create_id = quoteData.user.id;
 
             //Create Quote
+            // console.log(quoteData);
             quote = await RiteWay.Quote.create(quoteData, { transaction });
-
+            console.log("LLEGAMOS A DOS");
             await riteWayDBConn.query(
                 'UPDATE quotes SET created_at = :created_at, updated_at = :updated_at, deleted_at = :deleted_at WHERE id = :id',
                 {
@@ -273,22 +623,25 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             quoteData.id = quote.id;
 
             Logger.info(`Quote created ${quoteData.fd_number} with ID ${quote.id}, Company: ${quoteData.company.id}`);
-
+            console.log(`----------------------------------> Quote created ${quoteData.fd_number} with ID ${quote.id}, Company: ${quoteData.company.id}`);
             if (quoteData.order) {
                 quoteData.order.quote_id = quoteData.id;
                 await this.importOrderData(quoteData.order, quote, { transaction });
                 if (quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
             }
-
+            let total_notes = quoteData.notes.length;
             for (let i = 0; i < quoteData.notes.length; i++) {
-                let note = quoteData.notes[i];
-                let newNote = await RiteWay.Note.create({
-                    ...note,
-                    quote_id: quoteData.id
-                }, { transaction });
-                Logger.info(`Note created  of ${quoteData.fd_number}, with ID ${newNote.id}`);
+                if( i < 40){
+                    let note = quoteData.notes[i];
+                    let newNote = await RiteWay.Note.create({
+                        ...note,
+                        quote_id: quoteData.id
+                    }, { transaction });
+                    Logger.info(`Note created  of ${quoteData.fd_number}, with ID ${newNote.id}`);
+                }else{
+                    break;
+                }
             }
-
             for (let i = 0; i < quoteData.vehicles.length; i++) {
                 let vehicleData = quoteData.vehicles[i];
 
@@ -302,22 +655,32 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             let watch = status != ORDER_STATUS.CANCELLED;
             watch = watch && !(status == ORDER_STATUS.DELIVERED && isPaid);
-
-            let stageQuoteData = {
-                riteWayId: quote.id,
-                fdOrderId: FDEntity.FDOrderID,
-                fdAccountId: '',
-                fdResponse: 'Imported',
-                status: status,
-                watch,
-                ordered: quoteData.status_id == QUOTE_STATUS.ORDERED
+            console.log("LLEGAMOS A CINCO");
+            
+            let insertQuoteSummary = {
+                total_notes: quoteData.notes.length, 
+                total_vehicles: quoteData.vehicles.length,
+                total_customer_notes: 0,
+                quote_id: quote.id,
+                vehicles_summary: quoteData.vehicles_summary
             };
-            await StageQuote.create(stageQuoteData, { transaction });
+            
+            await RiteWay.QuoteSummary.findOrCreate({
+                defaults: {
+                    ...insertQuoteSummary
+                },
+                where: {
+                    quote_id: quote.id
+                },
+                transaction 
+            });
+            // await StageQuote.create(stageQuoteData, { transaction });
             await transaction.commit();
             return true;
         }
         catch (error) {
             await transaction.rollback();
+            console.log(error);
             Logger.error(`All changes was rollback of  ${FDEntity.FDOrderID}`);
             Logger.error(error);
             throw error;
@@ -784,6 +1147,37 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             }
         }
     } */
+    async syncInvoiceFlow(quote, orderId, invoice) {
+        try {
+            
+            let fdInvoiceURL = (invoice.invoice_url ? FDConf.host + invoice.invoice_url : null);
+            let folder = `tmp/quote_${quote.id}/invoice`;
+             
+            if (fdInvoiceURL) {
+                let fileName = path.basename(fdInvoiceURL);
+                let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);
+                if (filePath) {
+                    let companyFolder = 'company_' + quote.company_id;
+                    let invoiceFolder = 'order_' + orderId + '/invoice';
+                    let s3Path = `${companyFolder}/${invoiceFolder}/${fileName}`;
+
+                    await this.uploadToS3(filePath, s3Path);
+                    fs.unlinkSync(filePath);
+                    Logger.info(`Invoice file of ${quote.fd_number} synchronized`);
+                    return `${s3Path}`;                    
+                }
+            }
+        }
+        catch (error) {
+            Logger.error(`Error when the system upload invoice file of ${quote.fd_number} on Rite Way System`);
+            Logger.error(error);
+            let contentFile = `${FDEntity.FDOrderID}: ${error.message} </br> ------------------- ${JSON.stringify(error)} ----------------------------- Final de la entidad -----------------------------`;
+            let appFolder = path.dirname(require.main ? require.main.filename : __dirname);
+            fs.writeFile(`${appFolder}/logs_sync_files/debugger-${quote.fd_number}.txt`, `${contentFile} \n \n \n \n \n`, { flag: 'a+' }, err => {
+                //console.log("ERROR EN MI debugger.txt", err);
+            })
+        }
+    }
 
     async syncInvoice(quote) {
         try {
@@ -792,9 +1186,10 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             if (!res.Success) {
                 return false;
             }
-
+            
             let fdInvoiceURL = (res.Data.invoice_file ? FDConf.host + res.Data.invoice_file : null);
             let folder = `tmp/quote_${quote.id}/invoice`;
+             
             if (fdInvoiceURL) {
                 let fileName = path.basename(fdInvoiceURL);
                 let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);
@@ -804,7 +1199,21 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     let s3Path = `${companyFolder}/${invoiceFolder}/${fileName}`;
 
                     await this.uploadToS3(filePath, s3Path);
-                    await quote.orderInfo.invoiceInfo.update({
+                    // console.log("asdasd", quote.orderInfo.invoiceInfo[0].id, quote.orderInfo.invoiceInfo[0]);
+                    let update_invoices = {
+                        invoice_url: `${s3Path}`,
+                        invoice_type_id: INVOICE_TYPES.CUSTOMER,
+                        id: quote.orderInfo.invoiceInfo.id
+                    }
+                    // await riteWayDBConn.query(
+                    //     'UPDATE invoices SET invoice_url = :invoice_url, invoice_type_id = :invoice_type_id WHERE id = :id',
+                    //     {
+                    //         replacements: { ...update_invoices },
+                    //         type: Sequelize.QueryTypes.UPDATE,
+                    //         raw: true
+                    //     }
+                    // );
+                    await quote.orderInfo.invoiceInfo[0].update({
                         invoice_url: `${s3Path}`,
                         invoice_type_id: INVOICE_TYPES.CUSTOMER
                     });
@@ -816,8 +1225,182 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         catch (error) {
             Logger.error(`Error when the system upload invoice file of ${quote.fd_number} on Rite Way System`);
             Logger.error(error);
+            let contentFile = `${FDEntity.FDOrderID}: ${error.message} </br> ------------------- ${JSON.stringify(error)} ----------------------------- Final de la entidad -----------------------------`;
+            let appFolder = path.dirname(require.main ? require.main.filename : __dirname);
+            fs.writeFile(`${appFolder}/logs_sync_files/debugger-${quote.fd_number}.txt`, `${contentFile} \n \n \n \n \n`, { flag: 'a+' }, err => {
+                //console.log("ERROR EN MI debugger.txt", err);
+            })
         }
     }
+
+    async syncDispatchSheet(order) {
+        try {
+            let res = await this.FDService.syncDispatchSheet(order.fd_number) || {};
+
+            if (!res.Success) {
+                return false;
+            }
+            console.log("..................................................", order.fd_number);
+
+            if(res.Data[0][0].files.length > 0){
+                let FDOrderID = res.Data[0][0].FDOrderID;
+                res.Data[0][0].files.forEach(archivo => {
+                    let name_original = archivo.name_original;
+                    archivo.FDOrderID = FDOrderID;
+                    if(name_original.startsWith('B2B Order Form')){
+                        this.loadFile(archivo, "b2b", order);
+                    }
+
+                    if(name_original.startsWith('Dispatch sheet')){
+                        this.loadFile(archivo, "dispatchsheet", order);
+                    }
+                });
+            }
+
+            
+        }
+        catch (error) {
+            console.log("ERROR EN syncDispatchSheet DE LA CLASE RiteWayAutotranportSyncService", error);
+        }
+    }
+
+    async loadFile(data, type = "dispatchsheet", obj = {}, optQuery = {}){
+        try{
+            let fdInvoiceURL = `https://freightdragon.com/uploads/entity/${data.name_on_server}`; 
+            let name_original = `${data.name_original}`;
+            let folder = `tmp/quote_${obj.quote_id}/${type}`;
+            if (fdInvoiceURL) {
+                let fileName = path.basename(fdInvoiceURL);
+                let filePath = await HTTPService.downloadFile(fdInvoiceURL, folder, fileName);
+                if (filePath) {
+                    console.log("SE DESCARGÓ EL ARCHIVO ", obj.order_id);
+                    const s3Path = `company_${obj.company_id}/order_${obj.order_id}/order_documents/${type}/${name_original}`;
+
+                    await this.uploadToS3(filePath, s3Path);
+                    let name = type == 'dispatchsheet' ? 'Dispatch sheet' : 'b2b';
+                    let dataDocument = {
+                        name,
+                        url_file: s3Path,
+                        uploaded_at: moment(),
+                        order_id: obj.order_id
+                    };
+                  
+                  
+                    await RiteWay.OrderDocument.findOrCreate({
+                        defaults: {
+                            ...dataDocument
+                        },
+                        where: {
+                            name: dataDocument.name,
+                            order_id: dataDocument.order_id
+                        },
+                        ...optQuery
+                    });;
+                    fs.unlinkSync(filePath);
+                    Logger.info(`${type} file of ${obj.fd_number} synchronized`);
+                }
+            }
+        }catch (error) {
+            Logger.error(`Error when the system upload ${type} file of ${data.FDOrderID} on Rite Way System`);
+            Logger.error(error);
+            let contentFile = `${FDEntity.FDOrderID}: ${error.message} </br> ------------------- ${JSON.stringify(error)} ----------------------------- Final de la entidad -----------------------------`;
+            let appFolder = path.dirname(require.main ? require.main.filename : __dirname);
+            fs.writeFile(`${appFolder}/logs_sync_files_${type}/debugger-${data.FDOrderID}.txt`, `${contentFile} \n \n \n \n \n`, { flag: 'a+' }, err => {
+                //console.log("ERROR EN MI debugger.txt", err);
+            })
+        }
+    }
+
+
+    async updateOrdersData(order, show_data) {
+        try {
+            let customer_balance_paid_by = [
+                '',
+                14,
+                4,
+                11,
+                9,
+                9,
+                13
+            ]
+                // this.response.customer_balance_paid_by = {}
+                
+                // this.response.customer_balance_paid_by.error = 0;
+                // this.response.customer_balance_paid_by.error_arr= [];
+
+                // this.response.customer_balance_paid_by.different++;
+                // this.response.customer_balance_paid_by.different_arr;
+
+                // this.response.customer_balance_paid_by.igual= 0;
+                // this.response.customer_balance_paid_by.new=0;
+            let res = await this.FDService.updateOrdersData(order.fd_number) || {};
+
+            if (!res.Success) {
+                return false;
+            }
+            let payment_method_id = null;
+            let update_order =  {};
+            if(res.Data.customer_balance_paid_by){
+                let customer_balance_paid_by_num = Number(res.Data.customer_balance_paid_by);
+                
+                if(customer_balance_paid_by_num < 7){
+                    if(order.payment_method_id==customer_balance_paid_by[customer_balance_paid_by_num]){
+                        this.response.customer_balance_paid_by.igual++;
+                        payment_method_id = order.payment_method_id;
+                    }else{
+                        this.response.customer_balance_paid_by.new++;
+                        payment_method_id = customer_balance_paid_by[customer_balance_paid_by_num];
+                    }
+                }else{
+                    payment_method_id = 9;
+                    this.response.customer_balance_paid_by.different++;
+                    this.response.customer_balance_paid_by.different_arr.push(`${order.fd_number} -> ${customer_balance_paid_by_num}`);
+                }
+            }else{
+                this.response.customer_balance_paid_by.error++;
+                this.response.customer_balance_paid_by.error_arr.push(order.fd_number);
+            }
+
+            if(res.Data.domain){
+                const sourceInfo = await riteWayDBConn.query(`SELECT * FROM sources          
+                                                    where sources."name" ilike  '%${res.Data.domain}%'`, {
+                    type: Sequelize.QueryTypes.SELECT
+                });
+              if(sourceInfo[0]){
+                  console.log("Se encontró el source ID");
+                update_order.source_id = sourceInfo[0].id
+              }else{
+                update_order.source_id = -1
+              }
+            }else{
+                console.log("Vino null y es ",order.fd_number);
+                update_order.source_id = -1
+            }
+            update_order.payment_method_id = payment_method_id;
+            update_order.id = order.id;
+            let sql_update = await riteWayDBConn.query(
+                        'UPDATE orders SET source_id = :source_id, payment_method_id = :payment_method_id WHERE id = :id',
+                        {
+                            replacements: { ...update_order },
+                            type: Sequelize.QueryTypes.UPDATE,
+                            raw: true
+                        }
+                    );
+            // console.log(sql_update);
+            if(show_data){
+                console.log("FINAAAAL");
+                console.log(this.response);
+            }          
+        }
+        catch (error) {
+            console.log("ERROR EN updateOrdersData DE LA CLASE RiteWayAutotranportSyncService", error);
+        }
+    }
+
+    
+
+
+    
 }
 
 module.exports = RiteWayAutotranportSyncService;

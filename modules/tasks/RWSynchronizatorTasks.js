@@ -19,23 +19,29 @@ class RWSynchronizatorTasks {
             refreshDeliveredOrders: true,
             syncInvoices: true
         }
+        this.doingQuerysyncMyOrders = null;
     }
 
     async createQuote() {
-        if (!this.finished.createQuote) return;
+        if (!this.finished.createQuote) {
+            console.log("No se ejecita createQuote");
+            return;
+        };
         this.finished.createQuote = false;
 
         Logger.info(`createQuote is executed`);
         let threads = [];
-
         threads.push(RWFDSynchronizatorWorker.createQuote());
 
         let results = await Promise.all(threads);
-        this.finished.createQuote = true;
+        // this.finished.createQuote = true;
     }
 
     async quoteToOrder() {
-        if (!this.finished.quoteToOrder) return;
+        if (!this.finished.quoteToOrder)  {
+            console.log("No se ejecita quoteToOrder");
+            return;
+        };;
         this.finished.quoteToOrder = false;
 
         Logger.info(`quoteToOrder is executed`);
@@ -44,7 +50,7 @@ class RWSynchronizatorTasks {
         threads.push(RWFDSynchronizatorWorker.quoteToOrder());
 
         let results = await Promise.all(threads);
-        this.finished.quoteToOrder = true;
+        // this.finished.quoteToOrder = true;
     }
 
     async refreshQuotes() {
@@ -84,6 +90,20 @@ class RWSynchronizatorTasks {
 
         let results = await Promise.all(threads);
         this.finished.refreshQuotes = true;
+    }
+
+    async createOrderFD(){
+        if (!this.finished.refreshOrders) {
+            console.log("No se puede ejecutar el createOrderFD");
+            return;
+        };
+        this.finished.refreshOrders = false;
+        Logger.info(`createOrderFD is executed`);
+        let threads = [];
+
+        threads.push(RWFDSynchronizatorWorker.quoteToOrder());
+
+        let results = await Promise.all(threads);
     }
 
     async refreshOrders() {
@@ -179,7 +199,10 @@ class RWSynchronizatorTasks {
     }
 
     async syncInvoices() {
-        if (!this.finished.syncInvoices) return;
+        if (!this.finished.syncInvoices) {
+            console.log("Estoy en this.finished.syncInvoices = ", this.finished.syncInvoices);
+            return;
+        }
         this.finished.syncInvoices = false;
 
         Logger.info(`syncInvoices is executed`);
@@ -190,6 +213,55 @@ class RWSynchronizatorTasks {
         let results = await Promise.all(threads);
         this.finished.syncInvoices = true;
     }
+
+    
+    async syncMyOrders() {
+        if (this.doingQuerysyncMyOrders == null){
+            this.finished.syncInvoices = false;
+
+            Logger.info(`syncMyOrders is executed`);
+            let threads = [];
+
+            threads.push(RWFDSynchronizatorWorker.syncMyOrders());
+
+            let results = await Promise.all(threads);
+            this.finished.syncInvoices = true;
+        }else{
+            console.log("Estoy en this.finished.syncInvoices = ", this.finished.syncInvoices);
+            return;
+        }
+        
+    }
+
+    async syncDispatchSheet() {
+        if (!this.finished.syncInvoices) return;
+        this.finished.syncInvoices = false;
+
+        Logger.info(`syncInvoices is executed`);
+        let threads = [];
+
+        threads.push(RWFDSynchronizatorWorker.syncDispatchSheet(SyncParameters.batch_size));
+
+        let results = await Promise.all(threads);
+        // this.finished.syncInvoices = true;
+        
+    }
+
+
+    async updateOrdersData(){
+        if (!this.finished.syncInvoices) return;
+        this.finished.syncInvoices = false;
+
+        Logger.info(`updateOrdersData is executed`);
+        let threads = [];
+
+        threads.push(RWFDSynchronizatorWorker.updateOrdersData(SyncParameters.batch_size));
+
+        let results = await Promise.all(threads);
+        this.finished.syncInvoices = true;
+    }
+
+    
 }
 
 

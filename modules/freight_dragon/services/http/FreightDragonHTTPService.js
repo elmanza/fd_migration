@@ -29,8 +29,9 @@ class FreightDragonHTTPServices extends HTTPService {
             //formData: data,
             json: true
         }
+        // console.log(options);
         const response = await requestProm(options);
-
+        // console.log(response);
         if (!response.Success && response.Message == this.InvalidCredentialsMsg && FDCredentialsAreWorking) {
             FDCredentialsAreWorking = false;
             this.mailManager.sendMail(SyncConf.supportEmails, 'FD API Credentials', 'FD API Credentials was deactivated');
@@ -46,14 +47,14 @@ class FreightDragonHTTPServices extends HTTPService {
             formData: this.getDataWCredentials(data),
             json: true
         }
-        console.log(options);
+        console.log("MIS OPTION ADENTRO DE sendPostRequest", options);
         const response = await requestProm(options);
 
         if (response.Success && !FDCredentialsAreWorking) {
             FDCredentialsAreWorking = true;
         }
         console.log("DESDE sendPostRequest CONSOLE DE formData: ", options.formData);
-        return requestProm(options);
+        // return requestProm(options);
     }
 }
 

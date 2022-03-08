@@ -31,7 +31,7 @@ const { getOrder } = require('../../components/order/queries/index');
 
 // CONFIG AND MODELS
 const { config } = require('../../configs/config');
-const { ritewayDB } = require('../../configs/databases');
+const { ritewayDB } = require('../../config/database');
 const { GisCity } = require('../../models');
 
 const Sequelize = require('sequelize');

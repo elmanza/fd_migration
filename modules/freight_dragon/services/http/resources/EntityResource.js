@@ -48,6 +48,26 @@ class EntityResource extends Resource {
         };
         return this.sendPostRequest('upload_file/', formData);
     }
+    getCustomeData(data){
+        return this.sendGetRequest('get_data_for_companies/', data);
+    }
+    syncMyOrders(data){
+        return this.sendGetRequest('sync_my_orders/', data);
+    }
+    
+    syncDispatchSheet(data){
+        return this.sendGetRequest('sync_dispatch_sheet/', data);
+    }
+
+    updateOrdersData(data){
+        return this.sendGetRequest('update_orders_data/', data);
+    }
+
+    getCarriers(data){
+        return this.sendGetRequest('get_carriers/', data);
+    }
+
+    
 }
 
 module.exports = EntityResource;
