@@ -7,6 +7,7 @@ const uploadAWS = async (localPath, pathDestination) => {
     var params = {
         ACL: 'public-read',
         Bucket: 'riteway-customerportal-static',
+        // Bucket: 'testritewaystatic-portal',
         Body: fs.createReadStream(localPath),
         Key: `uploads/${pathDestination}`
     };

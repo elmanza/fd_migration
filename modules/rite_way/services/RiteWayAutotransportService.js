@@ -23,7 +23,28 @@ let customer_balance_paid_by = [
         4,
         14
 ];
-
+let PaymentOption = {
+    1:{
+        charge:0,
+        discount:0
+    },
+    2:{
+        charge:12,
+        discount:3
+    },
+    3:{
+        charge:12,
+        discount:5
+    },
+    4:{
+        charge:0,
+        discount:3
+    },
+    5:{
+        charge:0,
+        discount:5
+    }
+}
 const FEESTYPE = [ 1, 1, 2, 3, 4, 5];
 // 14	customer	ACH
 // 7	customer	Cash
@@ -441,6 +462,23 @@ class RiteWayAutotranportService {
         let customerCompany = null;
         let shipper__type = FDEntity.shipper.shipper_type == "" ? "Residential" : FDEntity.shipper.shipper_type;
         console.log("shipper__type-COMPANY -->", FDEntity.shipper.company);
+
+        let operator = await this.findUser(FDEntity.assignedTo.email.trim());
+        let defaultOperator = await this.findUser(SyncConf.defaultOperator);
+        if(!operator){
+        let userFullName = FDEntity.assignedTo.contactname.split(' ');
+        let userData = {
+            name: userFullName[0],
+            last_name: userFullName.slice(1).join(' '),
+            username: FDEntity.assignedTo.email.trim().toLowerCase(),
+            photo: '',
+            phone: FDEntity.assignedTo.phone,
+            company_id: 149, // master 149 || dev 3105
+            rol_id: ROLES.OPERATOR
+        };
+        // console.log("erData, userData.userna ", userData);
+        operator = await this.getUser(userData, userData.username);
+        }
         // console.log("r ", shipperUser.name, "||||", shipperUser.dataValues.name);
         //Get company data
         if (shipperUser) {
@@ -465,22 +503,22 @@ class RiteWayAutotranportService {
             let city = zipcode_info.replace(/\D/g, "").length < 4 ? null : await this.getCity(state_info, city_info, zipcode_info.replace(/\D/g, ""));
             let zipcode = await this.getZipcode(state_info, zipcode_info.replace(/\D/g, ""));
 
-            let operator = await this.findUser(FDEntity.assignedTo.email.trim());
-            let defaultOperator = await this.findUser(SyncConf.defaultOperator);
+            // let operator = await this.findUser(FDEntity.assignedTo.email.trim());
+            // let defaultOperator = await this.findUser(SyncConf.defaultOperator);
 
-            if(!operator){
-                let userFullName = FDEntity.assignedTo.contactname.split(' ');
-                let userData = {
-                    name: userFullName[0],
-                    last_name: userFullName.slice(1).join(' '),
-                    username: FDEntity.assignedTo.email.trim().toLowerCase(),
-                    photo: '',
-                    phone: FDEntity.assignedTo.phone,
-                    company_id: 149, // master 149 || dev 3105
-                    rol_id: ROLES.OPERATOR
-                };
-                operator = await this.getUser(userData, userData.username);
-            }  
+            // if(!operator){
+            //     let userFullName = FDEntity.assignedTo.contactname.split(' ');
+            //     let userData = {
+            //         name: userFullName[0],
+            //         last_name: userFullName.slice(1).join(' '),
+            //         username: FDEntity.assignedTo.email.trim().toLowerCase(),
+            //         photo: '',
+            //         phone: FDEntity.assignedTo.phone,
+            //         company_id: 3105, // master 149 || dev 3105
+            //         rol_id: ROLES.OPERATOR
+            //     };
+            //     operator = await this.getUser(userData, userData.username);
+            // }  
             customerCompany = {
                 id: null,
                 isNew: true,
@@ -499,29 +537,16 @@ class RiteWayAutotranportService {
         }
 
         if(customerCompany == null){
-            let state_info = FDEntity.shipper.state == "" ? FDEntity.origin.state : FDEntity.shipper.state;
-            let city_info = FDEntity.shipper.city == "" ? FDEntity.origin.city : FDEntity.shipper.city;
-            let zipcode_info = FDEntity.shipper.zip == "" ? FDEntity.origin.zip : FDEntity.shipper.zip;
+
+            let state_info = FDEntity.shipper.state == "" || FDEntity.shipper.city == "" ? FDEntity.origin.state : FDEntity.shipper.state;
+            let city_info = FDEntity.shipper.city == "" || FDEntity.shipper.zip == "" ? FDEntity.origin.city : FDEntity.shipper.city;
+            let zipcode_info = FDEntity.shipper.city == "" || FDEntity.shipper.zip == "" ? FDEntity.origin.zip : FDEntity.shipper.zip;
             let city = zipcode_info.replace(/\D/g, "").length < 4 ? null : await this.getCity(state_info, city_info, zipcode_info.replace(/\D/g, ""));
             let zipcode = await this.getZipcode(state_info, zipcode_info.replace(/\D/g, ""));
 
-          let operator = await this.findUser(FDEntity.assignedTo.email.trim());
-          let defaultOperator = await this.findUser(SyncConf.defaultOperator);
-          if(!operator){
-            let userFullName = FDEntity.assignedTo.contactname.split(' ');
-            let userData = {
-                name: userFullName[0],
-                last_name: userFullName.slice(1).join(' '),
-                username: FDEntity.assignedTo.email.trim().toLowerCase(),
-                photo: '',
-                phone: FDEntity.assignedTo.phone,
-                company_id: 149, // master 149 || dev 3105
-                rol_id: ROLES.OPERATOR
-            };
-            // console.log("erData, userData.userna ", userData);
-            operator = await this.getUser(userData, userData.username);
-          }
-            //   console.log("asdkjlbaslkdbaskjlbdkjsad", operator);
+          
+            //   console.log("asdkjlbaslkdbaskjlbdkjsad", city);
+
           // console.log("kajsbdlkasd",operator);
           customerCompany = {
             id: null,
@@ -539,6 +564,9 @@ class RiteWayAutotranportService {
             shipper_type: shipper__type
           };
         }
+
+        // console.log("---------------------- OPERATOR..>", operator.dataValues.id, "lkasdjlkasjd");
+        if(!customerCompany.operator_id) customerCompany.operator_id = operator.dataValues.id || operator.id;
 
 
         // let company__id = customerCompany == null ? null : customerCompany.id;
@@ -697,8 +725,8 @@ class RiteWayAutotranportService {
                     zip: zipcode_carrier.replace(/\D/g, ""),
                     city_id: city.id,
                     zipcode_id: zipcode.id,
-                    created_at: FDEntity.carrier.driver.create_date  || today,
-                    updated_at: FDEntity.carrier.driver.create_date || today,
+                    created_at: FDEntity.carrier.create_date || FDEntity.carrier.driver.create_date  || today,
+                    updated_at: FDEntity.carrier.create_date || FDEntity.carrier.driver.create_date || today,
                     deleted_at: null,
                     company_type_id: COMPANY_TYPES.CARRIER
                 }
@@ -807,7 +835,7 @@ class RiteWayAutotranportService {
         return result;
     }
 
-    async parseFDEntityToPaymentData(FDEntity, isCOD = false) {
+    async parseFDEntityToPaymentData(FDEntity, isCOD = false, payment_option_id) {
         let result = {
             tariff: Number(FDEntity.total_tariff_stored),
             totalPaid: 0,
@@ -820,7 +848,7 @@ class RiteWayAutotranportService {
         };
 
         let lastPaymentDate = null;
-
+        let age_carrier = null;
         if (FDEntity.payments.length > 0) {
             for (let i = 0; i < FDEntity.payments.length; i++) {
                 let fdPayment = FDEntity.payments[i];
@@ -872,10 +900,10 @@ class RiteWayAutotranportService {
                     user_id: user.id,
                     created_at: fdPayment.created,
                     updated_at: fdPayment.created,
-                    age: fdPayment.age,
+                    age: fdPayment.to == "Carrier" ? age_carrier == null ? fdPayment.age : age_carrier : fdPayment.to,
                     payment_date: fdPayment.date_received || null
                 };
-
+                age_carrier = fdPayment.to == "Carrier" ? fdPayment.age : age_carrier;
                 result.paymentsData.push(paymentData);
             }
         }
@@ -899,6 +927,7 @@ class RiteWayAutotranportService {
         // Checks payments
         if (FDEntity.app_payments_check.length > 0) {
             result.payments_check = FDEntity.app_payments_check.map(check =>{
+                console.log("iuasdhiuashdiuahsdud123123123",check);
                 return { 
                     batch_id: Number(check.check_number) || -1,
                     created_at: `${check.delivery_date}`
@@ -940,7 +969,7 @@ class RiteWayAutotranportService {
             result.invoiceCarrierData = FDEntity.carrier_invoice.map(carrier_invoice =>{
                 
                 return {
-                    amount: Number(carrier_invoice.Amount),
+                    amount: Number(carrier_invoice.Amount) - Number(carrier_invoice.ProcessingFees),
                     invoice_url: `https://freightdragon.com/uploads/Invoices/${carrier_invoice.Invoice}`,
                     is_paid: carrier_invoice.Paid ==  "1" ? true : false,
                     paid_at: carrier_invoice.PaidDate,
@@ -957,13 +986,20 @@ class RiteWayAutotranportService {
                 console.log("ENTRAMOS A carrier_invoice")
                 let is_paid = false;
                 let difference =  FDEntity.carrier_pay_stored == "" || FDEntity.carrier_pay_stored == null ? 0 : Number(FDEntity.carrier_pay_stored) - result.totalPaidCarrier;
+                
+                let resta_invoice = 0;
+                
+                if(payment_option_id !== 1){
+                    resta_invoice = Number(FDEntity.carrier_pay_stored) - ((PaymentOption[payment_option_id].charge) + (Number(FDEntity.carrier_pay_stored)*PaymentOption[payment_option_id].discount/100))
+                }
+
                 if(isCOD){
                     if(result.totalPaid >= (Number(FDEntity.total_tariff_stored) - Number(FDEntity.carrier_pay_stored))) is_paid = true;
                 }else{
-                    is_paid = difference <= 5 ? true : false;
+                    is_paid = (difference - resta_invoice ) <= 5 ? true : false;
                 }
                 result.invoiceCarrierData = [{
-                    amount:Number(FDEntity.carrier_pay_stored),
+                    amount:Number(FDEntity.carrier_pay_stored) - resta_invoice,
                     invoice_url: '',
                     is_paid,
                     paid_at: null,
@@ -1068,7 +1104,7 @@ class RiteWayAutotranportService {
             if(FDEntity.avail_pickup_date){
                 estimated_picked_up = `${FDEntity.avail_pickup_date} 12:00:00`;
             }
-        }
+        } // 
         let isCOD = false;
         let picked_up_at =  FDEntity.load_date ? `${FDEntity.load_date} 12:00:00` :  FDEntity.load_date;
         let payment_receive_id = null;
@@ -1144,7 +1180,8 @@ class RiteWayAutotranportService {
             bol_url: FDEntity.carrier_invoice.length > 0 ? `https://freightdragon.com/uploads/Invoices/${FDEntity.carrier_invoice[0].Invoice}` : status_id == 11 ?  isCOD ? "PaymentwithCOD" : "pendingpayments" : "WithoutBOL",
             source_id: existSource ? sourceOrder.id : -1,
             bol_uploaded_on: FDEntity.carrier_invoice.length > 0 ? FDEntity.carrier_invoice[0].CreatedAt : isCOD ? FDEntity.delivered || picked_up_at : null,
-            special_instruction_dispatch_sheet: FDEntity.files.length > 0 ? FDEntity.files[0].instructions : null
+            special_instruction_dispatch_sheet: FDEntity.files.length > 0 ? FDEntity.files[0].instructions : null,
+            assigned_salesrep_id: null
         };
         // console.log("--------------------------------------", FDEntity.carrier_invoice[0]);
 
@@ -1154,7 +1191,7 @@ class RiteWayAutotranportService {
         
         let { originLocation, destinationLocation } = await this.parseFDEntityToOriginDestinationLocations(FDEntity);
         let { carrier, driver } = await this.parseFDEntityToCarrierDriverData(FDEntity);        
-        let { paymentsData, invoiceData, totalPaid, paymentcards, payments_check, invoiceCarrierData } = await this.parseFDEntityToPaymentData(FDEntity, isCOD);
+        let { paymentsData, invoiceData, totalPaid, paymentcards, payments_check, invoiceCarrierData } = await this.parseFDEntityToPaymentData(FDEntity, isCOD, payment_option_id);
 
         orderData.originLocation = originLocation;
         orderData.destinationLocation = destinationLocation;

@@ -224,10 +224,10 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 let name_original = archivo.name_original;
                 archivo.FDOrderID = FDOrderID;
                 if(name_original.startsWith('B2B Order Form')){
-                    this.loadFile(archivo, "b2b", orderLoadFile, optQuery);
+                    this.loadFile(archivo, "b2b", orderLoadFile);
                 }
                 if(name_original.startsWith('Dispatch sheet')){
-                    this.loadFile(archivo, "dispatchsheet", orderLoadFile, optQuery);
+                    this.loadFile(archivo, "dispatchsheet", orderLoadFile);
                 }
             });
         }
@@ -259,7 +259,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         }
 
         if (orderData.paymentCards.length > 0) {
-            console.log(orderData.paymentCards, "asdasd", quote.company_id)
+            // console.log(orderData.paymentCards, "asdasd", quote.company_id)
             for (let i = 0; i < orderData.paymentCards.length; i++) {
                 let creditCard = orderData.paymentCards[i];
                 // console.log(creditCard);
@@ -284,7 +284,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             console.log("Estoy en cheques", orderData.paymentsChecks);
             for (let i = 0; i < orderData.paymentsChecks.length; i++) {
                 let paymentOrderChecks = await RiteWay.OrderChecks.create({
-                    batch_id: orderData.paymentsChecks[i].check_number,
+                    batch_id: orderData.paymentsChecks[i].batch_id,
                     order_id: orderData.id
                 }, optQuery);
 
@@ -520,14 +520,13 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             let quoteData = await this.parseFDEntity(FDEntity, associateCompany);
             let isPaid = false;
             console.log("LLEGAMOS A UNO");
+            // console.log(quoteData.company);
             if (typeof quoteData.company.id == 'undefined' || quoteData.company.id == null) {
                 delete quoteData.company.id;
                 let operator_id = quoteData.company.operator_id;
                 let shipper_type = quoteData.company.shipper_type;
                 let shipper_hours = quoteData.company.shipper_hours;
-                if(quoteData.company.isNew && quoteData.company.name == "Residential"){
-
-                }
+                
                 // let companyFoundResidential = await RiteWay.Company.findOne({
                 //     where: {
                 //         [sqOp.iLike]: [
@@ -564,18 +563,43 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 quoteData.company = companyData;
                 // quoteData.company = await RiteWay.Company.create(quoteData.company, { transaction });
                 // console.log("lajshdlkasdn", quoteData.company);
-                await RiteWay.CustomerDetail.create(
-                {
-                    operator_id: operator_id,
-                    company_id: quoteData.company.id,
-                    shipper_type: shipper_type,
-                    hours: shipper_hours
-                },
-                { transaction }
-                );
+                // await RiteWay.CustomerDetail.create(
+                // {
+                //     operator_id: operator_id,
+                //     company_id: quoteData.company.id,
+                //     shipper_type: shipper_type,
+                //     hours: shipper_hours
+                // },
+                // { transaction }
+                // );
+                await RiteWay.CustomerDetail.findOrCreate({
+                    defaults: {
+                        operator_id: operator_id,
+                        company_id: quoteData.company.id,
+                        shipper_type: shipper_type,
+                        hours: shipper_hours
+                    },
+                    where: {
+                        company_id: quoteData.company.id
+                    },
+                    transaction
+                });
                 
                 
             }
+
+            // await RiteWay.CustomerDetail.findOrCreate({
+            //     defaults: {
+            //         operator_id: operator_id,
+            //         company_id: quoteData.company.id,
+            //         shipper_type: shipper_type,
+            //         hours: shipper_hours
+            //     },
+            //     where: {
+            //         company_id: quoteData.company.id
+            //     },
+            //     transaction
+            // });
 
             
 
@@ -605,7 +629,10 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
 
             quoteData.company_id = quoteData.company.id;
             quoteData.user_create_id = quoteData.user.id;
-
+            if(quoteData.company.isNew && quoteData.company.shipper_type == "Residential"){
+                quoteData.residential_user_id = quoteData.user.id;
+            }
+            
             //Create Quote
             // console.log(quoteData);
             quote = await RiteWay.Quote.create(quoteData, { transaction });
@@ -626,6 +653,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             console.log(`----------------------------------> Quote created ${quoteData.fd_number} with ID ${quote.id}, Company: ${quoteData.company.id}`);
             if (quoteData.order) {
                 quoteData.order.quote_id = quoteData.id;
+                quoteData.order.assigned_salesrep_id = quoteData.company.operator_id;
                 await this.importOrderData(quoteData.order, quote, { transaction });
                 if (quoteData.order.invoice) isPaid = quoteData.order.invoice.is_paid
             }
@@ -1301,11 +1329,11 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 }
             }
         }catch (error) {
-            Logger.error(`Error when the system upload ${type} file of ${data.FDOrderID} on Rite Way System`);
+            Logger.error(`Error when the system upload ${type} file of ${obj.fd_number} on Rite Way System`);
             Logger.error(error);
-            let contentFile = `${FDEntity.FDOrderID}: ${error.message} </br> ------------------- ${JSON.stringify(error)} ----------------------------- Final de la entidad -----------------------------`;
+            let contentFile = `${obj.fd_number}: ${error.message} </br> ------------------- ${JSON.stringify(error)} ----------------------------- Final de la entidad -----------------------------`;
             let appFolder = path.dirname(require.main ? require.main.filename : __dirname);
-            fs.writeFile(`${appFolder}/logs_sync_files_${type}/debugger-${data.FDOrderID}.txt`, `${contentFile} \n \n \n \n \n`, { flag: 'a+' }, err => {
+            fs.writeFile(`${appFolder}/logs_sync_files_${type}/debugger-${obj.fd_number}.txt`, `${contentFile} \n \n \n \n \n`, { flag: 'a+' }, err => {
                 //console.log("ERROR EN MI debugger.txt", err);
             })
         }

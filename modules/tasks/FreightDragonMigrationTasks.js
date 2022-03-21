@@ -100,7 +100,7 @@ class FreightDragonMigrationTasks {
 
     async migrateCustomeData() {
         try {
-            let results = await Promise.all([FDMigrationWorker.migrateCustomeData()]);
+            let results = await Promise.all([FDMigrationWorker.migrateCustomeDataByFDNumbers()]);
         } catch (error) {
             console.log("ERROR EN migrateCustomeData", error);
         }

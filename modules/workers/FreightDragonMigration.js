@@ -168,8 +168,8 @@ async function migrateCustomeData(){
         migrando = true;
         console.log("ADENTRO DE migrateCustomeData");
 
-        let from = '2022-03-01';
-        let to = '2022-03-31';
+        let from = '2022-03-15';
+        let to = '2022-03-20';
         console.log("fecahas ",from , to);
         // let to = moment().format('YYYY-MM-DD');
         try {
@@ -257,22 +257,14 @@ async function migrateCustomeDataByFDNumbers(){
         try {
             
             let orders = [
-                '8GS-767513',
-                '9AJ-767515',
-                '1QH-767825',
-                '3QK-766960',
-		        '9RO-766961',
-		        '4BB-766965',
-                '2IT-766963',
-                '8GR-766968',
-                '6XV-766971',
-                '0WD-767861',
-                '3ZE-767949',
-                '0KY-766530',
-                '1AG-766990',
-                '8JQ-768217',
-                '3GQ-767724',
-                '9HZ-767361'
+                // '7DP-768112',
+                //  '9DF-741234',
+                // '4CU-767786',
+                // '1BR-767675',
+                // '2IM-767627',
+                // '1EV-767583',
+                // '4JL-767578',
+                '0ZM-768184', '4DU-768289', '2AC-768335'
               ];
             // let res = await FDService.getCustomeData(`${from} 00:00:00`, `${to} 23:59:59`);
             let request = [];
