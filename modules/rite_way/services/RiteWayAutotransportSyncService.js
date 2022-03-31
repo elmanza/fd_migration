@@ -220,14 +220,14 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 created_at: order.created_at,
                 company_id: quote.company_id
             }
-            orderData.files.forEach(archivo => {
+            orderData.files.forEach(async archivo => {
                 let name_original = archivo.name_original;
                 archivo.FDOrderID = FDOrderID;
                 if(name_original.startsWith('B2B Order Form')){
-                    this.loadFile(archivo, "b2b", orderLoadFile);
+                    await this.loadFile(archivo, "b2b", orderLoadFile, optQuery);
                 }
                 if(name_original.startsWith('Dispatch sheet')){
-                    this.loadFile(archivo, "dispatchsheet", orderLoadFile);
+                    await this.loadFile(archivo, "dispatchsheet", orderLoadFile, optQuery);
                 }
             });
         }
@@ -491,7 +491,6 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             },
             paranoid: false
         });
-        console.log("SEG BRO!");
         if (quote) {
             await quote.update({
                 fd_id: FDEntity.id,
@@ -549,6 +548,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 // }else{
                 //     quoteData.company = companyFoundResidential;
                 // }
+                
                 let [companyData , isNewCompany] = await RiteWay.Company.findOrCreate({
                     defaults: {
                         ...quoteData.company
@@ -572,12 +572,34 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 // },
                 // { transaction }
                 // );
+
+                let existSource = true;
+                if(FDEntity.shipper.referred_by == null || FDEntity.shipper.referred_by == ""){
+                    existSource= false;
+                }
+                let sourceOrder = null;
+                let isNewSource = null;
+                if(existSource){
+                    [sourceOrder, isNewSource] = await RiteWay.Source.findOrCreate({
+                        defaults: {
+                            name: `${FDEntity.shipper.referred_by}`,
+                            description: `${FDEntity.referred_id}`
+                        },
+                        where: {
+                            name: {
+                                [sqOp.iLike]: `${FDEntity.shipper.referred_by}`
+                            }
+                        }
+                    });
+                }
+                
                 await RiteWay.CustomerDetail.findOrCreate({
                     defaults: {
                         operator_id: operator_id,
                         company_id: quoteData.company.id,
                         shipper_type: shipper_type,
-                        hours: shipper_hours
+                        hours: shipper_hours,
+                        source_id: existSource ? sourceOrder.id : -1
                     },
                     where: {
                         company_id: quoteData.company.id

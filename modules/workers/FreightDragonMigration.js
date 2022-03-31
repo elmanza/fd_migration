@@ -167,9 +167,14 @@ async function migrateCustomeData(){
     if(migrando == null){
         migrando = true;
         console.log("ADENTRO DE migrateCustomeData");
+    
+        let from = '2022-03-01';
+        let to = '2022-03-05';
 
-        let from = '2022-03-15';
-        let to = '2022-03-20';
+        // let from = '2022-02-15';
+        // let to = '2022-02-31';
+
+
         console.log("fecahas ",from , to);
         // let to = moment().format('YYYY-MM-DD');
         try {
@@ -222,12 +227,12 @@ async function migrateCustomeData(){
                             // fail_arr.push(`${res.Data.prefix}-${res.Data.number}`);
                             fail_arr.push(`${FDEntity.FDOrderID}`);
                             fail++;
-                            let contentFile = `${FDEntity.FDOrderID}: ${e.message} </br> ------------------- ${JSON.stringify(e)} ----------------------------- Final de la entidad -----------------------------`;
-                            let appFolder = path.dirname(require.main ? require.main.filename : __dirname);
-                            let nameDoc = FDEntity.shipper.company == "" || FDEntity.shipper.company == null ? FDEntity.shipper.entity_id : FDEntity.shipper.company.trim();
-                            fs.writeFile(`${appFolder}/logs_migration_by_for_feb_08_22/debugger-${nameDoc}.txt`, `${contentFile} \n \n \n \n \n`, { flag: 'a+' }, err => {
+                            // let contentFile = `${FDEntity.FDOrderID}: ${e.message} </br> ------------------- ${JSON.stringify(e)} ----------------------------- Final de la entidad -----------------------------`;
+                            // let appFolder = path.dirname(require.main ? require.main.filename : __dirname);
+                            // let nameDoc = FDEntity.shipper.company == "" || FDEntity.shipper.company == null ? FDEntity.shipper.entity_id : FDEntity.shipper.company.trim();
+                            // fs.writeFile(`${appFolder}/logs_migration_by_for_feb_08_22/debugger-${nameDoc}.txt`, `${contentFile} \n \n \n \n \n`, { flag: 'a+' }, err => {
                                 //console.log("ERROR EN MI debugger.txt", err);
-                            })
+                            // })
                         }
     
                     }
@@ -257,14 +262,7 @@ async function migrateCustomeDataByFDNumbers(){
         try {
             
             let orders = [
-                // '7DP-768112',
-                //  '9DF-741234',
-                // '4CU-767786',
-                // '1BR-767675',
-                // '2IM-767627',
-                // '1EV-767583',
-                // '4JL-767578',
-                '0ZM-768184', '4DU-768289', '2AC-768335'
+                '4BB-766965'
               ];
             // let res = await FDService.getCustomeData(`${from} 00:00:00`, `${to} 23:59:59`);
             let request = [];
@@ -335,8 +333,8 @@ async function migrateCarriers(){
     if(migrando == null){
         migrando = true;
         try {
-            let from = '2016-07-01';
-            let to = '2016-12-31';
+            let from = '2021-09-01';
+            let to = '2021-12-31';
             let ok = 0;
             let fail = 0;
             let exists = 0;

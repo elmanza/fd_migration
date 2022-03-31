@@ -364,10 +364,19 @@ class RiteWayAutotranportService {
 
     async findUser(username) {
         return await RiteWay.User.findOne({
+            include:[
+                {
+                    model: RiteWay.Company,
+                    required:false
+                }
+            ],
             where: {
                 username: {
                     [sqOp.iLike]: username.trim()
                 }
+                // name: {
+                //     [sqOp.iLike]: username.trim()
+                // }
             }
         });
     }
@@ -458,7 +467,10 @@ class RiteWayAutotranportService {
 
     //PARSE DATA=========================================
     async parseFDEntityToCustomerCompanyData(FDEntity) {
+        // let shipperUser = await this.findUser(FDEntity.shipper.company);
+        console.log(FDEntity.shipper);
         let shipperUser = await this.findUser(FDEntity.shipper.email);
+        // console.log("oiqwhd908123he082h389h2983rh", shipperUser);
         let customerCompany = null;
         let shipper__type = FDEntity.shipper.shipper_type == "" ? "Residential" : FDEntity.shipper.shipper_type;
         console.log("shipper__type-COMPANY -->", FDEntity.shipper.company);
@@ -481,7 +493,8 @@ class RiteWayAutotranportService {
         }
         // console.log("r ", shipperUser.name, "||||", shipperUser.dataValues.name);
         //Get company data
-        if (shipperUser) {
+        let searchCompany = shipperUser ? shipperUser.company_id == 149 ? false : FDEntity.shipper.company == shipperUser.Company.name ? true : false : false;
+        if (shipperUser  && searchCompany) {
             customerCompany = await RiteWay.Company.findByPk(shipperUser.company_id, {paranoid: false});
             console.log("Encontramos al shipperUse --->", shipperUser.company_id)
         }else if (FDEntity.shipper.company != null && FDEntity.shipper.company.trim() != '') {
@@ -497,9 +510,10 @@ class RiteWayAutotranportService {
                 }
             });
         }else {
-            let state_info = FDEntity.shipper.state == "" ? FDEntity.origin.state : FDEntity.shipper.state;
-            let city_info = FDEntity.shipper.city == "" ? FDEntity.origin.city : FDEntity.shipper.city;
-            let zipcode_info = FDEntity.shipper.zip == "" ? FDEntity.origin.zip : FDEntity.shipper.zip;
+
+            let state_info = FDEntity.shipper.state == "" || FDEntity.shipper.city == "" ? FDEntity.origin.state : FDEntity.shipper.state;
+            let city_info = FDEntity.shipper.city == "" || FDEntity.shipper.zip == "" ? FDEntity.origin.city : FDEntity.shipper.city;
+            let zipcode_info = FDEntity.shipper.city == "" || FDEntity.shipper.zip == "" ? FDEntity.origin.zip : FDEntity.shipper.zip;
             let city = zipcode_info.replace(/\D/g, "").length < 4 ? null : await this.getCity(state_info, city_info, zipcode_info.replace(/\D/g, ""));
             let zipcode = await this.getZipcode(state_info, zipcode_info.replace(/\D/g, ""));
 
@@ -535,7 +549,7 @@ class RiteWayAutotranportService {
                 shipper_type: shipper__type
             };
         }
-
+        
         if(customerCompany == null){
 
             let state_info = FDEntity.shipper.state == "" || FDEntity.shipper.city == "" ? FDEntity.origin.state : FDEntity.shipper.state;
@@ -558,8 +572,8 @@ class RiteWayAutotranportService {
             address: FDEntity.shipper.address1,
             operator: operator || defaultOperator,
             operator_id: operator.id || defaultOperator.id,
-            city_id: city.id,
-            zipcode_id: zipcode.id,
+            city_id: city.id || null,
+            zipcode_id: zipcode.id || null,
             company_type_id: COMPANY_TYPES.CUSTOMER,
             shipper_type: shipper__type
           };
@@ -711,10 +725,12 @@ class RiteWayAutotranportService {
                 let state_carrier = FDEntity.carrier.state ? FDEntity.carrier.state : FDEntity.carrier.driver.carrier_state;
                 let city = await this.getCity(state_carrier, city_carrier, zipcode_carrier.replace(/\D/g, ""));
                 let zipcode = await this.getZipcode(state_carrier, zipcode_carrier.replace(/\D/g, ""));
-                
+                console.log("---------------------");
+                console.log(state_carrier, city_carrier, zipcode_carrier.replace(/\D/g, ""));
 
                 let carrier_phone = FDEntity.carrier.phone1 ? FDEntity.carrier.phone1 : FDEntity.carrier.driver.carrier_phone_1;
                 let carrier_address = FDEntity.carrier.address1 ? FDEntity.carrier.address1 : FDEntity.carrier.driver.carrier_address;
+                // console.log(city);
                 result.carrier = {
                     isNew: true,
                     name: carrier_company_name.trim(),
@@ -739,14 +755,16 @@ class RiteWayAutotranportService {
                 // insurance_expire: FDEntity.carrier.driver.insurance_expirationdate || null
                 // hours_of_operation: FDEntity.carrier.driver.hours_of_operation
             };
-
+            // let insurance_expirationdate_driver = false;
             if(FDEntity.carrier.insurance_expirationdate){
-                result.carrier.carrierDetail.insurance_expire = FDEntity.carrier.insurance_expirationdate == "0000-00-00 00:00:00" ? moment().format('YYYY-MM-DD hh:mm:ss') : FDEntity.carrier.insurance_expirationdate;
+                result.carrier.carrierDetail.insurance_expire = FDEntity.carrier.insurance_expirationdate == "0000-00-00 00:00:00" ? null : FDEntity.carrier.insurance_expirationdate;
+
+                // insurance_expirationdate_driver = FDEntity.carrier.insurance_expirationdate == "0000-00-00 00:00:00" ? true : false;
             }
 
             if(FDEntity.carrier.driver){
                 if(FDEntity.carrier.driver.insurance_expirationdate){
-                    result.carrier.carrierDetail.insurance_expire = FDEntity.carrier.driver.insurance_expirationdate == "0000-00-00 00:00:00" ? moment().format('YYYY-MM-DD hh:mm:ss') : FDEntity.carrier.driver.insurance_expirationdate;
+                    result.carrier.carrierDetail.insurance_expire = FDEntity.carrier.driver.insurance_expirationdate == "0000-00-00 00:00:00" ? null : FDEntity.carrier.driver.insurance_expirationdate;
                 }
             }
             
@@ -795,7 +813,6 @@ class RiteWayAutotranportService {
             originLocation: null,
             destinationLocation: null
         };
-
         let locationType = function (locationType) {
             return ADDRESS_TYPE[locationType.toUpperCase()] || 1;
         };
@@ -927,7 +944,7 @@ class RiteWayAutotranportService {
         // Checks payments
         if (FDEntity.app_payments_check.length > 0) {
             result.payments_check = FDEntity.app_payments_check.map(check =>{
-                console.log("iuasdhiuashdiuahsdud123123123",check);
+                // console.log("iuasdhiuashdiuahsdud123123123",check);
                 return { 
                     batch_id: Number(check.check_number) || -1,
                     created_at: `${check.delivery_date}`
@@ -1029,7 +1046,7 @@ class RiteWayAutotranportService {
         let destinationCity = await this.getCity(FDEntity.destination.state, FDEntity.destination.city, destZipcode);
         let destinationZipcode = await this.getZipcode(FDEntity.destination.state, destZipcode);
         // console.log("PREEE parseFDEntityToCustomerCompanyData");
-        let { user, company, users } = await this.parseFDEntityToCustomerCompanyData(FDEntity);;
+        let { user, company, users } = await this.parseFDEntityToCustomerCompanyData(FDEntity);
         console.log("POST parseFDEntityToCustomerCompanyData");
         quoteData.distance = Math.round(FDEntity.distance);
         quoteData.quantity = FDEntity.vehicles.length;
@@ -1169,7 +1186,7 @@ class RiteWayAutotranportService {
             updated_at: FDEntity.ordered,
             estimated_delivery_date: FDEntity.delivery_date,
             picked_up_at: picked_up_at,
-            delivered_at: FDEntity.delivered,
+            delivered_at: FDEntity.delivered == "0000-00-00 00:00:00" ? FDEntity.delivery_date : FDEntity.delivered,
             estimated_picked_up: estimated_picked_up,
             deleted_at: FDEntity.archived || null,
             user_accept_id: associateCompany ? associateCompany.customerDetail.operator_id : null,
