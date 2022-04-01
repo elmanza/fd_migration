@@ -37,7 +37,7 @@ const FD_STATUS = {
 
 const ADDRESS_TYPE = {
     COMMERCIAL: 1,
-    RESIDENCIAL: 2
+    RESIDENTIAL: 2
 }
 
 const COMPANY_TYPES = {

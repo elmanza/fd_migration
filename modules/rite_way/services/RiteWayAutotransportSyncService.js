@@ -693,6 +693,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                     break;
                 }
             }
+
             for (let i = 0; i < quoteData.vehicles.length; i++) {
                 let vehicleData = quoteData.vehicles[i];
 
@@ -715,16 +716,23 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 quote_id: quote.id,
                 vehicles_summary: quoteData.vehicles_summary
             };
+
+            // console.log("Mi insertQuoteSummary --> ", insertQuoteSummary, insertQuoteSummary.vehicles_summary[0].vehicle_type);
             
-            await RiteWay.QuoteSummary.findOrCreate({
-                defaults: {
-                    ...insertQuoteSummary
-                },
-                where: {
-                    quote_id: quote.id
-                },
-                transaction 
-            });
+            
+            // await RiteWay.QuoteSummary.findOrCreate({
+            //     defaults: {
+            //         ...insertQuoteSummary
+            //     },
+            //     where: {
+            //         quote_id: quote.id
+            //     },
+            //     transaction 
+            // });
+
+            await RiteWay.QuoteSummary.upsert(insertQuoteSummary,{transaction});
+
+            // await RiteWay.QuoteSummary.create(insertQuoteSummary, {transaction});
             // await StageQuote.create(stageQuoteData, { transaction });
             await transaction.commit();
             return true;
