@@ -168,8 +168,8 @@ async function migrateCustomeData(){
         migrando = true;
         console.log("ADENTRO DE migrateCustomeData");
     
-        let from = '2022-03-01';
-        let to = '2022-03-05';
+        let from = '2022-03-25';
+        let to = '2022-03-31';
 
         // let from = '2022-02-15';
         // let to = '2022-02-31';
@@ -262,7 +262,26 @@ async function migrateCustomeDataByFDNumbers(){
         try {
             
             let orders = [
-                '4BB-766965'
+                '1KR-768371', '5TD-768372', '3OB-768373', '6VV-768374', '8LP-768375',
+  '6QW-768376', '4VT-768377', '3PM-768378', '5VM-768379', '6HR-768380',
+  '6PO-768382', '5IF-768383', '1QS-768384', '5CE-768386', '4QI-768394',
+  '9MN-768396', '6WV-768397', '3DD-768399', '2GN-768401', '0QV-768402',
+  '2HU-768403', '1KJ-768405', '1EC-768406', '4MH-768409', '9QM-768410',
+  '8TJ-768411', '7AE-768413', '7WS-768414', '0TW-768416', '2NP-768419',
+  '5PM-768420', '7ZN-768422', '9FU-768423', '2ZN-768425', '4FU-768426',
+  '9ET-768431', '4BQ-768437', '7GV-768438', '0RS-768439', '7RL-768440',
+  '1HH-768441', '9LV-768443', '3EO-768446', '5MX-768447', '4DN-768449',
+  '3PM-768450', '2NP-768455', '1NG-768459', '5FY-768462', '6UV-768466',
+  '1ID-768479', '6XM-768482', '8MV-768485', '8BQ-768486', '0SF-768489',
+  '2JN-768490', '7HG-768491', '7AN-768499', '9VJ-768504', '3GK-768508',
+  '2TJ-768509', '1RI-768511', '9SH-768512', '1GL-768515', '8JZ-768517',
+  '9FX-768518', '3QF-768521', '5LX-768523', '4KP-768524', '6QE-768529',
+  '4TP-768532', '1PK-768533', '4XJ-768534', '1CQ-768537', '8OO-768538',
+  '6HK-768545', '4LV-768547', '4PN-768550', '0FV-768551', '7AX-768552',
+  '1AA-768553', '6TK-768557', '8BL-768559', '1TM-768560', '5ZR-768565',
+  '0GE-768566', '8WK-768575', '3YT-768577', '8VN-768578', '4RH-768579',
+  '8ZH-768580', '1CJ-768584', '9YL-768586', '4XA-768587', '0XM-768588',
+  '9AW-768589', '9NY-768590', '0CH-768591', '4MD-768592', '8XW-768593'
               ];
             // let res = await FDService.getCustomeData(`${from} 00:00:00`, `${to} 23:59:59`);
             let request = [];
@@ -334,6 +353,56 @@ async function migrateCarriers(){
         migrando = true;
         try {
             let from = '2021-09-01';
+            let to = '2022-03-31';
+            let ok = 0;
+            let fail = 0;
+            let exists = 0;
+            let no_migradas = [];
+            let fail_arr = [];
+            let res = await FDService.getCarriers(`${from} 00:00:00`, `${to} 23:59:59`);
+            let i = 0;
+            if (res.Success) {
+                console.log("Total de carrier traidos ", res.Data.length);
+                for (const fdCarrier of res.Data) {
+                    try {
+                        // console.log("ADENTOR BROO")
+                        let success = await RwSyncService.importFDCarrier(fdCarrier, null)
+                        // console.log("--------------RwSyncService---------> ", success);
+                        if (success) {
+                            console.log("-------success----------------> ");
+                            Logger.info(`Sucess import (${((i + 1) / res.Data.length * 100).toFixed(6)}%) ${fdCarrier.company_name} ${fdCarrier.email}`);
+                            ok++;
+                        }
+                        console.log(success);
+                    } catch (e) {
+                        console.log("-------catch----------------> ");
+                        Logger.error(`Error import (${((i + 1) / res.Data.length * 100).toFixed(6)}%) ${fdCarrier.id}: ${fdCarrier.company_name}: ${fdCarrier.email} : ${e.message}`);
+                        Logger.error(e);
+                        // fail_arr.push(`${res.Data.prefix}-${res.Data.number}`);
+                        fail_arr.push(`${fdCarrier.id} || ${fdCarrier.company_name} || ${fdCarrier.email}`);
+                        fail++;
+                    }
+                    i++;
+                }
+                console.log(`From: ${from} --- To: ${to}`)
+                console.log(`ok:${ok}  || fail:${fail} `)
+                console.log("No migradas ");
+                console.log(JSON.stringify(fail_arr));
+            }           
+        } catch (error) {
+            console.log("migrateCustomeData", error);
+        }
+    }
+        
+}
+
+
+
+async function updateReferredCustomer(){
+    if(migrando == null){
+        migrando = true;
+        try {
+            let from = '2021-09-01';
             let to = '2021-12-31';
             let ok = 0;
             let fail = 0;
@@ -382,5 +451,6 @@ module.exports = {
     migrateOperators,
     migrateCustomeData,
     migrateCustomeDataByFDNumbers,
-    migrateCarriers
+    migrateCarriers,
+    updateReferredCustomer
 }

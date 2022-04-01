@@ -64,5 +64,7 @@ cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCustomeData);
 
 
 // cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCarriers);
+
+// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.updateReferredCustomer);
 //TEST SOCKETS
 //require('./test_sockets');

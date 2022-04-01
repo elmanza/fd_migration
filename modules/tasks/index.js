@@ -10,7 +10,10 @@ module.exports = {
     },
     migrateCarriers(){
         return FDTasks.migrateCarriers();
-    },    
+    },
+    updateReferredCustomer(){
+        return FDTasks.updateReferredCustomer();
+    }, 
     migrate(){
         return FDTasks.migrateAll();
     },

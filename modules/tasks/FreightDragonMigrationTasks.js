@@ -114,7 +114,14 @@ class FreightDragonMigrationTasks {
             console.log("ERROR EN migrateCustomeData", error);
         }
     }
-
+    
+    async updateReferredCustomer() {
+        try {
+            let results = await Promise.all([FDMigrationWorker.updateReferredCustomer()]);
+        } catch (error) {
+            console.log("ERROR EN migrateCustomeData", error);
+        }
+    }
 
     
 }

@@ -384,10 +384,11 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 address: FDCarrier.address1, 
                 contact: FDCarrier.contact_name1, 
                 phone: FDCarrier.phone1, 
-                use_for_print_check:true,
+                use_for_print_check: FDCarrier.print_check == "0" ? false : true,
                 zipcode_id: city.zipcode_id || null,
                 city_id: city.id || null,
-                state_id: city.state_id || null
+                state_id: city.state_id || null,
+                print_check_as: FDCarrier.print_name
               }
               let [carrierAddressDetails, isNewCarrierAddressDetails] = await RiteWay.CarrierAddressDetails.findOrCreate({
                 defaults: newCarrierAddressDetails,

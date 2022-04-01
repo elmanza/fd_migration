@@ -671,7 +671,7 @@ class RiteWayAutotranportService {
                 plate: vehicle.plate,
                 state: vehicle.state,
                 color: vehicle.color,
-                inop: vehicle.inop,
+                inop: vehicle.inop == "0" ? false : true,
                 tariff: Number(vehicle.tariff),
                 carrier_pay: Number(vehicle.carrier_pay),
                 deposit: Number(vehicle.deposit),

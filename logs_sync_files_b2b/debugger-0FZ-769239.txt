@@ -1,5 +1,0 @@
-0FZ-769239: commit has been called on this transaction(018b362a-479f-4d99-be1d-a795127423ca), you can no longer use it. (The rejected query is attached as the 'sql' property of this error) </br> ------------------- {"sql":"SAVEPOINT \"018b362a-479f-4d99-be1d-a795127423ca-sp-5\";"} ----------------------------- Final de la entidad ----------------------------- 
- 
- 
- 
- 
