@@ -59,6 +59,10 @@ class EntityResource extends Resource {
         return this.sendGetRequest('sync_dispatch_sheet/', data);
     }
 
+    syncInsertCompaniesWithoutCustomerDetails(data){
+        return this.sendGetRequest('listgetonecompany/', data);
+    }
+
     updateOrdersData(data){
         return this.sendGetRequest('update_orders_data/', data);
     }
@@ -66,6 +70,20 @@ class EntityResource extends Resource {
     getCarriers(data){
         return this.sendGetRequest('get_carriers/', data);
     }
+
+    getReferredCustomer(data){
+        return this.sendGetRequest('get_referred_customer/', data);
+    }
+    
+    getLeads(data){
+        return this.sendGetRequest('get_leads/', data);
+    }
+
+    getNoteLeads(data){
+        return this.sendGetRequest('get_notes_leads/', data);
+    }
+
+    
 
     
 }

@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const { config } = require('dotenv');
 const Sequelize = require('sequelize');
 
 function getSequelizeConnection(params) {

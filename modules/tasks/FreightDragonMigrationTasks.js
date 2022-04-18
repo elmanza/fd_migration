@@ -123,6 +123,22 @@ class FreightDragonMigrationTasks {
         }
     }
 
+    async migrateLeads() {
+        try {
+            let results = await Promise.all([FDMigrationWorker.migrateLeads()]);
+        } catch (error) {
+            console.log("ERROR EN migrateLeads", error);
+        }
+    }
+
+    async migrateNotesLead() {
+        try {
+            let results = await Promise.all([FDMigrationWorker.migrateNotesLead(13)]);
+        } catch (error) {
+            console.log("ERROR EN migrateNotesLead", error);
+        }
+    }
+    
     
 }
 

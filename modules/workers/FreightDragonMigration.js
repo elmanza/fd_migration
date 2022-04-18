@@ -10,7 +10,7 @@ const RiteWayAutotransportSyncService = require('../rite_way/services/RiteWayAut
 const FreightDragonService = require('../freight_dragon/services/FreightDragonService');
 
 const { RiteWay, Stage } = require('../../models');
-
+const { ritewayDB } = require('../../config/database');
 const RwSyncService = new RiteWayAutotransportSyncService();
 const FDService = new FreightDragonService();
 
@@ -168,8 +168,36 @@ async function migrateCustomeData(){
         migrando = true;
         console.log("ADENTRO DE migrateCustomeData");
     
-        let from = '2022-03-25';
-        let to = '2022-03-31';
+        // let from = '2018-07-01';
+        // let to = '2018-07-03';
+
+        // let from = '2018-07-04';
+        // let to = '2018-07-06';
+
+        // let from = '2018-07-07';
+        // let to = '2018-07-09';
+
+        // let from = '2018-07-10';
+        // let to = '2018-07-12';
+
+        // let from = '2018-07-13';
+        // let to = '2018-07-15';
+
+        // let from = '2018-07-16';
+        // let to = '2018-07-19';
+
+        // let from = '2018-07-20';
+        // let to = '2018-07-22';
+
+        // let from = '2018-07-23';
+        // let to = '2018-07-25';
+
+        // let from = '2018-07-26';
+        // let to = '2018-07-28';
+
+        let from = '2022-04-05';
+        let to = '2022-04-08';
+
 
         // let from = '2022-02-15';
         // let to = '2022-02-31';
@@ -262,7 +290,10 @@ async function migrateCustomeDataByFDNumbers(){
         try {
             
             let orders = [
-                '3HO-769503'
+                '7AK-768081',
+                '6GS-768362',
+                '4GP-768708',
+                '4LE-769245', '2RO-769268', '6QQ-769279', '4FY-769281'
               ];
             // let res = await FDService.getCustomeData(`${from} 00:00:00`, `${to} 23:59:59`);
             let request = [];
@@ -333,12 +364,12 @@ async function migrateCarriers(){
     if(migrando == null){
         migrando = true;
         try {
-            let from = '2021-09-01';
-            let to = '2022-03-31';
+            let from = '2021-12-01';
+            let to = '2021-12-31';
             let ok = 0;
             let fail = 0;
             let exists = 0;
-            let no_migradas = [];
+            let migradas = [];
             let fail_arr = [];
             let res = await FDService.getCarriers(`${from} 00:00:00`, `${to} 23:59:59`);
             let i = 0;
@@ -353,6 +384,7 @@ async function migrateCarriers(){
                             console.log("-------success----------------> ");
                             Logger.info(`Sucess import (${((i + 1) / res.Data.length * 100).toFixed(6)}%) ${fdCarrier.company_name} ${fdCarrier.email}`);
                             ok++;
+                            migradas.push(`${fdCarrier.email}`);
                         }
                         console.log(success);
                     } catch (e) {
@@ -366,9 +398,12 @@ async function migrateCarriers(){
                     i++;
                 }
                 console.log(`From: ${from} --- To: ${to}`)
-                console.log(`ok:${ok}  || fail:${fail} `)
+                console.log(`ok:${ok}  || fail:${fail} `) 
                 console.log("No migradas ");
                 console.log(JSON.stringify(fail_arr));
+
+                console.log("Migradas ");
+                console.log(JSON.stringify(migradas));
             }           
         } catch (error) {
             console.log("migrateCustomeData", error);
@@ -383,21 +418,21 @@ async function updateReferredCustomer(){
     if(migrando == null){
         migrando = true;
         try {
-            let from = '2021-09-01';
-            let to = '2021-12-31';
+            let from = '2018-01-01';
+            let to = '2022-12-31';
             let ok = 0;
             let fail = 0;
             let exists = 0;
             let no_migradas = [];
             let fail_arr = [];
-            let res = await FDService.getCarriers(`${from} 00:00:00`, `${to} 23:59:59`);
+            let res = await FDService.getReferredCustomer(`${from} 00:00:00`, `${to} 23:59:59`);
             let i = 0;
             if (res.Success) {
                 console.log("Total de carrier traidos ", res.Data.length);
                 for (const fdCarrier of res.Data) {
                     try {
-                        // console.log("ADENTOR BROO")
-                        let success = await RwSyncService.importFDCarrier(fdCarrier, null)
+                        // console.log("ADENTOR BROO") 
+                        let success = await RwSyncService.updateReferredCustomer(fdCarrier, null)
                         // console.log("--------------RwSyncService---------> ", success);
                         if (success) {
                             console.log("-------success----------------> ");
@@ -426,6 +461,135 @@ async function updateReferredCustomer(){
     }
         
 }
+
+
+
+
+async function migrateLeads(){
+    if(migrando == null){
+        migrando = true;
+        try {
+            let from = '2019-01-01';
+            let to = '2019-12-31';
+            let ok = 0;
+            let fail = 0;
+            let exists = 0;
+            let no_migradas = [];
+            let fail_arr = [];
+            let res = await FDService.getLeads(`${from} 00:00:00`, `${to} 23:59:59`);
+            let i = 0;
+            if (res.Success) {
+                let totalLeads = res.Data.length;
+                console.log("Total de Leads traidas ", totalLeads);
+                for (const Lead of res.Data) {
+                    try {
+                        // console.log("ADENTOR BROO") 
+                        let success = await RwSyncService.importLeadToLoadGenie(Lead, null)
+                        // console.log("--------------RwSyncService---------> ", success);
+                        if (success) {
+                            console.log("-------success----------------> ");
+                            Logger.info(`Sucess import (${((i + 1) / res.Data.length * 100).toFixed(6)}%) ${Lead.number} ${Lead.company} --> ${(i + 1)} de ${totalLeads}`);
+                            ok++;
+                        }
+                        console.log(success);
+                    } catch (e) {
+                        console.log("-------catch----------------> ");
+                        Logger.error(`Error import (${((i + 1) / res.Data.length * 100).toFixed(6)}%) ${Lead.id}: ${Lead.number}: ${Lead.email} : ${Lead.company}`);
+                        Logger.error(e);
+                        // fail_arr.push(`${res.Data.prefix}-${res.Data.number}`);
+                        fail_arr.push(`${Lead.number}`);
+                        fail++;
+                    }
+                    i++;
+                }
+                console.log(`From: ${from} --- To: ${to}`)
+                console.log(`ok:${ok}  || fail:${fail} `)
+                console.log("No migradas ");
+                console.log(JSON.stringify(fail_arr));
+            }           
+        } catch (error) {
+            console.log("migrateCustomeData", error);
+        }
+    }
+        
+}
+function calcPagination(page = 0, pageSize = 20) {
+    return {
+      limit: pageSize,
+      offset: page * pageSize
+    };
+  }
+let syncDispatchSheetOnLeads = true;
+async function migrateNotesLead(limit){
+    try{
+        if(syncDispatchSheetOnLeads){
+            syncDispatchSheetOnLeads = false;
+            let countQuery = `select
+                                COUNT(leads.id) as total
+                              from
+                                leads
+                                left join lead_notes on leads.id = lead_notes.lead_id 
+                              where
+                                leads.imported is true and lead_notes.id is null
+                                and leads."created_at" <= '2015-12-31 05:00:00.000 +00:00' and 
+                                leads."created_at" >= '2015-01-01 05:00:00.000 +00:00'`;                            
+            let leadsCount = await ritewayDB.query(countQuery, {
+                type: ritewayDB.QueryTypes.SELECT
+                });
+                console.log("laksndklasnd", leadsCount);
+            let amountOrders = Number(leadsCount[0].total) || 0;
+                if(amountOrders > 0){
+                    
+                    let totalPage = Math.ceil(amountOrders / limit);
+                    let page = 0;
+                    let doing = true;          
+                    console.log(`Model: Leads get dispatchsheet. BatchSize: ${limit}. Total Pages: ${totalPage}`);
+                    while(doing){
+                        let promises = [];
+                        if(page > totalPage){
+                            doing = false;
+                            syncDispatchSheetOnLeads = true;
+                        }
+                        let limitAndOffset = calcPagination(page, limit);
+                        let query = `select
+                                        SUBSTRING(code, 7, length(code)) as number,
+                                        leads.id
+                                    from
+                                        leads
+                                        left join lead_notes on leads.id = lead_notes.lead_id 
+                                        where
+                                            leads.imported is true and lead_notes.id is null
+                                            and leads."created_at" >= '2018-01-01 05:00:00.000 +00:00'
+                                            order by leads.created_at desc
+                                        limit ${limitAndOffset.limit} offset ${limitAndOffset.offset}`;
+
+                                
+                        let leads = await ritewayDB.query(query, {
+                            type: ritewayDB.QueryTypes.SELECT
+                        });
+
+                        console.log(`Page ${page} de ${totalPage}. VALOR DE doing ${doing}`);
+            
+                        for (const lead of leads) {
+                            promises.push(RwSyncService.migrateNotesLead(lead));
+                        }
+                        await Promise.all(promises);
+                        page++;
+                    } 
+                    if(syncDispatchSheetOnLeads){
+                        return true;
+                    }
+                }
+            return true;
+        }
+    }catch(err){
+        console.log(err);
+        return false;
+    }
+        
+}
+
+
 module.exports = {
     migrate,
     migrateTodayEntities,
@@ -433,5 +597,7 @@ module.exports = {
     migrateCustomeData,
     migrateCustomeDataByFDNumbers,
     migrateCarriers,
-    updateReferredCustomer
+    updateReferredCustomer,
+    migrateLeads,
+    migrateNotesLead
 }

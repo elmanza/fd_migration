@@ -337,7 +337,7 @@ class RiteWayAutotranportService {
                 }
             });
 
-            return zipcode
+            return zipcode;
         }
 
         throw new Error(`There is'n a state ${stateAbbrv}`);
@@ -975,7 +975,7 @@ class RiteWayAutotranportService {
                 updatedAt: FDEntity.delivered || FDEntity.actual_pickup_date || FDEntity.avail_pickup_date || FDEntity.created,
                 amount: result.tariff,
                 archived: false,
-                invoice_url: FDEntity.invoice_file ? FDEntity.invoice_file : '',
+                invoice_url: FDEntity.invoice_file,
                 invoice_type_id: INVOICE_TYPES.CUSTOMER
             };
         }
@@ -1031,6 +1031,190 @@ class RiteWayAutotranportService {
         }
 
         return result;
+    }
+
+    formatPhoneValue(value) {
+        let response = '';
+        let data = value.replace(/[^0-9]*/g, ''); // Only numbers
+        
+        const dataSize = data.length;
+        if (dataSize === 3) {
+          if (this.delete) {
+            response = data;
+          } else {
+            response = `${data}-`;
+          }
+        } else if (dataSize > 3 && dataSize < 6) {
+          response = `${data.slice(0, 3)}-${data.slice(3, dataSize + 1)}`;
+        } else if (dataSize === 6) {
+          if (this.delete) {
+            response = `${data.slice(0, 3)}-${data.slice(3, 6)}`;
+          } else {
+            response =  `${data.slice(0, 3)}-${data.slice(3, 6)}-`;
+          }
+        } else if (dataSize > 6 && dataSize <= 10) {
+          response = `${data.slice(0, 3)}-${data.slice(3, 6)}-${data.slice(6, dataSize + 1)}`;
+        } else {
+          response = data;
+        }
+        return response;
+      }
+
+    async parseFDEntityToLeadLoadGenieData(FDLead){
+        let statuses_lead = { 
+            "17": 18,
+            "14": 19,
+            "12": 19,
+            "16": 30,
+            "13": 21,
+            "18": 21
+        };
+        let days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+        try {
+            let oriZipcode = FDLead.zip ? FDLead.zip.replace(/\D/g, "") : '';
+            let city = null;
+            let zipcode = null;
+            if(FDLead.state == "" || FDLead.city == "" || oriZipcode == ""){
+                city = {
+                    id: null
+                }
+                zipcode = {
+                    id: null
+                }
+            }else{
+                city = await this.getCity(FDLead.state, FDLead.city, oriZipcode);
+                zipcode = await this.getZipcode(FDLead.state, oriZipcode);
+            }
+            // console.log("parseFDLeadToQuoteData 22222222222", FDLead.origin);
+            // let status_id = statuses_lead[FDLead];
+            let code = `LED-00${FDLead.number}`;
+            // if (conflicts){
+            //     throw boom.conflict(
+            //       'There is already a company with this email or company name.'
+            //     );
+            // }
+            let address_type_id = 1;
+            // if(FDLead.shipper_type){
+            //     address_type_id = FDLead.shipper_type == 'Commercial' ? 1 : FDLead.shipper_type == 'Residential' ? 2 : null;
+            // }
+            let shipment_type_arr = ['Both', 'Full Load', 'Single', 'Both'];
+            let shipment = 'Both';
+            if(FDLead.shipment_type && Number(FDLead.shipment_type < 4)){
+                shipment = shipment_type_arr[FDLead.shipment_type];
+            }
+            let existSource = true;
+            if(FDLead.referred_by == null || FDLead.referred_by == ""){
+                existSource= false;
+            }
+            let sourceOrder = null;
+            let isNewSource = null;
+            if(existSource){
+                [sourceOrder, isNewSource] = await RiteWay.Source.findOrCreate({
+                    defaults: {
+                        name: `${FDLead.referred_by}`,
+                        description: `${FDLead.referred_id}`
+                    },
+                    where: {
+                        name: {
+                            [sqOp.iLike]: `${FDLead.referred_by}`
+                        }
+                    }
+                });
+            }
+            // buysell_days
+            let search_front = FDLead.fronter_email == null || FDLead.fronter_email == "" ? false : true;
+            let fronter = search_front ? await this.findUser(FDLead.fronter_email.trim()) : null;
+            let search_salesrep = FDLead.salesrep_email == null ? false : true;
+            let salesrep = search_salesrep ? await this.findUser(FDLead.salesrep_email.trim()) : null;
+            let isAssigned = false;
+            if(!fronter && search_front){
+                let userFullName = FDLead.fronter_contactname.split(' ');
+                let userData = {
+                    name: userFullName[0],
+                    last_name: userFullName.slice(1).join(' '),
+                    username: FDLead.fronter_email.trim().toLowerCase(),
+                    photo: '',
+                    phone: FDLead.fronter_phone,
+                    company_id: 149, // master 149 || dev 3105
+                    rol_id: 6
+                };
+                // console.log("erData, userData.userna ", userData);
+                fronter = await this.getUser(userData, userData.username);
+            }
+            if(!salesrep && search_salesrep){
+                let userFullName = FDLead.salesrep_contactname.split(' ');
+                let userData = {
+                    name: userFullName[0],
+                    last_name: userFullName.slice(1).join(' '),
+                    username: FDLead.salesrep_email.trim().toLowerCase(),
+                    photo: '',
+                    phone: FDLead.salesrep_phone,
+                    company_id: 149, // master 149 || dev 3105
+                    rol_id: 8
+                };
+                // console.log("erData, userData.userna ", userData);
+                salesrep = await this.getUser(userData, userData.username);
+            }
+            let usually_days_to_sell_buy = null;
+            if(FDLead.buysell_days && FDLead.buysell_days != 'null' && FDLead.buysell_days != '' && FDLead.buysell_days != ' '){
+                usually_days_to_sell_buy = JSON.parse(FDLead.buysell_days);
+                if(Array.isArray(usually_days_to_sell_buy)){
+                    if(FDLead.buysell_days.length > 0){
+                        usually_days_to_sell_buy = JSON.stringify(usually_days_to_sell_buy.map(day => days[Number(day) - 1]));
+                    }
+                }                
+            }
+            let arr_status = Object.entries(statuses_lead).filter(obj => obj[0] == FDLead.status);
+            // isAssigned = FDLead.status == "17" ?  FDLead.fronter_email == null || FDLead.fronter_email == "" ?  true :  fronter.rol_id == 8 ? true : false : false;
+            // let status_id = isAssigned ? 18 : arr_status.length > 0 ? arr_status[0][1] : 17;
+            let status_id = arr_status.length > 0 ? arr_status[0][1] : 17;
+            // if(fronter.rol_id == 8 && status_id == 17){
+            //     status_id
+            // }
+            let units_month = FDLead.units_per_month == "" || FDLead.units_per_month == null ? null : FDLead.units_per_month == "20-30" ||  FDLead.units_per_month == "30+" ? "20+" : FDLead.units_per_month;
+            let res = { 
+                code,
+                company: FDLead.company,
+                first_name: FDLead.fname,
+                last_name: FDLead.lname,
+                email: FDLead.email,
+                phone: FDLead.phone1 && FDLead.phone1 !== "" ? this.formatPhoneValue(FDLead.phone1) : FDLead.phone1,
+                phone2: FDLead.phone2,
+                mobile: FDLead.mobile,
+                fax: FDLead.fax,
+                address: FDLead.address1,
+                address2: FDLead.address2,
+                hours: FDLead.shipper_hours,
+                units_month,
+                shipment,
+                website: FDLead.website,
+                notes: FDLead.information,
+                usually_days_to_sell_buy,
+                next_possible_shipping_day: FDLead.next_shipping_date == '0000-00-00 00:00:00' ? null : FDLead.next_shipping_date,
+                last_activity_at: FDLead.last_activity_date,
+                accepted_at: FDLead.assigned_date,
+                status_id,
+                city_id: city.id,
+                zipcode_id: zipcode.id,
+                address_type_id,
+                source_id: sourceOrder ? sourceOrder.id : -1,
+                fronter_id: search_front ? fronter.id : null,
+                sales_rep_id: search_salesrep ? salesrep.id : null,
+                logo: null,
+                assigned_at: FDLead.assigned_date,
+                reason_cancel: null,
+                created_at: FDLead.created,
+                updated_at: FDLead.created,
+                deleted_at: null,
+                priority: FDLead.status == 12 ? true : false,
+                imported: true
+            };
+            // console.log(res);
+            return res;
+        } catch (error) {
+            console.log(error);
+            return false;
+        }
     }
 
     async parseFDEntityToQuoteData(FDEntity, associateCompany = null) {
@@ -1186,7 +1370,7 @@ class RiteWayAutotranportService {
             updated_at: FDEntity.ordered,
             estimated_delivery_date: FDEntity.delivery_date,
             picked_up_at: picked_up_at,
-            delivered_at: FDEntity.delivered == "0000-00-00 00:00:00" ? FDEntity.delivery_date : FDEntity.delivered,
+            delivered_at: FDEntity.delivered == "0000-00-00 00:00:00" ||  FDEntity.delivered == null ? FDEntity.delivery_date : FDEntity.delivered,
             estimated_picked_up: estimated_picked_up,
             deleted_at: FDEntity.archived || null,
             user_accept_id: associateCompany ? associateCompany.customerDetail.operator_id : null,
@@ -1239,6 +1423,10 @@ class RiteWayAutotranportService {
         }
 
         return quoteData;
+    }
+
+    async parseFDLead(FDLead){
+        return await this.parseFDEntityToLeadLoadGenieData(FDLead);;
     }
 
     //Upload files

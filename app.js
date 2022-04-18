@@ -33,7 +33,7 @@ const tasks = require('./modules/tasks');
 const cronTasks = {};
 
 
-cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCustomeData);
+// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCustomeData);
 // cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrate);
 // cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateTodayEntities);
 
@@ -54,6 +54,9 @@ cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCustomeData);
 // cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.syncDispatchSheet);
 
 
+// cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.syncInsertCompaniesWithoutCustomerDetails);
+
+
 // cron.schedule(SyncConf.SCHEDULE.GENERAL, tasks.updateOrdersData);
 
 
@@ -63,8 +66,13 @@ cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCustomeData);
 // cron.schedule(SyncConf.SCHEDULE.REFRESH_ORDERS, tasks.createOrderFD);
 
 
-// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCarriers);
+cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateCarriers);
 
 // cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.updateReferredCustomer);
-//TEST SOCKETS
+
+// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateLeads);
+
+// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateNotesLead);
+
+// cron.schedule(SyncConf.SCHEDULE.MIGRATION, tasks.migrateInfoUsersResidential);
 //require('./test_sockets');

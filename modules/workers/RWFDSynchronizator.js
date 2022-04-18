@@ -638,7 +638,94 @@ async function syncDispatchSheet(limit) {
     }
 }
 
+async function syncInsertCompaniesWithoutCustomerDetails(limit) {
+    try{
+        if(syncDispatchSheetOnOrders){
+            syncDispatchSheetOnOrders = false;
+            let countQuery = `select
+                                companies.name
+                            from
+                                orders
+                            inner join quotes on
+                                orders.quote_id = quotes.id
+                            inner join companies on
+                                quotes.company_id = companies.id
+                            left join customer_details on
+                                customer_details.company_id = companies.id
+                            where
+                                customer_details.id is null and companies.id <> 149
+                            group by
+                                companies.name,
+                                customer_details.id,
+                                companies.id
+                            order by 
+                            	companies.name`; 
+                                      
+            let ordersCount = await ritewayDB.query(countQuery, {
+                type: ritewayDB.QueryTypes.SELECT
+                });
+                console.log("laksndklasnd", ordersCount);
+            let amountOrders = Number(ordersCount.length) || 0;
+                if(amountOrders > 0){
+                    
+                    let totalPage = Math.ceil(amountOrders / limit);
+                    let page = 0;
+                    let doing = true;          
+                    console.log(`Model: Order get syncInsertCompaniesWithoutCustomerDetails. BatchSize: ${limit}. Total Pages: ${totalPage}`);
+                    while(doing){
+                        let promises = [];
+                        if(page > totalPage){
+                            doing = false;
+                            syncDispatchSheetOnOrders = true;
+                        }
+                        let limitAndOffset = calcPagination(page, limit);
+                        let query = `select
+                                        customer_details.id as customer_id,
+                                        companies.name,
+                                        companies.id as company_id,
+                                        jsonb_agg(orders.assigned_salesrep_id) as operator_id
+                                    from
+                                        orders
+                                    inner join quotes on
+                                        orders.quote_id = quotes.id
+                                    inner join companies on
+                                        quotes.company_id = companies.id
+                                    left join customer_details on
+                                        customer_details.company_id = companies.id
+                                    where
+                                        customer_details.id is null and companies.id <> 149
+                                    group by
+                                        companies.name,
+                                        customer_details.id,
+                                        companies.id
+                                    order by 
+                                        companies.name
+                                    limit ${limitAndOffset.limit} offset ${limitAndOffset.offset}`;
 
+                                
+                        let orders = await ritewayDB.query(query, {
+                            type: ritewayDB.QueryTypes.SELECT
+                        });
+
+                        console.log(`Page ${page} de ${totalPage}. VALOR DE doing ${doing}`);
+            
+                        for (const order of orders) {
+                            promises.push(RwSyncService.syncInsertCompaniesWithoutCustomerDetails(order));
+                        }
+                        await Promise.all(promises);
+                        page++;
+                    } 
+                    if(syncDispatchSheetOnOrders){
+                        return true;
+                    }
+                }
+            return true;
+        }
+    }catch(err){
+        console.log(err);
+        return false;
+    }
+}
 async function updateOrdersData(limit2) {
     let limit = 50;
     try{
@@ -761,5 +848,6 @@ module.exports = {
     syncInvoices,
     syncMyOrders,
     syncDispatchSheet,
-    updateOrdersData
+    updateOrdersData,
+    syncInsertCompaniesWithoutCustomerDetails
 }

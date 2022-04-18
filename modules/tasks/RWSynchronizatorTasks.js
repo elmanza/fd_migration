@@ -247,6 +247,23 @@ class RWSynchronizatorTasks {
         
     }
 
+    async syncInsertCompaniesWithoutCustomerDetails() {
+        if (!this.finished.syncInvoices) return;
+        this.finished.syncInvoices = false;
+
+        Logger.info(`syncInvoices is executed`);
+        let threads = [];
+
+        threads.push(RWFDSynchronizatorWorker.syncInsertCompaniesWithoutCustomerDetails(SyncParameters.batch_size));
+
+        let results = await Promise.all(threads);
+        // this.finished.syncInvoices = true;
+        
+    }
+
+
+    
+
 
     async updateOrdersData(){
         if (!this.finished.syncInvoices) return;

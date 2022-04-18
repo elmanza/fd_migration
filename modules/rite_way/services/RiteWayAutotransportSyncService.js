@@ -333,12 +333,18 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
           let optQuery = { transaction, paranoid: false };
           let today = moment().format('YYYY-MM-DD hh:mm:ss');
            console.log("PUNTO 1");
-          if (FDCarrier.email) {
+          if (FDCarrier.email && FDCarrier.company_name) {
               conditions.push(Sequelize.where(
                   Sequelize.col('email'),
                   'ilike',
                   `${FDCarrier.email.trim()}`
               ));
+
+              conditions.push(Sequelize.where(
+                Sequelize.col('name'),
+                'ilike',
+                `${FDCarrier.company_name}`
+            ));
           }
           let carrier = await RiteWay.Company.findOne({
               include: {
@@ -347,7 +353,7 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                   as: 'carrierDetail'
               },
               where: {
-                  [sqOp.or]: [
+                  [sqOp.and]: [
                       ...conditions
                   ]
               },
@@ -358,13 +364,39 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
           if(carrier){
             console.log("PUNTO 2");
             let new_carrier_detail = {
-              insurance_doc: `https://freightdragon.com//application/accounts/getdocs/id/${FDCarrier.insurance_doc_id}/type/1`,
+              insurance_doc: FDCarrier.insurance_doc_id ? `https://freightdragon.com/application/accounts/getdocs/id/${FDCarrier.insurance_doc_id}/type/1` : null,
               //hours_of_operation: FDCarrier.hours_of_operation,
-              insurance_expire: FDCarrier.insurance_expirationdate,
+              insurance_expire: FDCarrier.insurance_expirationdate ? FDCarrier.insurance_expirationdate : null,
               dispatcher_id: 848,
-              insurance_iccmcnumber: FDCarrier.insurance_iccmcnumber,
+              insurance_iccmcnumber: FDCarrier.insurance_iccmcnumber || FDCarrier.insurance_iccmcnumber != "" ? FDCarrier.insurance_iccmcnumber : null,
               company_id: carrier.id
             }
+
+            // let allCarrierDetail = await RiteWay.CarrierDetail.findAll({
+            //   where: {
+            //     company_id: carrier.id,
+            //   }
+            // });
+
+            // // Elimino las direcciones de todos los carriers
+            // for (const oneCarrierDetail of allCarrierDetail) {
+            //   await RiteWay.CarrierAddressDetails.destroy({
+            //     where: {
+            //       carrier_detail_id: oneCarrierDetail.id
+            //     },
+            //     force: true,
+            //     ...optQuery
+            //   });
+            // }
+
+            // await RiteWay.CarrierDetail.destroy({
+            //   where: {
+            //     company_id: carrier.id
+            //   },
+            //   force: true,
+            //   ...optQuery
+            // });
+
             let [carrierDetail, isNewCarrierDetail] = await RiteWay.CarrierDetail.findOrCreate({
               defaults: new_carrier_detail,
               where: {
@@ -373,106 +405,241 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
                 ...optQuery
             });
 
-            if (!isNewCarrierDetail) {
-                await carrierDetail.update(new_carrier_detail, optQuery);
-            }
+            // console.log(carrierDetail);
 
-            let city = await this.getCity(FDCarrier.state, FDCarrier.city, FDCarrier.zip_code.replace(/\D/g, ""));
-            if(FDCarrier.address1){
-              let newCarrierAddressDetails = {
-                carrier_detail_id:carrierDetail.id,
-                address: FDCarrier.address1, 
-                contact: FDCarrier.contact_name1, 
-                phone: FDCarrier.phone1, 
-                use_for_print_check: FDCarrier.print_check == "0" ? false : true,
-                zipcode_id: city.zipcode_id || null,
-                city_id: city.id || null,
-                state_id: city.state_id || null,
-                print_check_as: FDCarrier.print_name
+             // Elimino las direcciones de todos los carriers
+            await RiteWay.CarrierAddressDetails.destroy({
+              where: {
+                carrier_detail_id: carrierDetail.id
+              },
+              force: true,
+              ...optQuery
+            });
+            
+
+            if(!isNewCarrierDetail) {
+                let updateingCarrierDetail = {};
+                let isUpdateingCarrierDetail = false;
+                if((carrierDetail.insurance_expire == "" || carrierDetail.insurance_expire == null) && (FDCarrier.insurance_expirationdate && FDCarrier.insurance_expirationdate != "")){
+                    new_carrier_detail.insurance_expire = FDCarrier.insurance_expirationdate;
+                    isUpdateingCarrierDetail = true
+                }
+
+                if((carrierDetail.insurance_iccmcnumber == "" || carrierDetail.insurance_iccmcnumber == null) && (FDCarrier.insurance_iccmcnumber && FDCarrier.insurance_iccmcnumber != "")){
+                    new_carrier_detail.insurance_iccmcnumber = FDCarrier.insurance_iccmcnumber;
+                    isUpdateingCarrierDetail = true
+                }
+                if(isUpdateingCarrierDetail) await carrierDetail.update(new_carrier_detail, optQuery);  
+                isUpdateingCarrierDetail = false;              
+            }
+            
+            
+            let print_address1 = FDCarrier.print_address1 ? FDCarrier.print_address1.substr(0,6).toUpperCase() : FDCarrier.print_address1;
+            let normal_address1 = FDCarrier.address1 ? FDCarrier.address1.substr(0,6).toUpperCase() : FDCarrier.address1;
+
+            
+            let casos = [
+                "P O BO",
+                "PO. BO",
+                "P.O BO",
+                "P.O.BO",
+                "PO BOX",
+                "P.O. B",
+                "P.O BO"
+            ]
+            let is_pox = casos.includes(print_address1) ? true : false;
+            let is_po_box_normal = casos.includes(normal_address1) ? true : false;
+            // let is_pox = print_address1 == "PO BOX" ? true : false;
+            // let is_po_box_normal = normal_address1 == "PO BOX" ? true : false;
+
+              let city;
+              let ziiptrim = FDCarrier.zip_code.split('-');
+              if(FDCarrier.state == null || FDCarrier.city == null || FDCarrier.zip_code == null){
+                city = { zipcode_id: null, state_id:null, id: null }
+              }else{
+                city = await this.getCity(FDCarrier.state, FDCarrier.city, ziiptrim[0].replace(/\D/g, ""));
+                if(!city){
+                    city = { zipcode_id: null, state_id:null, id: null } 
+                }
               }
-              let [carrierAddressDetails, isNewCarrierAddressDetails] = await RiteWay.CarrierAddressDetails.findOrCreate({
-                defaults: newCarrierAddressDetails,
-                where: {
-                  carrier_detail_id: carrierDetail.id
-                  },
-                  ...optQuery
-              });
 
-              if (!isNewCarrierAddressDetails) {
-                await carrierDetail.update(newCarrierAddressDetails, optQuery);
+              let normal_zipcode;
+              if(FDCarrier.state == null || FDCarrier.city == null || FDCarrier.zip_code == null){
+                normal_zipcode = { id: null, code: null }
+              }else{
+                let ziip = FDCarrier.zip_code.split('-');
+                normal_zipcode = await this.getZipcode(FDCarrier.state, ziip[0].replace(/\D/g, ""));
               }
-              
-              Logger.info(`YA CREADO CarrierAddressDetails of carrier ${carrierAddressDetails.id} was updated`);
-            }
 
-          }else{
-            console.log("PUNTO 3");
-            let city = await this.getCity(FDCarrier.state, FDCarrier.city, FDCarrier.zip_code.replace(/\D/g, ""));
-            let newCarrier = {
-              name: FDCarrier.company_name.trim(),
-              photo: '',
-              email: FDCarrier.email.trim().toLowerCase(),
-              phone: FDCarrier.phone1 || '',
-              address:FDCarrier.address1 || '',
-              status:true,
-              company_type_id:1,
-              city_id: city.id,
-              zipcode_id: city.zipcode_id,
-              created_at: FDCarrier.create_date  || today,
-              updated_at: FDCarrier.create_date || today,
-              invoice_created_in: 'dispatch'
-            }
-              carrier = await RiteWay.Company.create(newCarrier, optQuery);
-              let new_carrier_detail = {
-                insurance_doc: `https://freightdragon.com//application/accounts/getdocs/id/${FDCarrier.insurance_doc_id}/type/1`,
-                //hours_of_operation: FDCarrier.hours_of_operation,
-                insurance_expire: FDCarrier.insurance_expirationdate,
-                dispatcher_id: 848,
-                insurance_iccmcnumber: FDCarrier.insurance_iccmcnumber,
-                company_id: carrier.id
+
+              let insertAddressDetails = [];
+                if(FDCarrier.print_check == "1" 
+                && FDCarrier.print_address1  !== "" 
+                && FDCarrier.print_city  !== "" 
+                && FDCarrier.print_state  !== ""  
+                && FDCarrier.print_zip_code  !== ""){
+                    let newNormalAddress = {
+                      carrier_detail_id:carrierDetail.id,
+                      address: is_po_box_normal ? `` : `${FDCarrier.address1}`,
+                      contact: FDCarrier.contact_name1, 
+                      phone: FDCarrier.phone1, 
+                      use_for_print_check: false,
+                      zipcode_id: normal_zipcode.id || null,
+                      city_id: city.id || null,
+                      state_id: city.state_id || null,
+                      print_check_as: null,
+                      address_detail: is_po_box_normal  ? FDCarrier.address1 : null,
+                      is_po_box: is_po_box_normal  ? true : false
+                    }
+                    insertAddressDetails.push(newNormalAddress);
+                    // console.log(newNormalAddress);
+
+                    
+                    let checkt_city;
+                    
+                    if(FDCarrier.print_check == 0  || (FDCarrier.print_state == null || FDCarrier.print_city == null || FDCarrier.print_zip_code == null)){
+                      checkt_city = { zipcode_id: null, state_id:null, id: null }
+                    }else{
+                        let print_ziptrim = FDCarrier.print_zip_code.split('-');
+                      checkt_city = await this.getCity(FDCarrier.print_state, FDCarrier.print_city, print_ziptrim[0].replace(/\D/g, ""));
+                    }
+
+                    let checkt_zipcode;
+                    if(FDCarrier.state == null || FDCarrier.city == null || FDCarrier.zip_code == null){
+                      checkt_zipcode = { id: null, code: null }
+                    }else{
+                      let ziip = FDCarrier.print_zip_code.split('-');
+                      checkt_zipcode = await this.getZipcode(FDCarrier.print_state, ziip[0].replace(/\D/g, ""));
+                    }
+                    let newCarrierAddressDetails = {
+                      carrier_detail_id:carrierDetail.id,
+                      address: is_pox ? `` : `${FDCarrier.print_address1}`,
+                      contact: FDCarrier.contact_name1, 
+                      phone: FDCarrier.phone1, 
+                      use_for_print_check: true,
+                      zipcode_id: checkt_zipcode.id || null,
+                      city_id: checkt_city.id || null,
+                      state_id: checkt_city.state_id || null,
+                      print_check_as: FDCarrier.print_name,
+                      address_detail: is_pox ? FDCarrier.print_address1 : null,
+                      is_po_box: is_pox ? true : false
+                    }
+
+                    insertAddressDetails.push(newCarrierAddressDetails);
+
+                    // // check address
+                    // let [carrierAddressDetails, isNewCarrierAddressDetails] = await RiteWay.CarrierAddressDetails.findOrCreate({
+                    //   defaults: newCarrierAddressDetails,
+                    //   where: {
+                    //     carrier_detail_id: carrierDetail.id,
+                    //     use_for_print_check: true
+                    //   },
+                    //   ...optQuery
+                    // });
+
+                    // if (!isNewCarrierAddressDetails) {
+                    //     await carrierAddressDetails.update(newCarrierAddressDetails, optQuery);
+                    // }
+                }else{
+                  // console.log(FDCarrier.address1, "   ... normal_address1normal_address1normal_address1 ", city);
+                  let newCarrierAddressDetails = {
+                    carrier_detail_id:carrierDetail.id,
+                    address: is_po_box_normal ? `` : `${FDCarrier.address1}`,
+                    contact: FDCarrier.contact_name1, 
+                    phone: FDCarrier.phone1, 
+                    use_for_print_check: false,
+                    zipcode_id: normal_zipcode.id || null,
+                    city_id: city.id || null,
+                    state_id: city.state_id || null,
+                    print_check_as: null,
+                    address_detail: is_po_box_normal  ? FDCarrier.address1 : null,
+                    is_po_box: is_po_box_normal  ? true : false
+                  }
+                  insertAddressDetails.push(newCarrierAddressDetails);
+                  // console.log("lasdhaioshdoiwhi9dh9ihd9iashd9ihasid", newCarrierAddressDetails);
+                  // await RiteWay.CarrierAddressDetails.destroy({
+                  //   where: {
+                  //     carrier_detail_id: carrierDetail.id
+                  //   },
+                  //   force: true
+                  // });
+                }
+
+                for (const infoAddressDetails of insertAddressDetails) {
+                  await RiteWay.CarrierAddressDetails.create(infoAddressDetails,{...optQuery});
+                }
                 
-              }
-              let [carrierDetail, isNewCarrierDetail] = await RiteWay.CarrierDetail.findOrCreate({
-                defaults: new_carrier_detail,
-                where: {
-                      company_id: carrier.id
-                  },
-                  ...optQuery
-              });
-              if (!isNewCarrierDetail) {
-                await carrierDetail.update(new_carrier_detail, optQuery);
-            }
 
-            if(FDCarrier.address1){
-              let newCarrierAddressDetails = {
-                carrier_detail_id:carrierDetail.id,
-                address: FDCarrier.address1, 
-                contact: FDCarrier.contact_name1, 
-                phone: FDCarrier.phone1, 
-                use_for_print_check:true,
-                zipcode_id: city.zipcode_id || null,
-                city_id: city.id || null,
-                state_id: city.state_id || null
-              }
-              let [carrierAddressDetails, isNewCarrierAddressDetails] = await RiteWay.CarrierAddressDetails.findOrCreate({
-                defaults: newCarrierAddressDetails,
-                where: {
-                  carrier_detail_id: carrierDetail.id
-                  },
-                  ...optQuery
-              });
+              Logger.info(`Actualizado la empresa ${carrier.name}`);
+          }else{
+            // console.log("PUNTO 3");
+            // let city = await this.getCity(FDCarrier.state, FDCarrier.city, FDCarrier.zip_code.replace(/\D/g, ""));
+            // let newCarrier = {
+            //   name: FDCarrier.company_name.trim(),
+            //   photo: '',
+            //   email: FDCarrier.email.trim().toLowerCase(),
+            //   phone: FDCarrier.phone1 || '',
+            //   address:FDCarrier.address1 || '',
+            //   status:true,
+            //   company_type_id:1,
+            //   city_id: city.id,
+            //   zipcode_id: city.zipcode_id,
+            //   created_at: FDCarrier.create_date  || today,
+            //   updated_at: FDCarrier.create_date || today,
+            //   invoice_created_in: 'dispatch'
+            // }
+            //   carrier = await RiteWay.Company.create(newCarrier, optQuery);
+            //   let new_carrier_detail = {
+            //     insurance_doc: `https://freightdragon.com//application/accounts/getdocs/id/${FDCarrier.insurance_doc_id}/type/1`,
+            //     //hours_of_operation: FDCarrier.hours_of_operation,
+            //     insurance_expire: FDCarrier.insurance_expirationdate,
+            //     dispatcher_id: 848,
+            //     insurance_iccmcnumber: FDCarrier.insurance_iccmcnumber,
+            //     company_id: carrier.id
+                
+            //   }
+            //   let [carrierDetail, isNewCarrierDetail] = await RiteWay.CarrierDetail.findOrCreate({
+            //     defaults: new_carrier_detail,
+            //     where: {
+            //           company_id: carrier.id
+            //       },
+            //       ...optQuery
+            //   });
+            //   if (!isNewCarrierDetail) {
+            //     await carrierDetail.update(new_carrier_detail, optQuery);
+            // }
 
-              if (!isNewCarrierAddressDetails) {
-                await carrierDetail.update(newCarrierAddressDetails, optQuery);
-              }
+            // if(FDCarrier.address1){
+            //   let newCarrierAddressDetails = {
+            //     carrier_detail_id:carrierDetail.id,
+            //     address: FDCarrier.address1, 
+            //     contact: FDCarrier.contact_name1, 
+            //     phone: FDCarrier.phone1, 
+            //     use_for_print_check:true,
+            //     zipcode_id: city.zipcode_id || null,
+            //     city_id: city.id || null,
+            //     state_id: city.state_id || null
+            //   }
+            //   let [carrierAddressDetails, isNewCarrierAddressDetails] = await RiteWay.CarrierAddressDetails.findOrCreate({
+            //     defaults: newCarrierAddressDetails,
+            //     where: {
+            //       carrier_detail_id: carrierDetail.id
+            //       },
+            //       ...optQuery
+            //   });
+
+            //   if (!isNewCarrierAddressDetails) {
+            //     await carrierDetail.update(newCarrierAddressDetails, optQuery);
+            //   }
               
-              Logger.info(`NO ESTABA CREADO CarrierAddressDetails of carrier ${carrierAddressDetails.id} was updated`);
-            }
+            //   Logger.info(`NO ESTABA CREADO CarrierAddressDetails of carrier ${carrierAddressDetails.id} was updated`);
+            // }
           }
           console.log("PUNTO 4");
           if (transaction) await transaction.commit();
           return true;
         } catch (error) {
+          console.log(error);
           if (transaction) await transaction.rollback();
           Logger.info(`[Error] en creación del carrier`);
           Logger.error(error);
@@ -480,7 +647,82 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
           return false;
         }
     }
+    
+    async updateReferredCustomer(FDCarrier){
+        let transaction = undefined;
+          try {
+            let conditions = [];
+  
+            transaction = await riteWayDBConn.transaction();
+            let optQuery = { transaction, paranoid: false };
+            let today = moment().format('YYYY-MM-DD hh:mm:ss');
+            if (FDCarrier.company_name) {
+                conditions.push(Sequelize.where(
+                    Sequelize.col('"Company"."name"'),
+                    'ilike',
+                    `%${FDCarrier.company_name}%`
+                ));
+            }
+            let shipper = await RiteWay.Company.findOne({
+                include: {
+                    model: RiteWay.CustomerDetail,
+                    as: 'customerDetail',
+                    required: true
+                },
+                where: {
+                    [sqOp.or]: [
+                        ...conditions
+                    ]
+                },
+                subQuery: false
+            });
 
+
+            if(shipper){
+                let existSource = true;
+                if(FDCarrier.referred_by == null || FDCarrier.referred_by == ""){
+                    existSource= false;
+                }
+                let sourceOrder = null;
+                let isNewSource = null;
+                if(existSource){
+                    // console.log(FDCarrier);
+                    [sourceOrder, isNewSource] = await RiteWay.Source.findOrCreate({
+                        defaults: {
+                            name: `${FDCarrier.referred_by}`,
+                            description: `${FDCarrier.referred_by}`
+                        },
+                        where: {
+                            name: {
+                                [sqOp.iLike]: `${FDCarrier.referred_by}`
+                            }
+                        },
+                        ...optQuery
+                    });
+                    console.log(shipper.customerDetail.dataValues.id);
+                    console.log("oooooooooooooooooooooooooooooooooooooooooooo");
+                    console.log(shipper.customerDetail.id);
+                    let idCustomerR = shipper.customerDetail.dataValues.id;
+                    await RiteWay.CustomerDetail.update({
+                        source_id: existSource ? sourceOrder.id : -1
+                    }, { where: { id: idCustomerR }, ...optQuery });
+                    console.log("SE ACTUALIZÓ", idCustomerR)
+                }
+                
+            }
+
+            if (transaction) await transaction.commit();
+            return true;
+          } catch (error) {
+            if (transaction) await transaction.rollback();
+            Logger.info(`[Error] en actualización del referred by en el shipper`);
+            Logger.error(error);
+            throw error;
+            return false;
+          }
+      }
+
+   
 
     async importFDEntity(FDEntity, associateCompany = null) {
         let quote = await RiteWay.Quote.findOne({
@@ -1322,6 +1564,96 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
             console.log("ERROR EN syncDispatchSheet DE LA CLASE RiteWayAutotranportSyncService", error);
         }
     }
+    
+    async migrateNotesLead(lead) {
+        if(lead.number.length < 6) return false;
+        let leadNotesTypes = [1,2,3];
+        try {
+            const transaction = await riteWayDBConn.transaction();
+            let res = await this.FDService.getNoteLeads(lead.number) || {};
+
+            if (!res.Success) {
+                return false;
+            }
+            console.log("..................................................", lead.number);
+            let totalnotes = res.Data.length;
+            if(totalnotes > 0){
+                
+                for (let i = 0; i < totalnotes; i++) {
+                    if( i < 60){
+                        let fronter =await this.findUser(res.Data[i].email.trim());
+                        if(!fronter){
+                            let userFullName = res.Data[i].contactname.split(' ');
+                            let userData = {
+                                name: userFullName[0],
+                                last_name: userFullName.slice(1).join(' '),
+                                username: res.Data[i].email.trim().toLowerCase(),
+                                photo: '',
+                                phone: res.Data[i].phone,
+                                company_id: 149, // master 149 || dev 3105
+                                rol_id: 6
+                            };
+                            fronter = await this.getUser(userData, userData.username);
+                        }
+                        let dataNote = {
+                            lead_id: lead.id,
+                            lead_note_type_id: leadNotesTypes[2],
+                            user_id: fronter.id,
+                            priority: 'medium',
+                            text: res.Data[i].text,
+                            created_at: res.Data[i].created,
+                            updated_at: res.Data[i].created
+                        }
+                          
+                        await RiteWay.LeadNote.create({
+                            ...dataNote
+                        }, { transaction });
+                        // Logger.info(`Note created  of ${lead.number}, with ID ${lead.id}`);
+                    }else{
+                        break;
+                    }
+                }
+            }
+            if (transaction) await transaction.commit();
+            return true;            
+        }
+        catch (error) {
+            console.log("ERROR EN syncDispatchSheet DE LA CLASE RiteWayAutotranportSyncService", error);
+        }
+    }
+    async syncInsertCompaniesWithoutCustomerDetails(order) {
+        try {
+            let res = await this.FDService.syncInsertCompaniesWithoutCustomerDetails(order.name) || {};
+
+            if (!res.Success) {
+                return false;
+            }
+            console.log("..................................................", order.name);
+            console.log(res);
+            let operador = await this.masRepetido(order.operator_id);
+            // console.log("el mas repetidos" ,operador[0]);
+            let insert = `(${order.company_id}, ${operador[0]}, NULL, 'sin shipper', NULL, NULL, NULL, NULL, NULL, false, false, '${res.Data[0].shipper_hours}', NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, NULL)`;
+            console.log(insert);
+            // let operator_id = await this.masRepetido(order.operator_id);
+            // await RiteWay.CustomerDetail.findOrCreate({
+            //     defaults: {
+            //         operator_id: operador[0],
+            //         company_id: order.company_id,
+            //         shipper_type: `${res.Data[0].shipper_type ? res.Data[0].shipper_type : '' }`,
+            //         hours: res.Data[0].shipper_hours,
+            //         source_id: -1
+            //     },
+            //     where: {
+            //         company_id: order.company_id
+            //     }
+            // });
+            
+            
+        }
+        catch (error) {
+            console.log("ERROR EN syncInsertCompaniesWithoutCustomerDetails DE LA CLASE RiteWayAutotranportSyncService", error);
+        }
+    }
 
     async loadFile(data, type = "dispatchsheet", obj = {}, optQuery = {}){
         try{
@@ -1454,6 +1786,68 @@ class RiteWayAutotranportSyncService extends RiteWayAutotranportService {
         catch (error) {
             console.log("ERROR EN updateOrdersData DE LA CLASE RiteWayAutotranportSyncService", error);
         }
+    }
+
+
+    async masRepetido(ar) {
+        return ar.reduce((acum, el, i, ar) => {
+            const count=ar.filter(e => e==el).length;
+            return count > acum[1] ? [el, count] : acum;
+        }, ["", 0]);
+    }
+
+
+    async importLeadToLoadGenie(leadFD){
+        let transaction = undefined;
+        try {
+            let conditions = [];
+  
+            transaction = await riteWayDBConn.transaction();
+            console.log("lkashdkansdlkansd");
+            let optQuery = { transaction, paranoid: false };
+            let today = moment().format('YYYY-MM-DD hh:mm:ss');
+            let lead = await this.parseFDLead(leadFD);
+            console.log("LEAD ANTES DE INSERTAR, ", lead);
+            // await RiteWay.Lead.create(lead, {...optQuery});
+
+            if(lead){
+                let [leadObj, isNewLead] = await RiteWay.Lead.findOrCreate({
+                    defaults: {
+                        ...lead
+                    },
+                    where: {
+                        code: {
+                            [sqOp.iLike]: `${lead.code}`
+                        }
+                    },
+                    ...optQuery
+                });
+                // if(isNewLead){
+                //     if (transaction) await transaction.commit();
+                //     leadObj.update({created_at: leadFD.created , updated_at: leadFD.created}, 
+                //         {
+                //             where: {
+                //                 id: leadObj.id
+                //               }
+                //         });
+                // }else{
+                    
+                // }
+            
+                if (transaction) await transaction.commit();
+                return true;
+            }else{
+                return false;
+            }
+
+            
+        } catch (error) {
+            console.log(error);
+            if (transaction) await transaction.rollback();
+            Logger.error(error);
+            throw error;
+            return false;
+          }
     }
 
     

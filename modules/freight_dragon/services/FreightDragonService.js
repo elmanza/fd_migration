@@ -207,6 +207,9 @@ class FreightDragonService {
         return this.entityResource.syncDispatchSheet({ FDOrderID});
     }
 
+    syncInsertCompaniesWithoutCustomerDetails(Company) {
+        return this.entityResource.syncInsertCompaniesWithoutCustomerDetails({ Company});
+    }
     updateOrdersData(FDOrderID) {
         return this.entityResource.updateOrdersData({ FDOrderID});
     }
@@ -217,6 +220,24 @@ class FreightDragonService {
         });
     }
 
+    getReferredCustomer(iniDate, endDate) {
+        return this.entityResource.getReferredCustomer({
+            Created: `${iniDate}|${endDate}`
+        });
+    }
+
+    getLeads(iniDate, endDate) {
+        return this.entityResource.getLeads({
+            Created: `${iniDate}|${endDate}`
+        });
+    }
+
+    getNoteLeads(number) {
+        return this.entityResource.getNoteLeads({
+            number: number
+        });
+    }
+    
 
     
 
